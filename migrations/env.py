@@ -4,12 +4,12 @@ from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 from src.config import settings
-from src.domains.parents.entity import ParentModel
 
 # 1. Importações Absolutas do seu projeto
 from src.infrastructure.database import Base
+from src.domains.users.entity import UserModel
 
-_ = ParentModel
+_ = UserModel
 
 # Objeto de configuração do Alembic (lê o alembic.ini)
 config = context.config
