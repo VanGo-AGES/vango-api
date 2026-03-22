@@ -1,0 +1,55 @@
+{
+  "name": "VanTrack Dev Environment",
+  "dockerComposeFile": [
+    "../docker-compose.yml"
+  ],
+  "service": "api",
+  "workspaceFolder": "/code",
+  "containerEnv": {
+    "PYTHONUNBUFFERED": "1",
+    "PYTHONPATH": "/code"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "charliermarsh.ruff",
+        "ms-python.python",
+        "ms-python.debugpy"
+      ],
+      "settings": {
+        // --- Python ---
+        "python.defaultInterpreterPath": "/usr/local/bin/python",
+        "python.languageServer": "Default",
+        // --- Ruff ---
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "charliermarsh.ruff",
+        "terminal.integrated.defaultProfile.linux": "bash",
+        // --- Port Forwarding ---
+        "remote.autoForwardPorts": false,
+        "remote.portsAttributes": {
+          "8000": {
+            "label": "FastAPI Swagger",
+            "onAutoForward": "openBrowser"
+          },
+          "5678": {
+            "label": "Python Debugger",
+            "onAutoForward": "ignore"
+          }
+        },
+        // --- Configurações de Teste ---
+        "python.testing.pytestEnabled": true,
+        "python.testing.unittestEnabled": false,
+        "python.testing.pytestArgs": [
+          "tests"
+        ],
+        "python.testing.autoTestDiscoverOnSaveEnabled": true
+      }
+    }
+  },
+  "remoteUser": "root",
+  // Safe directory permite outros usuarios rodarem o codigo
+  "postCreateCommand": "git config --global --add safe.directory '*' && pip install pre-commit && pre-commit install && pre-commit install --hook-type commit-msg",
+  "forwardPorts": [
+    8000
+  ]
+}

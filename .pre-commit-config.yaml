@@ -1,0 +1,49 @@
+fail_fast: true
+
+repos:
+  # 1. Ruff para Linter e Formatter
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.3.0
+    hooks:
+      # Roda o Linter para checar tipagem (ANN), bugs e imports
+      - id: ruff
+        args: [ --fix, --exit-non-zero-on-fix ]
+      # Roda o Formatter para garantir aspas e espaços padronizados
+      - id: ruff-format
+
+  # 2. COMMITS E BRANCHES: Padronização e Segurança
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace      # Remove espaços inúteis no fim das linhas
+      - id: end-of-file-fixer        # Garante uma linha vazia no fim do arquivo
+      - id: check-yaml               # Valida a sintaxe de arquivos YAML
+      - id: check-added-large-files  # Impede o commit de arquivos gigantes (>500kb)
+      - id: no-commit-to-branch      # Protege as branches principais
+        args: [--branch, main, --branch, dev]
+
+  # 3. CONVENTIONAL COMMITS: Força o padrão feat:, fix:, etc.
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v3.1.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args: ["feat", "fix", "chore", "docs", "style", "refactor", "test"]
+
+  # 4. LOCAL: Validação Customizada de Nomes de Branch
+  - repo: local
+    hooks:
+      - id: check-branch-name
+        name: Check branch name (regex)
+        entry: |
+          python3 -c '
+          import os, re, sys
+          branch = os.popen("git branch --show-current").read().strip()
+          pattern = r"^(feat|fix|hotfix|chore|docs)\/.*"
+          if not re.match(pattern, branch):
+              print(f"ERRO: Nome de branch inválido [{branch}]. Use: feat/nome, fix/nome, etc.")
+              sys.exit(1)
+          sys.exit(0)
+          '
+        language: system
+        pass_filenames: false
