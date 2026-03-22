@@ -12,3 +12,4 @@ pydantic[email]
 sqlalchemy
 psycopg2-binary
 alembic
+passlib[bcrypt]
