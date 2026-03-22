@@ -2,13 +2,13 @@ from fastapi import HTTPException, status
 
 from src.domains.users.dtos import UserCreate
 from src.domains.users.entity import UserModel
-from src.infrastructure.repositories.user_repository import IUserRepository
-from src.infrastructure.security import hash_password
+from src.domains.users.repository import IPasswordHasher, IUserRepository
 
 
 class UserService:
-    def __init__(self, repository: IUserRepository):
+    def __init__(self, repository: IUserRepository, password_hasher: IPasswordHasher):
         self.repository = repository
+        self.password_hasher = password_hasher
 
     def create_user(self, user_data: UserCreate) -> UserModel:
         # 1. Regra de Negócio: E-mail deve ser único
@@ -21,7 +21,7 @@ class UserService:
             name=user_data.name,
             email=user_data.email,
             phone=user_data.phone,
-            password_hash=hash_password(user_data.password),  # Senha protegida!
+            password_hash=self.password_hasher.hash(user_data.password),  # Senha protegida!
             role=user_data.role,
         )
 
