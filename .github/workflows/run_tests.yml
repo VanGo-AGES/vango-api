@@ -1,0 +1,46 @@
+name: Testes VanGo
+
+on: [pull_request] # Roda sempre que abrir um PR
+
+jobs:
+  meus-testes:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: ${{ github.workspace }}
+
+    # 1. Aqui a gente pede o banco de dados (O "Postgres de Aluguel")
+    services:
+      db:
+        image: postgres:16
+        env:
+          POSTGRES_USER: root
+          POSTGRES_PASSWORD: password123
+          POSTGRES_DB: vango_test
+        ports:
+          - 5432:5432
+
+    steps:
+      # 2. Copia seu código pro computador do GitHub
+      - uses: actions/checkout@v4
+
+      # 3. Instala o Python
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # 4. Instala as bibliotecas (FastAPI, SQLAlchemy, etc)
+      - name: Instalar libs
+        run: pip install -r requirements.txt
+
+      # 5. SINCRONIZA O BANCO
+      # Sem isso, o banco existe mas está sem as tabelas.
+      - name: Rodar Migrations
+        env:
+          DATABASE_URL: postgresql://root:password123@localhost:5432/vango_test
+        run: alembic upgrade head
+
+      # 6. AGORA SIM: Roda o teste
+      - name: Executar Pytest
+        env:
+          DATABASE_URL: postgresql://root:password123@localhost:5432/vango_test
+        run: pytest

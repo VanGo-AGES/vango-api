@@ -1,0 +1,26 @@
+[tool.ruff]
+target-version = "py312"
+line-length = 140
+# Exclui linting das pastas de testes e migrações
+extend-exclude = ["tests", "migrations"]
+
+[tool.ruff.lint]
+# E: pycodestyle, F: Pyflakes, I: isort (organiza imports)
+# ANN: flake8-annotations (Obrigada a ter tipagem em tudo)
+# B: flake8-bugbear (pega bugs comuns)
+select = ["E", "F", "I", "ANN", "B", "UP"]
+ignore = [
+    "ANN101", # Não precisa de tipo para 'self'
+    "ANN102", # Não precisa de tipo para 'cls'
+    "ANN401", # Permite Any em casos muito específicos
+]
+
+[tool.ruff.lint.flake8-annotations]
+allow-star-arg-any = true
+suppress-none-returning = true
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
