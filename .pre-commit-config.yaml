@@ -39,7 +39,7 @@ repos:
           python3 -c '
           import os, re, sys
           branch = os.popen("git branch --show-current").read().strip()
-          pattern = r"^(feat|fix|hotfix|chore|docs)\/.*"
+          pattern = r"^(feat|fix|hotfix|chore|docs|test)\/.*"
           if not re.match(pattern, branch):
               print(f"ERRO: Nome de branch inválido [{branch}]. Use: feat/nome, fix/nome, etc.")
               sys.exit(1)
