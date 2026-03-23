@@ -5,6 +5,8 @@ on: [pull_request] # Roda sempre que abrir um PR
 jobs:
   meus-testes:
     runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: ${{ github.workspace }}
 
     # 1. Aqui a gente pede o banco de dados (O "Postgres de Aluguel")
     services:
