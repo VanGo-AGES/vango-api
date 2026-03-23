@@ -3,6 +3,10 @@
 Repositório da API do projeto VanGO (Gestão de Vans Escolares).
 Este projeto utiliza **Dev Containers** para padronizar o ambiente de desenvolvimento.
 
+## 📚 Guias de Engenharia
+
+- [Como adicionar um domínio do zero](readmes/adding-new-domain.md)
+
 ---
 
 ## 🚀 Como Começar (Quick Start)
