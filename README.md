@@ -59,3 +59,5 @@ ruff format .       # Formata o código conforme o padrão do projeto
 Erro de porta já em uso: Certifique-se de que não há outro Postgres rodando localmente na porta 5432.
 
 Conflito de Containers: Rode docker rm -f vango_api vango_db no seu terminal local se o build falhar por nomes duplicados.
+
+Para dúvidas mais específicas, chame um dos AGES III do Backend, Dalton ou Stéfano no Discord.
