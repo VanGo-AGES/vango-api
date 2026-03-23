@@ -10,6 +10,7 @@ htmlcov/
 .env
 .venv
 firebase-secrets.json
+.pem
 
 # Python
 __pycache__/
