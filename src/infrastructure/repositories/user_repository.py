@@ -23,6 +23,12 @@ class UserRepositoryImpl(IUserRepository):
     def find_by_id(self, user_id: UUID) -> UserModel | None:
         return self.session.query(UserModel).filter(UserModel.id == user_id).first()
 
+    def update(self, user_id: str, data: dict):
+        pass
+
+    def delete(self, user_id: str):
+        pass
+
 
 class PasswordHasherImpl(IPasswordHasher):
     def hash(self, password: str) -> str:

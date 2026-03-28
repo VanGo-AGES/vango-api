@@ -17,6 +17,14 @@ class IUserRepository(ABC):
     def find_by_id(self, user_id: UUID) -> UserModel | None:
         pass
 
+    @abstractmethod
+    def update(self, user_id: str, data: dict):
+        pass
+
+    @abstractmethod
+    def delete(self, user_id: str):
+        pass
+
 
 class IPasswordHasher(ABC):
     @abstractmethod

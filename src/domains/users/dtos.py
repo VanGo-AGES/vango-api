@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 # 1. O que a API RECEBE (Entrada)
@@ -14,17 +14,30 @@ class UserCreate(BaseModel):
     # Você pode definir um valor padrão ou exigir que venha do front
     role: str = Field(default="guardian", pattern="^(driver|passenger|guardian)$")
 
+    # Opcional — obrigatório apenas para motoristas no fluxo de cadastro
+    cpf: str | None = Field(default=None, json_schema_extra={"example": "999.999.999-99"})
+    photo_url: str | None = None
+
 
 # 2. O que a API DEVOLVE (Saída)
 class UserResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: UUID
     name: str
     email: EmailStr
     phone: str
     role: str
+    cpf: str | None = None
+    photo_url: str | None = None
     created_at: datetime
     updated_at: datetime
 
-    # Necessário para o Pydantic ler o objeto do SQLAlchemy (UserModel)
-    class Config:
-        from_attributes = True
+
+class UserUpdate(BaseModel):
+    name: str | None = None
+    email: EmailStr | None = None
+    phone: str | None = None
+    password: str | None = None
+    cpf: str | None = None
+    photo_url: str | None = None

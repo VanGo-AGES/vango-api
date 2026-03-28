@@ -1,4 +1,4 @@
-from src.domains.users.dtos import UserCreate
+from src.domains.users.dtos import UserCreate, UserUpdate
 from src.domains.users.entity import UserModel
 from src.domains.users.errors import DuplicateEmailError
 from src.domains.users.repository import IPasswordHasher, IUserRepository
@@ -22,7 +22,18 @@ class UserService:
             phone=user_data.phone,
             password_hash=self.password_hasher.hash(user_data.password),
             role=user_data.role,
+            cpf=user_data.cpf,
+            photo_url=user_data.photo_url,
         )
 
         # 3. Persistir via Repository
         return self.repository.save(new_user)
+
+    def get_user(self, user_id: str) -> UserModel:
+        pass
+
+    def update_user(self, user_id: str, data: UserUpdate) -> UserModel:
+        pass
+
+    def delete_user(self, user_id: str) -> None:
+        pass
