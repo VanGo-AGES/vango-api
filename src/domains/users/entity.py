@@ -23,6 +23,10 @@ class UserModel(Base):
 
     role: Mapped[str] = mapped_column(String(50), nullable=False)
 
+    cpf: Mapped[str | None] = mapped_column(String(14), nullable=True)
+
+    photo_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
