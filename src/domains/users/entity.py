@@ -1,8 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, String, func
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import UUID, DateTime, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.infrastructure.database import Base
@@ -31,4 +30,7 @@ class UserModel(Base):
         return f"<User(name={self.name}, role={self.role})>"
 
     # relationships
-    dependents = relationship("Dependent", back_populates="guardian", cascade="all, delete-orphan")
+    dependents = relationship("DependentModel", back_populates="guardian", cascade="all, delete-orphan")
+    vehicles = relationship("VehicleModel", back_populates="driver", cascade="all, delete-orphan")
+    addresses = relationship("AddressModel", back_populates="user", cascade="all, delete-orphan")
+    routes = relationship("RouteModel", back_populates="driver", cascade="all, delete-orphan")
