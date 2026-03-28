@@ -3,7 +3,7 @@ from datetime import datetime
 
 from sqlalchemy import DateTime, String, func
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.infrastructure.database import Base
 
@@ -29,3 +29,6 @@ class UserModel(Base):
 
     def __repr__(self) -> str:
         return f"<User(name={self.name}, role={self.role})>"
+
+    # relationships
+    dependents = relationship("Dependent", back_populates="guardian", cascade="all, delete-orphan")

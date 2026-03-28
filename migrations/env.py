@@ -8,8 +8,13 @@ from src.config import settings
 # 1. Importações Absolutas do seu projeto
 from src.infrastructure.database import Base
 from src.domains.users.entity import UserModel
+from src.domains.addresses.enitty import AddressModel
+from src.domains.dependents.entity import DependentModel
+from src.domains.routes.entity import RouteModel
+from src.domains.route_passangers.entity import RoutePassangerModel
+from src.domains.vehicles.entity import VehicleModel
 
-_ = UserModel
+_ = UserModel, AddressModel, DependentModel, RouteModel, RoutePassangerModel, VehicleModel
 
 # Objeto de configuração do Alembic (lê o alembic.ini)
 config = context.config
