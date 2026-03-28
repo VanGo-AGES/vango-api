@@ -18,11 +18,11 @@ class IUserRepository(ABC):
         pass
 
     @abstractmethod
-    def update(self, user_id: str, data: dict):
+    def update(self, user_id: UUID, data: dict) -> UserModel | None:
         pass
 
     @abstractmethod
-    def delete(self, user_id: str):
+    def delete(self, user_id: UUID) -> bool:
         pass
 
 
