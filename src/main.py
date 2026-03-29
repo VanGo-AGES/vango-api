@@ -13,6 +13,7 @@ from src.domains.addresses.entity import AddressModel
 from src.domains.dependents.controller import router as dependent_controller
 from src.domains.dependents.entity import DependentModel
 from src.domains.route_passangers.entity import RoutePassangerModel
+from src.domains.routes.controller import router as route_controller
 from src.domains.routes.entity import RouteModel
 from src.domains.uploads.controller import router as upload_controller
 from src.domains.users.controller import router as user_controller
@@ -81,6 +82,7 @@ async def catch_all_handler(request: Request, exc: Exception) -> JSONResponse:
 app.include_router(user_controller)
 app.include_router(vehicle_controller)
 app.include_router(dependent_controller)
+app.include_router(route_controller)
 app.include_router(upload_controller)
 
 
