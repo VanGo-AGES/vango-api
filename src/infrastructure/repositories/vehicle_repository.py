@@ -6,6 +6,7 @@ from src.domains.vehicles.entity import VehicleModel
 from src.domains.vehicles.repository import IVehicleRepository
 
 
+# test
 class VehicleRepositoryImpl(IVehicleRepository):
     def __init__(self, session: Session):
         self.session = session
