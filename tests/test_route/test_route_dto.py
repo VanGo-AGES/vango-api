@@ -74,6 +74,20 @@ def test_address_create_state_must_be_two_chars() -> None:
         AddressCreate(**make_address_payload(state="Rio Grande do Sul"))
 
 
+def test_address_create_state_is_normalized_to_uppercase() -> None:
+    from src.domains.routes.dtos import AddressCreate
+
+    addr = AddressCreate(**make_address_payload(state="rs"))
+    assert addr.state == "RS"
+
+
+def test_address_create_state_lowercase_is_accepted_and_uppercased() -> None:
+    from src.domains.routes.dtos import AddressCreate
+
+    addr = AddressCreate(**make_address_payload(state="sp"))
+    assert addr.state == "SP"
+
+
 # --- RouteCreate ---
 
 

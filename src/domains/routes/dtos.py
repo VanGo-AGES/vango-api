@@ -20,6 +20,11 @@ class AddressCreate(BaseModel):
     city: str = Field(..., min_length=1)
     state: str = Field(..., min_length=2, max_length=2)
 
+    @field_validator("state")
+    @classmethod
+    def normalize_state_to_uppercase(cls, v: str) -> str:
+        return v.upper()
+
 
 class AddressResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
