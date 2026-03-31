@@ -39,7 +39,6 @@ def make_route_payload(**kwargs) -> dict:
 # --- AddressCreate ---
 
 
-@pytest.mark.skip(reason="US05-TK02")
 def test_address_create_valid() -> None:
     from src.domains.routes.dtos import AddressCreate
 
@@ -48,7 +47,6 @@ def test_address_create_valid() -> None:
     assert addr.zip == "91760-000"
 
 
-@pytest.mark.skip(reason="US05-TK02")
 def test_address_create_missing_required_fields() -> None:
     from pydantic import ValidationError
 
@@ -58,7 +56,6 @@ def test_address_create_missing_required_fields() -> None:
         AddressCreate(label="Casa")
 
 
-@pytest.mark.skip(reason="US05-TK02")
 def test_address_create_invalid_zip_format() -> None:
     from pydantic import ValidationError
 
@@ -68,7 +65,6 @@ def test_address_create_invalid_zip_format() -> None:
         AddressCreate(**make_address_payload(zip="91760000"))
 
 
-@pytest.mark.skip(reason="US05-TK02")
 def test_address_create_state_must_be_two_chars() -> None:
     from pydantic import ValidationError
 
@@ -81,7 +77,6 @@ def test_address_create_state_must_be_two_chars() -> None:
 # --- RouteCreate ---
 
 
-@pytest.mark.skip(reason="US05-TK02")
 def test_route_create_valid_outbound() -> None:
     from src.domains.routes.dtos import RouteCreate
 
@@ -91,7 +86,6 @@ def test_route_create_valid_outbound() -> None:
     assert route.recurrence == "seg,ter,qua,qui,sex"
 
 
-@pytest.mark.skip(reason="US05-TK02")
 def test_route_create_valid_inbound() -> None:
     from src.domains.routes.dtos import RouteCreate
 
@@ -99,7 +93,6 @@ def test_route_create_valid_inbound() -> None:
     assert route.route_type == "inbound"
 
 
-@pytest.mark.skip(reason="US05-TK02")
 def test_route_create_invalid_route_type() -> None:
     from pydantic import ValidationError
 
@@ -109,7 +102,6 @@ def test_route_create_invalid_route_type() -> None:
         RouteCreate(**make_route_payload(route_type="ambos"))
 
 
-@pytest.mark.skip(reason="US05-TK02")
 def test_route_create_missing_name() -> None:
     from pydantic import ValidationError
 
@@ -121,7 +113,6 @@ def test_route_create_missing_name() -> None:
         RouteCreate(**payload)
 
 
-@pytest.mark.skip(reason="US05-TK02")
 def test_route_create_empty_name() -> None:
     from pydantic import ValidationError
 
@@ -131,7 +122,6 @@ def test_route_create_empty_name() -> None:
         RouteCreate(**make_route_payload(name=""))
 
 
-@pytest.mark.skip(reason="US05-TK02")
 def test_route_create_recurrence_single_day() -> None:
     from src.domains.routes.dtos import RouteCreate
 
@@ -139,7 +129,6 @@ def test_route_create_recurrence_single_day() -> None:
     assert route.recurrence == "sab"
 
 
-@pytest.mark.skip(reason="US05-TK02")
 def test_route_create_recurrence_invalid_day() -> None:
     from pydantic import ValidationError
 
@@ -149,7 +138,6 @@ def test_route_create_recurrence_invalid_day() -> None:
         RouteCreate(**make_route_payload(recurrence="mon,tue"))
 
 
-@pytest.mark.skip(reason="US05-TK02")
 def test_route_create_recurrence_empty() -> None:
     from pydantic import ValidationError
 
@@ -159,7 +147,6 @@ def test_route_create_recurrence_empty() -> None:
         RouteCreate(**make_route_payload(recurrence=""))
 
 
-@pytest.mark.skip(reason="US05-TK02")
 def test_route_create_recurrence_duplicate_days() -> None:
     from pydantic import ValidationError
 
@@ -169,7 +156,6 @@ def test_route_create_recurrence_duplicate_days() -> None:
         RouteCreate(**make_route_payload(recurrence="seg,seg,ter"))
 
 
-@pytest.mark.skip(reason="US05-TK02")
 def test_route_create_missing_expected_time() -> None:
     from pydantic import ValidationError
 
@@ -179,3 +165,23 @@ def test_route_create_missing_expected_time() -> None:
     del payload["expected_time"]
     with pytest.raises(ValidationError):
         RouteCreate(**payload)
+
+
+# --- RouteCreate: origin != destination ---
+
+
+def test_route_create_origin_and_destination_cannot_be_equal() -> None:
+    from pydantic import ValidationError
+
+    from src.domains.routes.dtos import RouteCreate
+
+    same_address = make_address_payload()
+    with pytest.raises(ValidationError):
+        RouteCreate(**make_route_payload(origin=same_address, destination=same_address))
+
+
+def test_route_create_different_origin_and_destination_is_valid() -> None:
+    from src.domains.routes.dtos import RouteCreate
+
+    route = RouteCreate(**make_route_payload())
+    assert route.origin.street != route.destination.street

@@ -1,7 +1,7 @@
 from datetime import time
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 VALID_RECURRENCE_DAYS = {"seg", "ter", "qua", "qui", "sex", "sab", "dom"}
 
@@ -48,6 +48,14 @@ class RouteCreate(BaseModel):
     destination: AddressCreate
     expected_time: time
     recurrence: str
+
+    @model_validator(mode="after")
+    def validate_origin_differs_from_destination(self) -> "RouteCreate":
+        origin = self.origin
+        destination = self.destination
+        if origin.street == destination.street and origin.number == destination.number and origin.zip == destination.zip:
+            raise ValueError("Origem e destino não podem ser o mesmo endereço.")
+        return self
 
     @field_validator("recurrence")
     @classmethod
