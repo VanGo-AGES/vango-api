@@ -149,7 +149,6 @@ def test_register_user_with_cpf_returns_cpf_in_response():
 # ---- GET /users/{user_id} ----
 
 # Teste 1: retorna 200 com UserResponse quando usuário existe
-@pytest.mark.skip(reason="US02-TK04")
 def test_get_user_success():
     user_id = str(uuid4())
     mock_service = Mock(spec=UserService)
@@ -167,7 +166,6 @@ def test_get_user_success():
 
 
 # Teste 2: retorna 404 quando usuário não existe
-@pytest.mark.skip(reason="US02-TK04")
 def test_get_user_not_found():
     user_id = str(uuid4())
     mock_service = Mock(spec=UserService)
@@ -186,7 +184,6 @@ def test_get_user_not_found():
 # ---- PUT /users/{user_id} ----
 
 # Teste 3: retorna 200 com dados atualizados
-@pytest.mark.skip(reason="US02-TK04")
 def test_update_user_success():
     user_id = str(uuid4())
     mock_service = Mock(spec=UserService)
@@ -204,7 +201,6 @@ def test_update_user_success():
 
 
 # Teste 4: retorna 404 quando usuário não existe
-@pytest.mark.skip(reason="US02-TK04")
 def test_update_user_not_found():
     user_id = str(uuid4())
     mock_service = Mock(spec=UserService)
@@ -221,7 +217,6 @@ def test_update_user_not_found():
 
 
 # Teste 5: campo vazio no payload retorna 422 (Pydantic rejeita antes de chegar no service)
-@pytest.mark.skip(reason="US02-TK04")
 def test_update_user_invalid_payload():
     user_id = str(uuid4())
     mock_service = Mock(spec=UserService)
@@ -240,7 +235,6 @@ def test_update_user_invalid_payload():
 # ---- DELETE /users/{user_id} ----
 
 # Teste 6: retorna 204 No Content quando exclusão ocorre com sucesso
-@pytest.mark.skip(reason="US02-TK04")
 def test_delete_user_success():
     user_id = str(uuid4())
     mock_service = Mock(spec=UserService)
@@ -257,7 +251,6 @@ def test_delete_user_success():
 
 
 # Teste 7: retorna 404 quando usuário não existe
-@pytest.mark.skip(reason="US02-TK04")
 def test_delete_user_not_found():
     user_id = str(uuid4())
     mock_service = Mock(spec=UserService)
