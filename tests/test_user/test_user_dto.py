@@ -160,6 +160,7 @@ def test_user_update_cpf_and_photo_url():
         name="name",
         email="email@gmail.com",
         phone= "54999999999",
+        password="senha123",
         cpf="999.999.999-99",
         photo_url="https://storage.example.com/avatars/novo.jpg"
     )
@@ -174,7 +175,6 @@ def test_user_update_cpf_and_photo_url():
 # Para ativar: remova @pytest.mark.skip dos testes abaixo
 
 # Teste 2: password vazio rejeitado
-@pytest.mark.skip(reason="US02-TK02")
 def test_user_update_empty_password():
     with pytest.raises(ValidationError):
         UserUpdate(
@@ -186,7 +186,6 @@ def test_user_update_empty_password():
 
 
 # Teste 3: happy path — todos os campos válidos
-@pytest.mark.skip(reason="US02-TK02")
 def test_user_update_happy_path():
     user = UserUpdate(
         name="John Updated",
@@ -204,11 +203,10 @@ def test_user_update_happy_path():
 
 
 # Teste 4: email normalizado (lowercase + strip)
-@pytest.mark.skip(reason="US02-TK02")
 def test_user_update_email_normalization():
     user = UserUpdate(
         name="John Updated",
-        email="  JOHN.DOE@EMAIL.COM  "
+        email="  JOHN.DOE@EMAIL.COM  ",
         phone="54988888888",
         password="nova_senha_123"
     )
@@ -219,7 +217,6 @@ def test_user_update_email_normalization():
 
 
 # Teste 5: formato de email inválido rejeitado
-@pytest.mark.skip(reason="US02-TK02")
 def test_user_update_invalid_email():
     with pytest.raises(ValidationError):
         UserUpdate(
@@ -231,7 +228,6 @@ def test_user_update_invalid_email():
 
 
 # Teste 6: name vazio rejeitado
-@pytest.mark.skip(reason="US02-TK02")
 def test_user_update_empty_name():
     with pytest.raises(ValidationError):
         UserUpdate(
@@ -243,7 +239,6 @@ def test_user_update_empty_name():
 
 
 # Teste 7: phone vazio rejeitado
-@pytest.mark.skip(reason="US02-TK02")
 def test_user_update_empty_phone():
     with pytest.raises(ValidationError):
         UserUpdate(
