@@ -22,6 +22,13 @@ class VehicleUpdate(BaseModel):
     capacity: int | None = Field(default=None, gt=0, le=20)
     notes: str | None = None
 
+    @field_validator("plate")  # noqa: F821
+    @classmethod
+    def plate_must_not_be_blank(cls, v: str | None) -> str | None:
+        if v is not None and v.strip() == "":
+            raise ValueError("plate não pode conter apenas espaços")
+        return v
+
 
 class VehicleResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)

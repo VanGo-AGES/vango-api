@@ -105,7 +105,6 @@ def test_dependent_response_no_sensitive_fields():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK02")
 def test_dependent_update_no_fields_is_valid():
     """DependentUpdate sem nenhum campo deve ser válido (todos opcionais)."""
     from src.domains.dependents.dtos import DependentUpdate
@@ -114,7 +113,6 @@ def test_dependent_update_no_fields_is_valid():
     assert data.name is None
 
 
-@pytest.mark.skip(reason="US04-TK02")
 def test_dependent_update_with_name():
     """DependentUpdate com name preenchido deve ser válido."""
     from src.domains.dependents.dtos import DependentUpdate
@@ -128,7 +126,6 @@ def test_dependent_update_with_name():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK02")
 def test_dependent_update_empty_name_invalid():
     """name enviado como string vazia não deve ser aceito."""
     from src.domains.dependents.dtos import DependentUpdate
@@ -137,7 +134,6 @@ def test_dependent_update_empty_name_invalid():
         DependentUpdate(name="")
 
 
-@pytest.mark.skip(reason="US04-TK02")
 def test_dependent_update_whitespace_name_invalid():
     """name enviado com apenas espaços não deve ser aceito."""
     from src.domains.dependents.dtos import DependentUpdate
