@@ -1,4 +1,4 @@
-name: Mirror to GitLab
+name: Mirror to GitLab VanGO
 
 on:
   push:
@@ -12,9 +12,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: pixta-dev/repository-mirroring-action@v1
-        with:
-          target_repo_url:
-            git@tools.ages.pucrs.br:vango/vango-api.git
-          ssh_private_key:
-            ${{ secrets.GITLAB_SSH_PRIVATE_KEY }}
+      - name: Push to vango-api GitLab
+        run: |
+          git remote add gitlab https://stefano.carraro:${{ secrets.GITLAB_TOKEN }}@tools.ages.pucrs.br/vango/vango-api.git
+          git push gitlab main --force
