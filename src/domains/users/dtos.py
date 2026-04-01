@@ -35,6 +35,8 @@ class UserResponse(BaseModel):
 
 
 class UserUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     name: str | None = Field(default=None, min_length=3, max_length=255, example="John Doe")
     email: EmailStr | None = Field(default=None, example="john.doe@example.com")
     phone: str | None = Field(default=None, min_length=8, max_length=20, example="54999999999")
