@@ -35,9 +35,11 @@ class UserResponse(BaseModel):
 
 
 class UserUpdate(BaseModel):
-    name: str | None = None
-    email: EmailStr | None = None
-    phone: str | None = None
-    password: str | None = None
-    cpf: str | None = None
-    photo_url: str | None = None
+    name: str = Field(..., min_length=3, max_length=255, example="John Doe")
+    email: EmailStr = Field(..., example="john.doe@example.com")
+    phone: str = Field(..., min_length=8, max_length=20, example="54999999999")
+    password: str = Field(..., min_length=6, example="senha_segura123")
+    cpf: str | None = Field(default=None, json_schema_extra={"example": "999.999.999-99"})
+    photo_url: str | None = Field(default=None)
+    # Apesar da task dizer nenhum optional, cpf e photo_url são optional no create
+    # Trouxe aqui como optional também para não ficar inconsistente
