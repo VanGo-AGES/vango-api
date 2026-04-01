@@ -9,6 +9,13 @@ class VehicleCreate(BaseModel):
     capacity: int = Field(..., gt=0, le=20)
     notes: str | None = None
 
+    @field_validator("plate")
+    @classmethod
+    def strip_whitespace(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("field cannot be empty or only whitespace")
+        return v
+
 
 class VehicleUpdate(BaseModel):
     plate: str | None = Field(default=None, min_length=1)
