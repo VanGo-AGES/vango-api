@@ -11,7 +11,10 @@ class DependentRepositoryImpl(IDependentRepository):
         self.session = session
 
     def create(self, dependent: DependentModel) -> DependentModel:
-        pass
+        self.session.add(dependent)
+        self.session.commit()
+        self.session.refresh(dependent)
+        return dependent
 
     def get_by_id(self, dependent_id: UUID) -> DependentModel | None:
         pass
