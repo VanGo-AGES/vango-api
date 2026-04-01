@@ -1,7 +1,7 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class VehicleCreate(BaseModel):
@@ -14,6 +14,13 @@ class VehicleUpdate(BaseModel):
     plate: str | None = Field(default=None, min_length=1)
     capacity: int | None = Field(default=None, gt=0, le=20)
     notes: str | None = None
+
+    @field_validator("plate")  # noqa: F821
+    @classmethod
+    def plate_must_not_be_blank(cls, v: str | None) -> str | None:
+        if v is not None and v.strip() == "":
+            raise ValueError("plate não pode conter apenas espaços")
+        return v
 
 
 class VehicleResponse(BaseModel):
