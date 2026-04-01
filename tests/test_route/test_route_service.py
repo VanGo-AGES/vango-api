@@ -260,7 +260,6 @@ def test_regenerate_invite_code_wrong_owner_raises_error() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US07-TK03")
 def test_get_routes_returns_all_driver_routes() -> None:
     """get_routes deve retornar todas as rotas do motorista."""
     from src.domains.routes.service import RouteService
@@ -278,7 +277,6 @@ def test_get_routes_returns_all_driver_routes() -> None:
     route_repo.find_all_by_driver_id.assert_called_once_with(driver_id)
 
 
-@pytest.mark.skip(reason="US07-TK03")
 def test_get_routes_empty_list() -> None:
     """get_routes deve retornar lista vazia se motorista não tem rotas."""
     from src.domains.routes.service import RouteService
@@ -292,7 +290,6 @@ def test_get_routes_empty_list() -> None:
     assert result == []
 
 
-@pytest.mark.skip(reason="US07-TK03")
 def test_get_route_success() -> None:
     """get_route deve retornar a rota quando o motorista é o dono."""
     from src.domains.routes.service import RouteService
@@ -309,7 +306,6 @@ def test_get_route_success() -> None:
     assert result == route
 
 
-@pytest.mark.skip(reason="US07-TK03")
 def test_get_route_not_found_raises_error() -> None:
     """get_route deve lançar RouteNotFoundError se a rota não existir."""
     from src.domains.routes.errors import RouteNotFoundError
@@ -323,7 +319,6 @@ def test_get_route_not_found_raises_error() -> None:
         service.get_route(uuid.uuid4(), uuid.uuid4())
 
 
-@pytest.mark.skip(reason="US07-TK03")
 def test_get_route_wrong_owner_raises_error() -> None:
     """get_route deve lançar RouteOwnershipError se o motorista não for o dono."""
     from src.domains.routes.errors import RouteOwnershipError

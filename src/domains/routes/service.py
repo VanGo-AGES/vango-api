@@ -41,13 +41,21 @@ class RouteService:
         pass
 
     # US07 - TK03
+
     def get_routes(self, driver_id: UUID) -> list[RouteModel]:
         """Retorna todas as rotas do motorista independente de status."""
-        pass
+        return self.route_repository.find_all_by_driver_id(driver_id)
 
     def get_route(self, route_id: UUID, driver_id: UUID) -> RouteModel:
         """
         Retorna a rota pelo ID.
         Verifica ownership: 404 se não existir, 403 se não for o dono.
         """
-        pass
+        from src.domains.routes.errors import RouteNotFoundError, RouteOwnershipError
+
+        route = self.route_repository.find_by_id(route_id)
+        if route is None:
+            raise RouteNotFoundError()
+        if route.driver_id != driver_id:
+            raise RouteOwnershipError()
+        return route
