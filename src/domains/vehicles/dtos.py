@@ -1,13 +1,20 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class VehicleCreate(BaseModel):
     plate: str = Field(..., min_length=1)
     capacity: int = Field(..., gt=0, le=20)
     notes: str | None = None
+
+    @field_validator("plate")
+    @classmethod
+    def strip_whitespace(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("field cannot be empty or only whitespace")
+        return v
 
 
 class VehicleUpdate(BaseModel):
