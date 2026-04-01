@@ -158,7 +158,6 @@ def test_vehicle_response_no_password_exposed():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK02")
 def test_vehicle_update_no_fields_is_valid():
     """VehicleUpdate sem nenhum campo deve ser válido (todos opcionais)."""
     from src.domains.vehicles.dtos import VehicleUpdate
@@ -169,7 +168,6 @@ def test_vehicle_update_no_fields_is_valid():
     assert data.notes is None
 
 
-@pytest.mark.skip(reason="US04-TK02")
 def test_vehicle_update_plate_only():
     """VehicleUpdate com apenas plate deve ser válido."""
     from src.domains.vehicles.dtos import VehicleUpdate
@@ -179,7 +177,6 @@ def test_vehicle_update_plate_only():
     assert data.capacity is None
 
 
-@pytest.mark.skip(reason="US04-TK02")
 def test_vehicle_update_capacity_only():
     """VehicleUpdate com apenas capacity deve ser válido."""
     from src.domains.vehicles.dtos import VehicleUpdate
@@ -189,7 +186,6 @@ def test_vehicle_update_capacity_only():
     assert data.plate is None
 
 
-@pytest.mark.skip(reason="US04-TK02")
 def test_vehicle_update_all_fields():
     """VehicleUpdate com todos os campos deve ser válido."""
     from src.domains.vehicles.dtos import VehicleUpdate
@@ -205,7 +201,6 @@ def test_vehicle_update_all_fields():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK02")
 def test_vehicle_update_empty_plate_invalid():
     """plate enviada como string vazia não deve ser aceita."""
     from src.domains.vehicles.dtos import VehicleUpdate
@@ -214,7 +209,6 @@ def test_vehicle_update_empty_plate_invalid():
         VehicleUpdate(plate="")
 
 
-@pytest.mark.skip(reason="US04-TK02")
 def test_vehicle_update_whitespace_plate_invalid():
     """plate enviada como apenas espaços não deve ser aceita."""
     from src.domains.vehicles.dtos import VehicleUpdate
@@ -223,7 +217,6 @@ def test_vehicle_update_whitespace_plate_invalid():
         VehicleUpdate(plate="   ")
 
 
-@pytest.mark.skip(reason="US04-TK02")
 def test_vehicle_update_zero_capacity_invalid():
     """capacity igual a zero não deve ser aceita na atualização."""
     from src.domains.vehicles.dtos import VehicleUpdate
@@ -232,7 +225,6 @@ def test_vehicle_update_zero_capacity_invalid():
         VehicleUpdate(capacity=0)
 
 
-@pytest.mark.skip(reason="US04-TK02")
 def test_vehicle_update_negative_capacity_invalid():
     """capacity negativa não deve ser aceita na atualização."""
     from src.domains.vehicles.dtos import VehicleUpdate
@@ -241,7 +233,6 @@ def test_vehicle_update_negative_capacity_invalid():
         VehicleUpdate(capacity=-3)
 
 
-@pytest.mark.skip(reason="US04-TK02")
 def test_vehicle_update_capacity_over_max():
     """capacity maior que 20 não deve ser aceita na atualização."""
     from src.domains.vehicles.dtos import VehicleUpdate
