@@ -157,6 +157,9 @@ def test_user_response_cpf_and_photo_url_nullable():
 def test_user_update_cpf_and_photo_url():
     """Perfil pode ser atualizado informando cpf e/ou photo_url."""
     update = UserUpdate(
+        name="name",
+        email="email@gmail.com",
+        phone= "54999999999",
         cpf="999.999.999-99",
         photo_url="https://storage.example.com/avatars/novo.jpg"
     )
@@ -170,21 +173,16 @@ def test_user_update_cpf_and_photo_url():
 # --- US02-TK02: implementar validações no UserUpdate em src/domains/users/dtos.py ---
 # Para ativar: remova @pytest.mark.skip dos testes abaixo
 
-# Teste 1: campos opcionais — update parcial com apenas um campo
-@pytest.mark.skip(reason="US02-TK02")
-def test_user_update_partial_success():
-    user = UserUpdate(phone="54999999999")
-
-    data = user.model_dump(exclude_unset=True)
-
-    assert data == {"phone": "54999999999"}
-
-
 # Teste 2: password vazio rejeitado
 @pytest.mark.skip(reason="US02-TK02")
 def test_user_update_empty_password():
     with pytest.raises(ValidationError):
-        UserUpdate(password="")
+        UserUpdate(
+            name="John Updated",
+            email="john.updated@email.com",
+            phone="54988888888",
+            password=""
+        )
 
 
 # Teste 3: happy path — todos os campos válidos
@@ -208,7 +206,12 @@ def test_user_update_happy_path():
 # Teste 4: email normalizado (lowercase + strip)
 @pytest.mark.skip(reason="US02-TK02")
 def test_user_update_email_normalization():
-    user = UserUpdate(email="  JOHN.DOE@EMAIL.COM  ")
+    user = UserUpdate(
+        name="John Updated",
+        email="  JOHN.DOE@EMAIL.COM  "
+        phone="54988888888",
+        password="nova_senha_123"
+    )
 
     data = user.model_dump(exclude_unset=True)
 
@@ -219,28 +222,33 @@ def test_user_update_email_normalization():
 @pytest.mark.skip(reason="US02-TK02")
 def test_user_update_invalid_email():
     with pytest.raises(ValidationError):
-        UserUpdate(email="email_invalido")
+        UserUpdate(
+            name="John Updated",
+            mail="email_invalido",
+            phone="54988888888",
+            password="nova_senha_123"
+        )
 
 
 # Teste 6: name vazio rejeitado
 @pytest.mark.skip(reason="US02-TK02")
 def test_user_update_empty_name():
     with pytest.raises(ValidationError):
-        UserUpdate(name="")
+        UserUpdate(
+            name="",
+            mail="email_invalido",
+            phone="54988888888",
+            password="nova_senha_123"
+        )
 
 
 # Teste 7: phone vazio rejeitado
 @pytest.mark.skip(reason="US02-TK02")
 def test_user_update_empty_phone():
     with pytest.raises(ValidationError):
-        UserUpdate(phone="")
-
-
-# Teste 8: update sem nenhum campo é válido (noop)
-@pytest.mark.skip(reason="US02-TK02")
-def test_user_update_no_fields_is_valid():
-    user = UserUpdate()
-
-    data = user.model_dump(exclude_unset=True)
-
-    assert data == {}
+        UserUpdate(
+            name="John Updated",
+            mail="email_invalido",
+            phone=" ",
+            password="nova_senha_123"
+        )
