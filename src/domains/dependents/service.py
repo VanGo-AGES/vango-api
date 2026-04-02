@@ -1,6 +1,8 @@
+import uuid
+
 from src.domains.dependents.dtos import DependentCreate, DependentUpdate
 from src.domains.dependents.entity import DependentModel
-from src.domains.dependents.errors import DependentNotFoundError, DependentOwnershipError
+from src.domains.dependents.errors import DependentAccessDeniedError, DependentNotFoundError, DependentOwnershipError
 from src.domains.dependents.repository import IDependentRepository
 
 
@@ -9,7 +11,13 @@ class DependentService:
         self.repository = repository
 
     def add_dependent(self, user_id: str, user_role: str, data: DependentCreate) -> DependentModel:
-        pass
+        if user_role == "driver":
+            raise DependentAccessDeniedError()
+        dependent = DependentModel(
+            guardian_id=uuid.UUID(user_id),
+            name=data.name,
+        )
+        return self.repository.create(dependent)
 
     def get_dependents(self, user_id: str) -> list[DependentModel]:
         return self.repository.get_by_guardian_id(user_id)

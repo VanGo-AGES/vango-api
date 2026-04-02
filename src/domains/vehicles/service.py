@@ -1,6 +1,8 @@
+import uuid
+
 from src.domains.vehicles.dtos import VehicleCreate, VehicleUpdate
 from src.domains.vehicles.entity import VehicleModel
-from src.domains.vehicles.errors import VehicleNotFoundError, VehicleOwnershipError
+from src.domains.vehicles.errors import VehicleAccessDeniedError, VehicleNotFoundError, VehicleOwnershipError
 from src.domains.vehicles.repository import IVehicleRepository
 
 
@@ -9,7 +11,15 @@ class VehicleService:
         self.repository = repository
 
     def add_vehicle(self, user_id: str, user_role: str, data: VehicleCreate) -> VehicleModel:
-        pass
+        if user_role != "driver":
+            raise VehicleAccessDeniedError()
+        vehicle = VehicleModel(
+            driver_id=uuid.UUID(user_id),
+            plate=data.plate,
+            capacity=data.capacity,
+            notes=data.notes,
+        )
+        return self.repository.create(vehicle)
 
     def get_vehicles(self, user_id: str) -> list[VehicleModel]:
         return self.repository.get_by_driver_id(user_id)
