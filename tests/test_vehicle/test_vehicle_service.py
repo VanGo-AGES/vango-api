@@ -33,7 +33,6 @@ def make_mock_repo(plate: str = "ABC1D23", capacity: int = 4) -> MagicMock:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US03-TK03")
 def test_add_vehicle_driver_success():
     """Role 'driver' deve conseguir adicionar veículo sem exceção."""
     repo = make_mock_repo()
@@ -46,7 +45,6 @@ def test_add_vehicle_driver_success():
     repo.create.assert_called_once()
 
 
-@pytest.mark.skip(reason="US03-TK03")
 def test_add_vehicle_calls_repository_with_correct_model(db_session):
     """Service deve montar um VehicleModel com os dados do DTO e passar ao repositório."""
     repo = make_mock_repo(plate="XYZ9W99", capacity=6)
@@ -62,7 +60,6 @@ def test_add_vehicle_calls_repository_with_correct_model(db_session):
     assert call_args.notes == "Ar condicionado"
 
 
-@pytest.mark.skip(reason="US03-TK03")
 def test_add_vehicle_associates_user_id_to_vehicle(db_session):
     """driver_id no modelo criado deve ser o user_id recebido pelo service."""
     repo = make_mock_repo()
@@ -81,7 +78,6 @@ def test_add_vehicle_associates_user_id_to_vehicle(db_session):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US03-TK03")
 def test_add_vehicle_passenger_forbidden():
     """Role 'passenger' não pode adicionar veículo — deve lançar VehicleAccessDeniedError."""
     repo = make_mock_repo()
@@ -92,7 +88,6 @@ def test_add_vehicle_passenger_forbidden():
         service.add_vehicle(user_id=str(uuid.uuid4()), user_role="passenger", data=data)
 
 
-@pytest.mark.skip(reason="US03-TK03")
 def test_add_vehicle_guardian_forbidden():
     """Role 'guardian' não pode adicionar veículo — deve lançar VehicleAccessDeniedError."""
     repo = make_mock_repo()
@@ -108,7 +103,6 @@ def test_add_vehicle_guardian_forbidden():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US03-TK03")
 def test_add_vehicle_repository_not_called_when_passenger():
     """Quando role for 'passenger', repositório não deve ser chamado."""
     repo = make_mock_repo()
@@ -121,7 +115,6 @@ def test_add_vehicle_repository_not_called_when_passenger():
     repo.create.assert_not_called()
 
 
-@pytest.mark.skip(reason="US03-TK03")
 def test_add_vehicle_repository_not_called_when_guardian():
     """Quando role for 'guardian', repositório não deve ser chamado."""
     repo = make_mock_repo()
