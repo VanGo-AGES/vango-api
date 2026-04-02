@@ -1,5 +1,6 @@
 from src.domains.dependents.dtos import DependentCreate, DependentUpdate
 from src.domains.dependents.entity import DependentModel
+from src.domains.dependents.errors import DependentNotFoundError, DependentOwnershipError
 from src.domains.dependents.repository import IDependentRepository
 
 
@@ -11,13 +12,28 @@ class DependentService:
         pass
 
     def get_dependents(self, user_id: str) -> list[DependentModel]:
-        pass
+        return self.repository.get_by_guardian_id(user_id)
 
     def get_dependent(self, user_id: str, dependent_id: str) -> DependentModel:
-        pass
+        dependent = self.repository.get_by_id(dependent_id)
+        if dependent is None:
+            raise DependentNotFoundError()
+        if str(dependent.guardian_id) != user_id:
+            raise DependentOwnershipError()
+        return dependent
 
     def update_dependent(self, user_id: str, dependent_id: str, data: DependentUpdate) -> DependentModel:
-        pass
+        dependent = self.repository.get_by_id(dependent_id)
+        if dependent is None:
+            raise DependentNotFoundError()
+        if str(dependent.guardian_id) != user_id:
+            raise DependentOwnershipError()
+        return self.repository.update(dependent_id, data.model_dump(exclude_none=True))
 
     def delete_dependent(self, user_id: str, dependent_id: str) -> None:
-        pass
+        dependent = self.repository.get_by_id(dependent_id)
+        if dependent is None:
+            raise DependentNotFoundError()
+        if str(dependent.guardian_id) != user_id:
+            raise DependentOwnershipError()
+        self.repository.delete(dependent_id)

@@ -152,7 +152,6 @@ def make_other_dependent() -> DependentModel:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK03")
 def test_get_dependents_returns_list():
     """get_dependents deve delegar ao repositório e retornar a lista."""
     repo = MagicMock()
@@ -168,7 +167,6 @@ def test_get_dependents_returns_list():
     repo.get_by_guardian_id.assert_called_once()
 
 
-@pytest.mark.skip(reason="US04-TK03")
 def test_get_dependents_empty_list():
     """get_dependents deve retornar lista vazia quando não há dependentes."""
     repo = MagicMock()
@@ -185,7 +183,6 @@ def test_get_dependents_empty_list():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK03")
 def test_get_dependent_success():
     """get_dependent deve retornar o dependente quando pertence ao user_id."""
     user_id = str(uuid.uuid4())
@@ -199,7 +196,6 @@ def test_get_dependent_success():
     assert result is not None
 
 
-@pytest.mark.skip(reason="US04-TK03")
 def test_get_dependent_not_found():
     """get_dependent deve lançar DependentNotFoundError quando ID não existe."""
     repo = MagicMock()
@@ -210,7 +206,6 @@ def test_get_dependent_not_found():
         service.get_dependent(user_id=str(uuid.uuid4()), dependent_id=str(uuid.uuid4()))
 
 
-@pytest.mark.skip(reason="US04-TK03")
 def test_get_dependent_wrong_owner():
     """get_dependent deve lançar DependentOwnershipError quando pertence a outro guardião."""
     repo = MagicMock()
@@ -226,7 +221,6 @@ def test_get_dependent_wrong_owner():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK03")
 def test_update_dependent_success():
     """update_dependent deve chamar repositório e retornar dependente atualizado."""
     user_id = str(uuid.uuid4())
@@ -244,7 +238,6 @@ def test_update_dependent_success():
     repo.update.assert_called_once()
 
 
-@pytest.mark.skip(reason="US04-TK03")
 def test_update_dependent_not_found():
     """update_dependent deve lançar DependentNotFoundError quando ID não existe."""
     repo = MagicMock()
@@ -259,7 +252,6 @@ def test_update_dependent_not_found():
         )
 
 
-@pytest.mark.skip(reason="US04-TK03")
 def test_update_dependent_wrong_owner():
     """update_dependent deve lançar DependentOwnershipError quando pertence a outro guardião."""
     repo = MagicMock()
@@ -274,7 +266,6 @@ def test_update_dependent_wrong_owner():
         )
 
 
-@pytest.mark.skip(reason="US04-TK03")
 def test_update_dependent_repo_not_called_when_wrong_owner():
     """Repositório de update não deve ser chamado quando ownership falha."""
     repo = MagicMock()
@@ -296,7 +287,6 @@ def test_update_dependent_repo_not_called_when_wrong_owner():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK03")
 def test_delete_dependent_success():
     """delete_dependent deve chamar repositório sem lançar exceção."""
     user_id = str(uuid.uuid4())
@@ -311,7 +301,6 @@ def test_delete_dependent_success():
     repo.delete.assert_called_once()
 
 
-@pytest.mark.skip(reason="US04-TK03")
 def test_delete_dependent_not_found():
     """delete_dependent deve lançar DependentNotFoundError quando ID não existe."""
     repo = MagicMock()
@@ -322,7 +311,6 @@ def test_delete_dependent_not_found():
         service.delete_dependent(user_id=str(uuid.uuid4()), dependent_id=str(uuid.uuid4()))
 
 
-@pytest.mark.skip(reason="US04-TK03")
 def test_delete_dependent_wrong_owner():
     """delete_dependent deve lançar DependentOwnershipError quando pertence a outro guardião."""
     repo = MagicMock()
@@ -333,7 +321,6 @@ def test_delete_dependent_wrong_owner():
         service.delete_dependent(user_id=str(uuid.uuid4()), dependent_id=str(uuid.uuid4()))
 
 
-@pytest.mark.skip(reason="US04-TK03")
 def test_delete_dependent_repo_not_called_when_wrong_owner():
     """Repositório de delete não deve ser chamado quando ownership falha."""
     repo = MagicMock()
