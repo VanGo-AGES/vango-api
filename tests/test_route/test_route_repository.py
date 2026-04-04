@@ -250,7 +250,6 @@ def test_route_repository_update_invite_code_not_found(db_session) -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US07-TK01")
 def test_route_repository_find_all_by_driver_id_returns_list(db_session) -> None:
     from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
 
@@ -266,7 +265,6 @@ def test_route_repository_find_all_by_driver_id_returns_list(db_session) -> None
     assert len(routes) == 2
 
 
-@pytest.mark.skip(reason="US07-TK01")
 def test_route_repository_find_all_by_driver_id_empty(db_session) -> None:
     from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
 
@@ -275,7 +273,6 @@ def test_route_repository_find_all_by_driver_id_empty(db_session) -> None:
     assert routes == []
 
 
-@pytest.mark.skip(reason="US07-TK01")
 def test_route_repository_find_all_by_driver_id_only_own(db_session) -> None:
     from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
 
