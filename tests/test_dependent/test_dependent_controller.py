@@ -416,7 +416,6 @@ def integration_client(db_session):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US03-TK04")
 def test_integration_create_dependent_passenger_success(integration_client, db_session):
     """[Integração] POST /dependents/ com role passenger deve persistir e retornar 201."""
     guardian = make_guardian_in_db(db_session, role="passenger")
@@ -430,7 +429,6 @@ def test_integration_create_dependent_passenger_success(integration_client, db_s
     assert body["guardian_id"] == str(guardian.id)
 
 
-@pytest.mark.skip(reason="US03-TK04")
 def test_integration_create_dependent_guardian_success(integration_client, db_session):
     """[Integração] POST /dependents/ com role guardian deve persistir e retornar 201."""
     guardian = make_guardian_in_db(db_session, role="guardian")
@@ -442,7 +440,6 @@ def test_integration_create_dependent_guardian_success(integration_client, db_se
     assert response.json()["guardian_id"] == str(guardian.id)
 
 
-@pytest.mark.skip(reason="US03-TK04")
 def test_integration_create_dependent_driver_returns_403(integration_client, db_session):
     """[Integração] POST /dependents/ com role driver deve retornar 403."""
     driver = UserModel(

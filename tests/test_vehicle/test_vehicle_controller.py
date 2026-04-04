@@ -461,7 +461,6 @@ def integration_client(db_session):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US03-TK04")
 def test_integration_create_vehicle_driver_success(integration_client, db_session):
     """[Integração] POST /vehicles/ com driver real deve persistir e retornar 201."""
     driver = make_driver_in_db(db_session)
@@ -475,7 +474,6 @@ def test_integration_create_vehicle_driver_success(integration_client, db_sessio
     assert body["driver_id"] == str(driver.id)
 
 
-@pytest.mark.skip(reason="US03-TK04")
 def test_integration_create_vehicle_with_notes(integration_client, db_session):
     """[Integração] POST /vehicles/ com notes deve persistir o campo no banco."""
     driver = make_driver_in_db(db_session)
@@ -489,7 +487,6 @@ def test_integration_create_vehicle_with_notes(integration_client, db_session):
     assert response.json()["notes"] == "Ar condicionado"
 
 
-@pytest.mark.skip(reason="US03-TK04")
 def test_integration_create_vehicle_passenger_returns_403(integration_client, db_session):
     """[Integração] POST /vehicles/ com role passenger deve retornar 403."""
     user = UserModel(
@@ -508,7 +505,6 @@ def test_integration_create_vehicle_passenger_returns_403(integration_client, db
     assert response.status_code == 403
 
 
-@pytest.mark.skip(reason="US03-TK04")
 def test_integration_create_vehicle_guardian_returns_403(integration_client, db_session):
     """[Integração] POST /vehicles/ com role guardian deve retornar 403."""
     user = UserModel(
