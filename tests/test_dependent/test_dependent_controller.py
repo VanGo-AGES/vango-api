@@ -383,3 +383,251 @@ def test_delete_dependent_wrong_owner_returns_403(client):
     app.dependency_overrides.clear()
 
     assert response.status_code == 403
+
+
+# ===========================================================================
+# INTEGRAÇÃO — testes ponta a ponta (HTTP → controller → service → repo → DB)
+# Não mocka service nem repositório. Apenas get_db e get_current_user.
+# ===========================================================================
+
+from src.domains.users.entity import UserModel
+from src.infrastructure.database import get_db
+from src.infrastructure.repositories.dependent_repository import DependentRepositoryImpl
+
+
+def make_guardian_in_db(db_session, role: str = "passenger") -> UserModel:
+    user = UserModel(
+        name="Guardião Integração",
+        email=f"guardian_{uuid.uuid4()}@test.com",
+        phone="11999999999",
+        password_hash="hashed",
+        role=role,
+    )
+    db_session.add(user)
+    db_session.flush()
+    return user
+
+
+@pytest.fixture
+def integration_client(db_session):
+    def override_db():
+        yield db_session
+
+    app.dependency_overrides[get_db] = override_db
+    yield TestClient(app)
+    app.dependency_overrides.clear()
+
+
+# ---------------------------------------------------------------------------
+# POST /dependents/
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.skip(reason="US03-TK04")
+def test_integration_create_dependent_passenger_success(integration_client, db_session):
+    """[Integração] POST /dependents/ com role passenger deve persistir e retornar 201."""
+    guardian = make_guardian_in_db(db_session, role="passenger")
+    app.dependency_overrides[get_current_user] = lambda: {"id": str(guardian.id), "role": "passenger"}
+
+    response = integration_client.post("/dependents/", json={"name": "Ana"})
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["name"] == "Ana"
+    assert body["guardian_id"] == str(guardian.id)
+
+
+@pytest.mark.skip(reason="US03-TK04")
+def test_integration_create_dependent_guardian_success(integration_client, db_session):
+    """[Integração] POST /dependents/ com role guardian deve persistir e retornar 201."""
+    guardian = make_guardian_in_db(db_session, role="guardian")
+    app.dependency_overrides[get_current_user] = lambda: {"id": str(guardian.id), "role": "guardian"}
+
+    response = integration_client.post("/dependents/", json={"name": "Pedro"})
+
+    assert response.status_code == 201
+    assert response.json()["guardian_id"] == str(guardian.id)
+
+
+@pytest.mark.skip(reason="US03-TK04")
+def test_integration_create_dependent_driver_returns_403(integration_client, db_session):
+    """[Integração] POST /dependents/ com role driver deve retornar 403."""
+    driver = UserModel(
+        name="Motorista",
+        email=f"driver_{uuid.uuid4()}@test.com",
+        phone="11999999999",
+        password_hash="hashed",
+        role="driver",
+    )
+    db_session.add(driver)
+    db_session.flush()
+    app.dependency_overrides[get_current_user] = lambda: {"id": str(driver.id), "role": "driver"}
+
+    response = integration_client.post("/dependents/", json={"name": "Ana"})
+
+    assert response.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# GET /dependents/
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.skip(reason="US04-TK04")
+def test_integration_list_dependents_empty(integration_client, db_session):
+    """[Integração] GET /dependents/ sem dependentes deve retornar 200 com lista vazia."""
+    guardian = make_guardian_in_db(db_session)
+    app.dependency_overrides[get_current_user] = lambda: {"id": str(guardian.id), "role": "passenger"}
+
+    response = integration_client.get("/dependents/")
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+@pytest.mark.skip(reason="US04-TK04")
+def test_integration_list_dependents_returns_own_only(integration_client, db_session):
+    """[Integração] GET /dependents/ deve retornar apenas dependentes do guardião autenticado."""
+    guardian1 = make_guardian_in_db(db_session)
+    guardian2 = make_guardian_in_db(db_session)
+    repo = DependentRepositoryImpl(db_session)
+    repo.create(DependentModel(guardian_id=guardian1.id, name="Filho G1"))
+    repo.create(DependentModel(guardian_id=guardian2.id, name="Filho G2"))
+    app.dependency_overrides[get_current_user] = lambda: {"id": str(guardian1.id), "role": "passenger"}
+
+    response = integration_client.get("/dependents/")
+
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+    assert response.json()[0]["name"] == "Filho G1"
+
+
+# ---------------------------------------------------------------------------
+# GET /dependents/{dependent_id}
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.skip(reason="US04-TK04")
+def test_integration_get_dependent_by_id_success(integration_client, db_session):
+    """[Integração] GET /dependents/{id} deve retornar 200 com dados do dependente."""
+    guardian = make_guardian_in_db(db_session)
+    repo = DependentRepositoryImpl(db_session)
+    dependent = repo.create(DependentModel(guardian_id=guardian.id, name="Maria"))
+    app.dependency_overrides[get_current_user] = lambda: {"id": str(guardian.id), "role": "passenger"}
+
+    response = integration_client.get(f"/dependents/{dependent.id}")
+
+    assert response.status_code == 200
+    assert response.json()["name"] == "Maria"
+
+
+@pytest.mark.skip(reason="US04-TK04")
+def test_integration_get_dependent_not_found_returns_404(integration_client, db_session):
+    """[Integração] GET /dependents/{id} com id inexistente deve retornar 404."""
+    guardian = make_guardian_in_db(db_session)
+    app.dependency_overrides[get_current_user] = lambda: {"id": str(guardian.id), "role": "passenger"}
+
+    response = integration_client.get(f"/dependents/{uuid.uuid4()}")
+
+    assert response.status_code == 404
+
+
+@pytest.mark.skip(reason="US04-TK04")
+def test_integration_get_dependent_wrong_owner_returns_403(integration_client, db_session):
+    """[Integração] GET /dependents/{id} por guardião diferente do dono deve retornar 403."""
+    guardian1 = make_guardian_in_db(db_session)
+    guardian2 = make_guardian_in_db(db_session)
+    repo = DependentRepositoryImpl(db_session)
+    dependent = repo.create(DependentModel(guardian_id=guardian1.id, name="Lucas"))
+    app.dependency_overrides[get_current_user] = lambda: {"id": str(guardian2.id), "role": "passenger"}
+
+    response = integration_client.get(f"/dependents/{dependent.id}")
+
+    assert response.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# PUT /dependents/{dependent_id}
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.skip(reason="US04-TK04")
+def test_integration_update_dependent_success(integration_client, db_session):
+    """[Integração] PUT /dependents/{id} deve atualizar e retornar 200 com dados novos."""
+    guardian = make_guardian_in_db(db_session)
+    repo = DependentRepositoryImpl(db_session)
+    dependent = repo.create(DependentModel(guardian_id=guardian.id, name="Ana"))
+    app.dependency_overrides[get_current_user] = lambda: {"id": str(guardian.id), "role": "passenger"}
+
+    response = integration_client.put(f"/dependents/{dependent.id}", json={"name": "Ana Paula"})
+
+    assert response.status_code == 200
+    assert response.json()["name"] == "Ana Paula"
+
+
+@pytest.mark.skip(reason="US04-TK04")
+def test_integration_update_dependent_not_found_returns_404(integration_client, db_session):
+    """[Integração] PUT /dependents/{id} com id inexistente deve retornar 404."""
+    guardian = make_guardian_in_db(db_session)
+    app.dependency_overrides[get_current_user] = lambda: {"id": str(guardian.id), "role": "passenger"}
+
+    response = integration_client.put(f"/dependents/{uuid.uuid4()}", json={"name": "Novo"})
+
+    assert response.status_code == 404
+
+
+@pytest.mark.skip(reason="US04-TK04")
+def test_integration_update_dependent_wrong_owner_returns_403(integration_client, db_session):
+    """[Integração] PUT /dependents/{id} por guardião diferente do dono deve retornar 403."""
+    guardian1 = make_guardian_in_db(db_session)
+    guardian2 = make_guardian_in_db(db_session)
+    repo = DependentRepositoryImpl(db_session)
+    dependent = repo.create(DependentModel(guardian_id=guardian1.id, name="Julia"))
+    app.dependency_overrides[get_current_user] = lambda: {"id": str(guardian2.id), "role": "passenger"}
+
+    response = integration_client.put(f"/dependents/{dependent.id}", json={"name": "Novo"})
+
+    assert response.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# DELETE /dependents/{dependent_id}
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.skip(reason="US04-TK04")
+def test_integration_delete_dependent_success(integration_client, db_session):
+    """[Integração] DELETE /dependents/{id} deve remover do banco e retornar 204."""
+    guardian = make_guardian_in_db(db_session)
+    repo = DependentRepositoryImpl(db_session)
+    dependent = repo.create(DependentModel(guardian_id=guardian.id, name="Carla"))
+    app.dependency_overrides[get_current_user] = lambda: {"id": str(guardian.id), "role": "passenger"}
+
+    response = integration_client.delete(f"/dependents/{dependent.id}")
+
+    assert response.status_code == 204
+
+
+@pytest.mark.skip(reason="US04-TK04")
+def test_integration_delete_dependent_not_found_returns_404(integration_client, db_session):
+    """[Integração] DELETE /dependents/{id} com id inexistente deve retornar 404."""
+    guardian = make_guardian_in_db(db_session)
+    app.dependency_overrides[get_current_user] = lambda: {"id": str(guardian.id), "role": "passenger"}
+
+    response = integration_client.delete(f"/dependents/{uuid.uuid4()}")
+
+    assert response.status_code == 404
+
+
+@pytest.mark.skip(reason="US04-TK04")
+def test_integration_delete_dependent_wrong_owner_returns_403(integration_client, db_session):
+    """[Integração] DELETE /dependents/{id} por guardião diferente do dono deve retornar 403."""
+    guardian1 = make_guardian_in_db(db_session)
+    guardian2 = make_guardian_in_db(db_session)
+    repo = DependentRepositoryImpl(db_session)
+    dependent = repo.create(DependentModel(guardian_id=guardian1.id, name="Roberto"))
+    app.dependency_overrides[get_current_user] = lambda: {"id": str(guardian2.id), "role": "passenger"}
+
+    response = integration_client.delete(f"/dependents/{dependent.id}")
+
+    assert response.status_code == 403
