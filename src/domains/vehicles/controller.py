@@ -6,6 +6,7 @@ from src.infrastructure.dependencies.auth_dependencies import get_current_user
 from src.infrastructure.dependencies.vehicle_dependencies import get_vehicle_service
 
 from .dtos import VehicleCreate, VehicleResponse, VehicleUpdate
+from .errors import VehicleAccessDeniedError
 from .service import VehicleService
 
 router = APIRouter(prefix="/vehicles", tags=["Vehicles"])
@@ -23,7 +24,14 @@ def create_vehicle(
     service: Annotated[VehicleService, Depends(get_vehicle_service)],
     current_user: Annotated[dict, Depends(get_current_user)],
 ) -> VehicleResponse:
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Not Implemented")
+    try:
+        return service.add_vehicle(
+            user_id=current_user["id"],
+            user_role=current_user["role"],
+            data=body,
+        )
+    except VehicleAccessDeniedError as error:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error)) from error
 
 
 @router.get(

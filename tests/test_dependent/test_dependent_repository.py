@@ -128,7 +128,6 @@ def make_dependent(db_session, guardian, name: str = "Ana") -> DependentModel:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK01")
 def test_get_dependent_by_id_success(db_session):
     """get_by_id deve retornar o dependente correto quando ele existe."""
     guardian = make_guardian(db_session)
@@ -142,7 +141,6 @@ def test_get_dependent_by_id_success(db_session):
     assert result.name == "Maria"
 
 
-@pytest.mark.skip(reason="US04-TK01")
 def test_get_dependent_by_id_not_found(db_session):
     """get_by_id deve retornar None para um UUID inexistente."""
     repo = DependentRepositoryImpl(db_session)
@@ -157,7 +155,6 @@ def test_get_dependent_by_id_not_found(db_session):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK01")
 def test_get_dependents_by_guardian_id_returns_list(db_session):
     """get_by_guardian_id deve retornar todos os dependentes do guardião."""
     guardian = make_guardian(db_session)
@@ -170,7 +167,6 @@ def test_get_dependents_by_guardian_id_returns_list(db_session):
     assert len(result) == 2
 
 
-@pytest.mark.skip(reason="US04-TK01")
 def test_get_dependents_by_guardian_id_empty(db_session):
     """get_by_guardian_id deve retornar lista vazia quando guardião não tem dependentes."""
     guardian = make_guardian(db_session)
@@ -181,7 +177,6 @@ def test_get_dependents_by_guardian_id_empty(db_session):
     assert result == []
 
 
-@pytest.mark.skip(reason="US04-TK01")
 def test_get_dependents_by_guardian_id_only_own(db_session):
     """get_by_guardian_id não deve retornar dependentes de outros guardiões."""
     guardian1 = make_guardian(db_session)
@@ -201,7 +196,6 @@ def test_get_dependents_by_guardian_id_only_own(db_session):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK01")
 def test_update_dependent_success(db_session):
     """update deve aplicar o novo nome e retornar o objeto atualizado."""
     guardian = make_guardian(db_session)
@@ -214,7 +208,6 @@ def test_update_dependent_success(db_session):
     assert result.name == "Ana Paula"
 
 
-@pytest.mark.skip(reason="US04-TK01")
 def test_update_dependent_not_found(db_session):
     """update deve retornar None quando o dependente não existe."""
     repo = DependentRepositoryImpl(db_session)
@@ -224,7 +217,6 @@ def test_update_dependent_not_found(db_session):
     assert result is None
 
 
-@pytest.mark.skip(reason="US04-TK01")
 def test_update_dependent_persists_in_database(db_session):
     """Alteração feita pelo update deve estar visível em uma nova query."""
     guardian = make_guardian(db_session)
@@ -242,7 +234,6 @@ def test_update_dependent_persists_in_database(db_session):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK01")
 def test_delete_dependent_success(db_session):
     """delete deve retornar True quando o dependente é removido com sucesso."""
     guardian = make_guardian(db_session)
@@ -254,7 +245,6 @@ def test_delete_dependent_success(db_session):
     assert result is True
 
 
-@pytest.mark.skip(reason="US04-TK01")
 def test_delete_dependent_removes_from_database(db_session):
     """Após delete, dependente não deve existir no banco."""
     guardian = make_guardian(db_session)
@@ -267,7 +257,6 @@ def test_delete_dependent_removes_from_database(db_session):
     assert found is None
 
 
-@pytest.mark.skip(reason="US04-TK01")
 def test_delete_dependent_not_found(db_session):
     """delete deve retornar False quando o dependente não existe."""
     repo = DependentRepositoryImpl(db_session)
