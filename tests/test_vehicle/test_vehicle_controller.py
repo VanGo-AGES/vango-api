@@ -43,7 +43,6 @@ def client():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US03-TK04")
 def test_create_vehicle_driver_success(client):
     """POST /vehicles/ com role 'driver' deve retornar 201 Created."""
     mock_service = MagicMock(spec=VehicleService)
@@ -59,7 +58,6 @@ def test_create_vehicle_driver_success(client):
     assert response.status_code == 201
 
 
-@pytest.mark.skip(reason="US03-TK04")
 def test_create_vehicle_response_has_correct_fields(client):
     """Resposta 201 deve conter id, plate, capacity, driver_id, status e created_at."""
     vehicle = make_mock_vehicle()
@@ -83,7 +81,6 @@ def test_create_vehicle_response_has_correct_fields(client):
     assert "created_at" in body
 
 
-@pytest.mark.skip(reason="US03-TK04")
 def test_create_vehicle_with_notes_success(client):
     """POST com notes preenchido deve retornar 201 e incluir notes na resposta."""
     vehicle = make_mock_vehicle()
@@ -107,7 +104,6 @@ def test_create_vehicle_with_notes_success(client):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US03-TK04")
 def test_create_vehicle_passenger_returns_403(client):
     """POST /vehicles/ com role 'passenger' deve retornar 403 Forbidden."""
     mock_service = MagicMock(spec=VehicleService)
@@ -123,7 +119,6 @@ def test_create_vehicle_passenger_returns_403(client):
     assert response.status_code == 403
 
 
-@pytest.mark.skip(reason="US03-TK04")
 def test_create_vehicle_guardian_returns_403(client):
     """POST /vehicles/ com role 'guardian' deve retornar 403 Forbidden."""
     mock_service = MagicMock(spec=VehicleService)
@@ -144,7 +139,6 @@ def test_create_vehicle_guardian_returns_403(client):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US03-TK04")
 def test_create_vehicle_missing_plate_returns_422(client):
     """Payload sem plate deve retornar 422."""
     app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "driver"}
@@ -156,7 +150,6 @@ def test_create_vehicle_missing_plate_returns_422(client):
     assert response.status_code == 422
 
 
-@pytest.mark.skip(reason="US03-TK04")
 def test_create_vehicle_missing_capacity_returns_422(client):
     """Payload sem capacity deve retornar 422."""
     app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "driver"}
@@ -168,7 +161,6 @@ def test_create_vehicle_missing_capacity_returns_422(client):
     assert response.status_code == 422
 
 
-@pytest.mark.skip(reason="US03-TK04")
 def test_create_vehicle_empty_payload_returns_422(client):
     """Payload vazio deve retornar 422."""
     app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "driver"}
@@ -180,7 +172,6 @@ def test_create_vehicle_empty_payload_returns_422(client):
     assert response.status_code == 422
 
 
-@pytest.mark.skip(reason="US03-TK04")
 def test_create_vehicle_empty_plate_returns_422(client):
     """Plate vazia deve ser rejeitada com 422."""
     app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "driver"}
@@ -192,7 +183,6 @@ def test_create_vehicle_empty_plate_returns_422(client):
     assert response.status_code == 422
 
 
-@pytest.mark.skip(reason="US03-TK04")
 def test_create_vehicle_zero_capacity_returns_422(client):
     """Capacity igual a zero deve ser rejeitada com 422."""
     app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "driver"}
