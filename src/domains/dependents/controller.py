@@ -6,6 +6,7 @@ from src.infrastructure.dependencies.auth_dependencies import get_current_user
 from src.infrastructure.dependencies.dependent_dependencies import get_dependent_service
 
 from .dtos import DependentCreate, DependentResponse, DependentUpdate
+from .errors import DependentAccessDeniedError
 from .service import DependentService
 
 router = APIRouter(prefix="/dependents", tags=["Dependents"])
@@ -23,7 +24,14 @@ def create_dependent(
     service: Annotated[DependentService, Depends(get_dependent_service)],
     current_user: Annotated[dict, Depends(get_current_user)],
 ) -> DependentResponse:
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Not Implemented")
+    try:
+        return service.add_dependent(
+            user_id=current_user["id"],
+            user_role=current_user["role"],
+            data=body,
+        )
+    except DependentAccessDeniedError as error:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error)) from error
 
 
 @router.get(
