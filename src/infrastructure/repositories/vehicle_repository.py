@@ -11,7 +11,10 @@ class VehicleRepositoryImpl(IVehicleRepository):
         self.session = session
 
     def create(self, vehicle: VehicleModel) -> VehicleModel:
-        pass
+        self.session.add(vehicle)
+        self.session.commit()
+        self.session.refresh(vehicle)
+        return vehicle
 
     def get_by_id(self, vehicle_id: UUID) -> VehicleModel | None:
         return self.session.query(VehicleModel).filter(VehicleModel.id == vehicle_id).first()

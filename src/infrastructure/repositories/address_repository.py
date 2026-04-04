@@ -9,4 +9,7 @@ class AddressRepositoryImpl(IAddressRepository):
         self.session = session
 
     def save(self, address: AddressModel) -> AddressModel:
-        pass
+        self.session.add(address)
+        self.session.commit()
+        self.session.refresh(address)
+        return address

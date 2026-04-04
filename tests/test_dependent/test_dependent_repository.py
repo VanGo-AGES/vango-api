@@ -32,7 +32,6 @@ def make_guardian(db_session, role: str = "passenger") -> UserModel:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US03-TK01")
 def test_create_dependent_success(db_session):
     """Passageiro cria dependente — retorna objeto persistido com id gerado."""
     guardian = make_guardian(db_session)
@@ -46,7 +45,6 @@ def test_create_dependent_success(db_session):
     assert result.guardian_id == guardian.id
 
 
-@pytest.mark.skip(reason="US03-TK01")
 def test_create_dependent_persists_in_database(db_session):
     """Dependente criado deve ser recuperável em uma nova query na mesma sessão."""
     guardian = make_guardian(db_session)
@@ -60,7 +58,6 @@ def test_create_dependent_persists_in_database(db_session):
     assert found.guardian_id == guardian.id
 
 
-@pytest.mark.skip(reason="US03-TK01")
 def test_create_dependent_returns_object_with_generated_id(db_session):
     """ID deve ser gerado automaticamente (uuid4) ao persistir."""
     guardian = make_guardian(db_session)
@@ -78,7 +75,6 @@ def test_create_dependent_returns_object_with_generated_id(db_session):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US03-TK01")
 def test_create_dependent_associates_correctly_with_guardian(db_session):
     """guardian_id deve corresponder ao UUID do usuário passado."""
     guardian = make_guardian(db_session)
@@ -90,7 +86,6 @@ def test_create_dependent_associates_correctly_with_guardian(db_session):
     assert result.guardian_id == guardian.id
 
 
-@pytest.mark.skip(reason="US03-TK01")
 def test_create_multiple_dependents_same_guardian(db_session):
     """Um guardião pode ter múltiplos dependentes."""
     guardian = make_guardian(db_session)
@@ -105,7 +100,6 @@ def test_create_multiple_dependents_same_guardian(db_session):
     assert len(found) == 2
 
 
-@pytest.mark.skip(reason="US03-TK01")
 def test_create_dependent_guardian_role_can_be_guardian(db_session):
     """Usuário com role 'guardian' também pode ser dono de dependentes."""
     guardian = make_guardian(db_session, role="guardian")

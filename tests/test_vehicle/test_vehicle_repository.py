@@ -33,7 +33,6 @@ def make_driver(db_session) -> UserModel:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US03-TK01")
 def test_create_vehicle_success(db_session):
     """Motorista cria veículo com placa e capacidade — retorna objeto persistido."""
     driver = make_driver(db_session)
@@ -48,7 +47,6 @@ def test_create_vehicle_success(db_session):
     assert result.driver_id == driver.id
 
 
-@pytest.mark.skip(reason="US03-TK01")
 def test_create_vehicle_persists_in_database(db_session):
     """Veículo criado deve ser recuperável em uma nova query na mesma sessão."""
     driver = make_driver(db_session)
@@ -63,7 +61,6 @@ def test_create_vehicle_persists_in_database(db_session):
     assert found.driver_id == driver.id
 
 
-@pytest.mark.skip(reason="US03-TK01")
 def test_create_vehicle_returns_object_with_generated_id(db_session):
     """ID deve ser gerado automaticamente (uuid4) ao persistir."""
     driver = make_driver(db_session)
@@ -82,7 +79,6 @@ def test_create_vehicle_returns_object_with_generated_id(db_session):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US03-TK01")
 def test_create_vehicle_without_notes(db_session):
     """notes é opcional — criar sem ele não deve lançar exceção."""
     driver = make_driver(db_session)
@@ -94,7 +90,6 @@ def test_create_vehicle_without_notes(db_session):
     assert result.notes is None
 
 
-@pytest.mark.skip(reason="US03-TK01")
 def test_create_vehicle_with_notes(db_session):
     """notes preenchido deve ser salvo corretamente."""
     driver = make_driver(db_session)
@@ -111,7 +106,6 @@ def test_create_vehicle_with_notes(db_session):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US03-TK01")
 def test_create_vehicle_default_status_is_active(db_session):
     """status deve ser True por padrão quando não informado."""
     driver = make_driver(db_session)
@@ -128,7 +122,6 @@ def test_create_vehicle_default_status_is_active(db_session):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US03-TK01")
 def test_create_vehicle_duplicate_plate_raises_integrity_error(db_session):
     """Placa duplicada deve lançar IntegrityError (constraint unique)."""
     driver = make_driver(db_session)
@@ -142,7 +135,6 @@ def test_create_vehicle_duplicate_plate_raises_integrity_error(db_session):
         repo.create(vehicle2)
 
 
-@pytest.mark.skip(reason="US03-TK01")
 def test_create_vehicle_associates_correctly_with_driver(db_session):
     """driver_id deve corresponder ao UUID do motorista passado."""
     driver = make_driver(db_session)
