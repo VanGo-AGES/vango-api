@@ -72,7 +72,6 @@ def make_route_mock(driver_id: uuid.UUID = None):
     return route
 
 
-@pytest.mark.skip(reason="US05-TK03")
 def test_create_route_success() -> None:
     """create_route deve salvar a rota com status inativa e invite_code gerado."""
     from src.domains.routes.service import RouteService
@@ -98,7 +97,6 @@ def test_create_route_success() -> None:
     route_repo.save.assert_called_once()
 
 
-@pytest.mark.skip(reason="US05-TK03")
 def test_create_route_sets_status_inativa() -> None:
     """A rota deve ser salva com status='inativa'."""
     from src.domains.routes.entity import RouteModel
@@ -123,7 +121,6 @@ def test_create_route_sets_status_inativa() -> None:
     assert result.status == "inativa"
 
 
-@pytest.mark.skip(reason="US05-TK03")
 def test_create_route_uses_vehicle_capacity_for_max_passengers() -> None:
     """max_passengers deve ser preenchido com a capacidade do veículo do motorista."""
     from src.domains.routes.service import RouteService
@@ -147,7 +144,6 @@ def test_create_route_uses_vehicle_capacity_for_max_passengers() -> None:
     assert result.max_passengers == 8
 
 
-@pytest.mark.skip(reason="US05-TK03")
 def test_create_route_no_vehicle_raises_error() -> None:
     """Se o motorista não tem veículo, deve lançar NoVehicleError."""
     from src.domains.routes.errors import NoVehicleError
@@ -163,7 +159,6 @@ def test_create_route_no_vehicle_raises_error() -> None:
         service.create_route(uuid.uuid4(), make_route_create())
 
 
-@pytest.mark.skip(reason="US05-TK03")
 def test_create_route_generates_invite_code() -> None:
     """A rota deve ser criada com um invite_code alfanumérico de 5 caracteres."""
     from src.domains.routes.service import RouteService
@@ -188,7 +183,6 @@ def test_create_route_generates_invite_code() -> None:
     assert result.invite_code.isalnum()
 
 
-@pytest.mark.skip(reason="US05-TK03")
 def test_generate_invite_code_returns_5_char_alphanumeric() -> None:
     """_generate_invite_code deve retornar string de 5 chars alfanuméricos maiúsculos."""
     from src.domains.routes.service import RouteService
@@ -201,7 +195,6 @@ def test_generate_invite_code_returns_5_char_alphanumeric() -> None:
     assert code == code.upper()
 
 
-@pytest.mark.skip(reason="US05-TK03")
 def test_regenerate_invite_code_success() -> None:
     """regenerate_invite_code deve gerar novo código e atualizar a rota."""
     from src.domains.routes.service import RouteService
@@ -222,7 +215,6 @@ def test_regenerate_invite_code_success() -> None:
     route_repo.update_invite_code.assert_called_once()
 
 
-@pytest.mark.skip(reason="US05-TK03")
 def test_regenerate_invite_code_not_found_raises_error() -> None:
     """regenerate_invite_code deve lançar RouteNotFoundError se a rota não existir."""
     from src.domains.routes.errors import RouteNotFoundError
@@ -236,7 +228,6 @@ def test_regenerate_invite_code_not_found_raises_error() -> None:
         service.regenerate_invite_code(uuid.uuid4(), uuid.uuid4())
 
 
-@pytest.mark.skip(reason="US05-TK03")
 def test_regenerate_invite_code_wrong_owner_raises_error() -> None:
     """regenerate_invite_code deve lançar RouteOwnershipError se o motorista não for o dono."""
     from src.domains.routes.errors import RouteOwnershipError
