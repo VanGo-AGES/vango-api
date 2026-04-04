@@ -40,7 +40,6 @@ def client():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US03-TK04")
 def test_create_dependent_passenger_success(client):
     """POST /dependents/ com role 'passenger' deve retornar 201 Created."""
     mock_service = MagicMock(spec=DependentService)
@@ -56,7 +55,6 @@ def test_create_dependent_passenger_success(client):
     assert response.status_code == 201
 
 
-@pytest.mark.skip(reason="US03-TK04")
 def test_create_dependent_guardian_success(client):
     """POST /dependents/ com role 'guardian' deve retornar 201 Created."""
     mock_service = MagicMock(spec=DependentService)
@@ -72,7 +70,6 @@ def test_create_dependent_guardian_success(client):
     assert response.status_code == 201
 
 
-@pytest.mark.skip(reason="US03-TK04")
 def test_create_dependent_response_has_correct_fields(client):
     """Resposta 201 deve conter id, name, guardian_id e created_at."""
     dependent = make_mock_dependent()
@@ -99,7 +96,6 @@ def test_create_dependent_response_has_correct_fields(client):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US03-TK04")
 def test_create_dependent_driver_returns_403(client):
     """POST /dependents/ com role 'driver' deve retornar 403 Forbidden."""
     mock_service = MagicMock(spec=DependentService)
@@ -120,7 +116,6 @@ def test_create_dependent_driver_returns_403(client):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US03-TK04")
 def test_create_dependent_missing_name_returns_422(client):
     """Payload sem name deve retornar 422."""
     app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "passenger"}
@@ -132,7 +127,6 @@ def test_create_dependent_missing_name_returns_422(client):
     assert response.status_code == 422
 
 
-@pytest.mark.skip(reason="US03-TK04")
 def test_create_dependent_empty_name_returns_422(client):
     """name vazio deve ser rejeitado com 422."""
     app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "passenger"}
@@ -144,7 +138,6 @@ def test_create_dependent_empty_name_returns_422(client):
     assert response.status_code == 422
 
 
-@pytest.mark.skip(reason="US03-TK04")
 def test_create_dependent_invalid_payload_returns_422(client):
     """Payload com campos incorretos deve retornar 422."""
     app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "passenger"}
