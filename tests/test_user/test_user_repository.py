@@ -118,7 +118,6 @@ def test_user_repository_save_with_photo_url(db_session):
 # Para ativar: remova @pytest.mark.skip dos testes abaixo
 
 # Teste 6: update happy path
-@pytest.mark.skip(reason="US02-TK01")
 def test_user_repository_update(db_session):
     repo = UserRepositoryImpl(db_session)
 
@@ -145,7 +144,6 @@ def test_user_repository_update(db_session):
 
 
 # Teste 7: update usuário inexistente retorna None
-@pytest.mark.skip(reason="US02-TK01")
 def test_user_repository_update_not_found(db_session):
     repo = UserRepositoryImpl(db_session)
 
@@ -155,7 +153,6 @@ def test_user_repository_update_not_found(db_session):
 
 
 # Teste 8: delete com cascata (veículo e dependente devem ser removidos)
-@pytest.mark.skip(reason="US02-TK01")
 def test_user_repository_delete_cascade(db_session):
     repo = UserRepositoryImpl(db_session)
 
@@ -190,7 +187,6 @@ def test_user_repository_delete_cascade(db_session):
 
 
 # Teste 9: delete usuário inexistente retorna False
-@pytest.mark.skip(reason="US02-TK01")
 def test_user_repository_delete_not_found(db_session):
     repo = UserRepositoryImpl(db_session)
 

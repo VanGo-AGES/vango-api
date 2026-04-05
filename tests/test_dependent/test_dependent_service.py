@@ -33,7 +33,6 @@ def make_mock_repo(name: str = "Ana") -> MagicMock:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US03-TK03")
 def test_add_dependent_passenger_success():
     """Role 'passenger' deve conseguir adicionar dependente."""
     repo = make_mock_repo()
@@ -46,7 +45,6 @@ def test_add_dependent_passenger_success():
     repo.create.assert_called_once()
 
 
-@pytest.mark.skip(reason="US03-TK03")
 def test_add_dependent_guardian_success():
     """Role 'guardian' deve conseguir adicionar dependente."""
     repo = make_mock_repo()
@@ -59,7 +57,6 @@ def test_add_dependent_guardian_success():
     repo.create.assert_called_once()
 
 
-@pytest.mark.skip(reason="US03-TK03")
 def test_add_dependent_calls_repository_with_correct_model():
     """Service deve montar um DependentModel com os dados do DTO e passar ao repositório."""
     repo = make_mock_repo(name="João Carlos")
@@ -73,7 +70,6 @@ def test_add_dependent_calls_repository_with_correct_model():
     assert call_args.name == "João Carlos"
 
 
-@pytest.mark.skip(reason="US03-TK03")
 def test_add_dependent_associates_user_id_to_dependent():
     """guardian_id no modelo criado deve ser o user_id recebido pelo service."""
     repo = make_mock_repo()
@@ -92,7 +88,6 @@ def test_add_dependent_associates_user_id_to_dependent():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US03-TK03")
 def test_add_dependent_driver_forbidden():
     """Role 'driver' não pode adicionar dependente — deve lançar DependentAccessDeniedError."""
     repo = make_mock_repo()
@@ -108,7 +103,6 @@ def test_add_dependent_driver_forbidden():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US03-TK03")
 def test_add_dependent_repository_not_called_when_driver():
     """Quando role for 'driver', repositório não deve ser chamado."""
     repo = make_mock_repo()
@@ -152,7 +146,6 @@ def make_other_dependent() -> DependentModel:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK03")
 def test_get_dependents_returns_list():
     """get_dependents deve delegar ao repositório e retornar a lista."""
     repo = MagicMock()
@@ -168,7 +161,6 @@ def test_get_dependents_returns_list():
     repo.get_by_guardian_id.assert_called_once()
 
 
-@pytest.mark.skip(reason="US04-TK03")
 def test_get_dependents_empty_list():
     """get_dependents deve retornar lista vazia quando não há dependentes."""
     repo = MagicMock()
@@ -185,7 +177,6 @@ def test_get_dependents_empty_list():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK03")
 def test_get_dependent_success():
     """get_dependent deve retornar o dependente quando pertence ao user_id."""
     user_id = str(uuid.uuid4())
@@ -199,7 +190,6 @@ def test_get_dependent_success():
     assert result is not None
 
 
-@pytest.mark.skip(reason="US04-TK03")
 def test_get_dependent_not_found():
     """get_dependent deve lançar DependentNotFoundError quando ID não existe."""
     repo = MagicMock()
@@ -210,7 +200,6 @@ def test_get_dependent_not_found():
         service.get_dependent(user_id=str(uuid.uuid4()), dependent_id=str(uuid.uuid4()))
 
 
-@pytest.mark.skip(reason="US04-TK03")
 def test_get_dependent_wrong_owner():
     """get_dependent deve lançar DependentOwnershipError quando pertence a outro guardião."""
     repo = MagicMock()
@@ -226,7 +215,6 @@ def test_get_dependent_wrong_owner():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK03")
 def test_update_dependent_success():
     """update_dependent deve chamar repositório e retornar dependente atualizado."""
     user_id = str(uuid.uuid4())
@@ -244,7 +232,6 @@ def test_update_dependent_success():
     repo.update.assert_called_once()
 
 
-@pytest.mark.skip(reason="US04-TK03")
 def test_update_dependent_not_found():
     """update_dependent deve lançar DependentNotFoundError quando ID não existe."""
     repo = MagicMock()
@@ -259,7 +246,6 @@ def test_update_dependent_not_found():
         )
 
 
-@pytest.mark.skip(reason="US04-TK03")
 def test_update_dependent_wrong_owner():
     """update_dependent deve lançar DependentOwnershipError quando pertence a outro guardião."""
     repo = MagicMock()
@@ -274,7 +260,6 @@ def test_update_dependent_wrong_owner():
         )
 
 
-@pytest.mark.skip(reason="US04-TK03")
 def test_update_dependent_repo_not_called_when_wrong_owner():
     """Repositório de update não deve ser chamado quando ownership falha."""
     repo = MagicMock()
@@ -296,7 +281,6 @@ def test_update_dependent_repo_not_called_when_wrong_owner():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK03")
 def test_delete_dependent_success():
     """delete_dependent deve chamar repositório sem lançar exceção."""
     user_id = str(uuid.uuid4())
@@ -311,7 +295,6 @@ def test_delete_dependent_success():
     repo.delete.assert_called_once()
 
 
-@pytest.mark.skip(reason="US04-TK03")
 def test_delete_dependent_not_found():
     """delete_dependent deve lançar DependentNotFoundError quando ID não existe."""
     repo = MagicMock()
@@ -322,7 +305,6 @@ def test_delete_dependent_not_found():
         service.delete_dependent(user_id=str(uuid.uuid4()), dependent_id=str(uuid.uuid4()))
 
 
-@pytest.mark.skip(reason="US04-TK03")
 def test_delete_dependent_wrong_owner():
     """delete_dependent deve lançar DependentOwnershipError quando pertence a outro guardião."""
     repo = MagicMock()
@@ -333,7 +315,6 @@ def test_delete_dependent_wrong_owner():
         service.delete_dependent(user_id=str(uuid.uuid4()), dependent_id=str(uuid.uuid4()))
 
 
-@pytest.mark.skip(reason="US04-TK03")
 def test_delete_dependent_repo_not_called_when_wrong_owner():
     """Repositório de delete não deve ser chamado quando ownership falha."""
     repo = MagicMock()

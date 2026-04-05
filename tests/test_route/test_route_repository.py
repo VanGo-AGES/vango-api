@@ -94,7 +94,6 @@ def make_route(session, driver_id: uuid.UUID, origin_id: uuid.UUID, destination_
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US05-TK01")
 def test_address_repository_save_returns_address_with_id(db_session) -> None:
     from src.domains.addresses.entity import AddressModel
     from src.infrastructure.repositories.address_repository import AddressRepositoryImpl
@@ -117,7 +116,6 @@ def test_address_repository_save_returns_address_with_id(db_session) -> None:
     assert saved.label == "Casa"
 
 
-@pytest.mark.skip(reason="US05-TK01")
 def test_address_repository_save_persists_in_database(db_session) -> None:
     from src.domains.addresses.entity import AddressModel
     from src.infrastructure.repositories.address_repository import AddressRepositoryImpl
@@ -140,7 +138,6 @@ def test_address_repository_save_persists_in_database(db_session) -> None:
     assert found is not None
 
 
-@pytest.mark.skip(reason="US05-TK01")
 def test_address_repository_save_without_lat_lng(db_session) -> None:
     """latitude e longitude são opcionais — devem aceitar None."""
     from src.domains.addresses.entity import AddressModel
@@ -166,7 +163,6 @@ def test_address_repository_save_without_lat_lng(db_session) -> None:
     assert saved.longitude is None
 
 
-@pytest.mark.skip(reason="US05-TK01")
 def test_route_repository_save_returns_route_with_id(db_session) -> None:
     from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
 
@@ -181,7 +177,6 @@ def test_route_repository_save_returns_route_with_id(db_session) -> None:
     assert saved.status == "inativa"
 
 
-@pytest.mark.skip(reason="US05-TK01")
 def test_route_repository_save_persists_invite_code(db_session) -> None:
     from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
 
@@ -194,7 +189,6 @@ def test_route_repository_save_persists_invite_code(db_session) -> None:
     assert saved.invite_code == "XYZ99"
 
 
-@pytest.mark.skip(reason="US05-TK01")
 def test_route_repository_find_by_id_returns_route(db_session) -> None:
     from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
 
@@ -210,7 +204,6 @@ def test_route_repository_find_by_id_returns_route(db_session) -> None:
     assert found.id == route.id
 
 
-@pytest.mark.skip(reason="US05-TK01")
 def test_route_repository_find_by_id_not_found(db_session) -> None:
     from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
 
@@ -219,7 +212,6 @@ def test_route_repository_find_by_id_not_found(db_session) -> None:
     assert result is None
 
 
-@pytest.mark.skip(reason="US05-TK01")
 def test_route_repository_update_invite_code(db_session) -> None:
     from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
 
@@ -235,7 +227,6 @@ def test_route_repository_update_invite_code(db_session) -> None:
     assert updated.invite_code == "NEW99"
 
 
-@pytest.mark.skip(reason="US05-TK01")
 def test_route_repository_update_invite_code_not_found(db_session) -> None:
     from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
 

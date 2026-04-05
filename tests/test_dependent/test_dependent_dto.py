@@ -19,7 +19,6 @@ from src.domains.dependents.dtos import DependentCreate, DependentResponse
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US03-TK02")
 def test_dependent_create_valid():
     """name preenchido corretamente deve criar o schema sem erros."""
     data = DependentCreate(name="Ana Silva")
@@ -27,7 +26,6 @@ def test_dependent_create_valid():
     assert data.name == "Ana Silva"
 
 
-@pytest.mark.skip(reason="US03-TK02")
 def test_dependent_create_accepts_full_name():
     """Nomes compostos devem ser aceitos."""
     data = DependentCreate(name="João Carlos da Silva")
@@ -40,7 +38,6 @@ def test_dependent_create_accepts_full_name():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US03-TK02")
 def test_dependent_create_missing_name():
     """name é obrigatório — omitir deve lançar ValidationError."""
     with pytest.raises(ValidationError):
@@ -52,21 +49,18 @@ def test_dependent_create_missing_name():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US03-TK02")
 def test_dependent_create_empty_name():
     """name vazio não deve ser aceito."""
     with pytest.raises(ValidationError):
         DependentCreate(name="")
 
 
-@pytest.mark.skip(reason="US03-TK02")
 def test_dependent_create_whitespace_only_name():
     """name com apenas espaços não deve ser aceito."""
     with pytest.raises(ValidationError):
         DependentCreate(name="   ")
 
 
-@pytest.mark.skip(reason="US03-TK02")
 def test_dependent_create_single_space_name():
     """name com um único espaço não deve ser aceito."""
     with pytest.raises(ValidationError):
@@ -78,7 +72,6 @@ def test_dependent_create_single_space_name():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US03-TK02")
 def test_dependent_response_structure():
     """DependentResponse deve aceitar todos os campos e expô-los corretamente."""
     data = DependentResponse(
@@ -93,7 +86,6 @@ def test_dependent_response_structure():
     assert data.guardian_id is not None
 
 
-@pytest.mark.skip(reason="US03-TK02")
 def test_dependent_response_no_sensitive_fields():
     """DependentResponse não deve expor campos sensíveis do usuário."""
     fields = DependentResponse.model_fields.keys()
@@ -113,7 +105,6 @@ def test_dependent_response_no_sensitive_fields():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK02")
 def test_dependent_update_no_fields_is_valid():
     """DependentUpdate sem nenhum campo deve ser válido (todos opcionais)."""
     from src.domains.dependents.dtos import DependentUpdate
@@ -122,7 +113,6 @@ def test_dependent_update_no_fields_is_valid():
     assert data.name is None
 
 
-@pytest.mark.skip(reason="US04-TK02")
 def test_dependent_update_with_name():
     """DependentUpdate com name preenchido deve ser válido."""
     from src.domains.dependents.dtos import DependentUpdate
@@ -136,7 +126,6 @@ def test_dependent_update_with_name():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK02")
 def test_dependent_update_empty_name_invalid():
     """name enviado como string vazia não deve ser aceito."""
     from src.domains.dependents.dtos import DependentUpdate
@@ -145,7 +134,6 @@ def test_dependent_update_empty_name_invalid():
         DependentUpdate(name="")
 
 
-@pytest.mark.skip(reason="US04-TK02")
 def test_dependent_update_whitespace_name_invalid():
     """name enviado com apenas espaços não deve ser aceito."""
     from src.domains.dependents.dtos import DependentUpdate
