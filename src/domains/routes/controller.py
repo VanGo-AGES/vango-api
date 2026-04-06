@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, status
 from src.infrastructure.dependencies.route_dependencies import get_route_service
 
 from .dtos import RouteCreate, RouteResponse
-from .errors import RouteNotFoundError, RouteOwnershipError
+from .errors import NoVehicleError, RouteNotFoundError, RouteOwnershipError
 from .service import RouteService
 
 router = APIRouter(prefix="/routes", tags=["Routes"])
@@ -27,8 +27,13 @@ _DESCRIPTION_CREATE = (
 def create_route(
     body: RouteCreate,
     service: Annotated[RouteService, Depends(get_route_service)],
+    driver_id: Annotated[UUID, Header(alias="X-User-Id")],
 ) -> RouteResponse:
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Not Implemented")
+    try:
+        created_route = service.create_route(driver_id, body)
+        return created_route
+    except NoVehicleError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
 
 
 @router.post(
