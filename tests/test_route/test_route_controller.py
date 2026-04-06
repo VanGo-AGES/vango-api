@@ -212,7 +212,6 @@ def test_regenerate_invite_code_wrong_owner_returns_403() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US07-TK04")
 def test_list_routes_success_returns_200() -> None:
     """GET /routes/ deve retornar 200 e lista de rotas do motorista."""
     mock_service = Mock(spec=RouteService)
@@ -226,7 +225,6 @@ def test_list_routes_success_returns_200() -> None:
     assert len(response.json()) == 2
 
 
-@pytest.mark.skip(reason="US07-TK04")
 def test_list_routes_empty_returns_empty_list() -> None:
     """GET /routes/ sem rotas deve retornar 200 com lista vazia."""
     mock_service = Mock(spec=RouteService)
@@ -240,7 +238,6 @@ def test_list_routes_empty_returns_empty_list() -> None:
     assert response.json() == []
 
 
-@pytest.mark.skip(reason="US07-TK04")
 def test_get_route_success_returns_200() -> None:
     """GET /routes/{id} deve retornar 200 com dados completos da rota."""
     route_id = uuid.uuid4()
@@ -257,7 +254,6 @@ def test_get_route_success_returns_200() -> None:
     assert "destination_address" in body
 
 
-@pytest.mark.skip(reason="US07-TK04")
 def test_get_route_not_found_returns_404() -> None:
     """GET /routes/{id} com rota inexistente deve retornar 404."""
     from src.domains.routes.errors import RouteNotFoundError
@@ -272,7 +268,6 @@ def test_get_route_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US07-TK04")
 def test_get_route_wrong_owner_returns_403() -> None:
     """GET /routes/{id} por motorista que não é dono deve retornar 403."""
     from src.domains.routes.errors import RouteOwnershipError
@@ -479,7 +474,6 @@ def test_integration_regenerate_invite_code_wrong_owner_returns_403(integration_
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US07-TK04")
 def test_integration_list_routes_empty(integration_client, db_session) -> None:
     """[Integração] GET /routes/ sem rotas deve retornar 200 com lista vazia."""
     driver, _ = make_driver_with_vehicle(db_session)
@@ -491,7 +485,6 @@ def test_integration_list_routes_empty(integration_client, db_session) -> None:
     assert response.json() == []
 
 
-@pytest.mark.skip(reason="US07-TK04")
 def test_integration_list_routes_returns_own_only(integration_client, db_session) -> None:
     """[Integração] GET /routes/ deve retornar apenas rotas do motorista autenticado."""
     driver1, _ = make_driver_with_vehicle(db_session)
@@ -512,7 +505,6 @@ def test_integration_list_routes_returns_own_only(integration_client, db_session
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US07-TK04")
 def test_integration_get_route_success(integration_client, db_session) -> None:
     """[Integração] GET /routes/{id} deve retornar 200 com dados completos da rota."""
     driver, _ = make_driver_with_vehicle(db_session)
@@ -530,7 +522,6 @@ def test_integration_get_route_success(integration_client, db_session) -> None:
     assert "invite_code" in body
 
 
-@pytest.mark.skip(reason="US07-TK04")
 def test_integration_get_route_not_found_returns_404(integration_client, db_session) -> None:
     """[Integração] GET /routes/{id} com id inexistente deve retornar 404."""
     driver, _ = make_driver_with_vehicle(db_session)
@@ -541,7 +532,6 @@ def test_integration_get_route_not_found_returns_404(integration_client, db_sess
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US07-TK04")
 def test_integration_get_route_wrong_owner_returns_403(integration_client, db_session) -> None:
     """[Integração] GET /routes/{id} por motorista que não é dono deve retornar 403."""
     driver1, _ = make_driver_with_vehicle(db_session)
@@ -551,6 +541,9 @@ def test_integration_get_route_wrong_owner_returns_403(integration_client, db_se
         "/routes/", json=route_payload(),
         headers={"X-User-Id": str(driver1.id), "X-User-Role": "driver"},
     )
+
+    print(create_response.json())
+
     route_id = create_response.json()["id"]
 
     response = integration_client.get(
