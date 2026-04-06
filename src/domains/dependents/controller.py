@@ -1,4 +1,5 @@
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
@@ -6,7 +7,7 @@ from src.infrastructure.dependencies.auth_dependencies import get_current_user
 from src.infrastructure.dependencies.dependent_dependencies import get_dependent_service
 
 from .dtos import DependentCreate, DependentResponse, DependentUpdate
-from .errors import DependentAccessDeniedError
+from .errors import DependentAccessDeniedError, DependentNotFoundError, DependentOwnershipError
 from .service import DependentService
 
 router = APIRouter(prefix="/dependents", tags=["Dependents"])
@@ -45,7 +46,7 @@ def list_dependents(
     service: Annotated[DependentService, Depends(get_dependent_service)],
     current_user: Annotated[dict, Depends(get_current_user)],
 ) -> list[DependentResponse]:
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Not Implemented")
+    return service.get_dependents(current_user["id"])
 
 
 @router.get(
@@ -56,11 +57,16 @@ def list_dependents(
     description="Retorna um dependente específico do usuário logado.",
 )
 def get_dependent(
-    dependent_id: str,
+    dependent_id: UUID,
     service: Annotated[DependentService, Depends(get_dependent_service)],
     current_user: Annotated[dict, Depends(get_current_user)],
 ) -> DependentResponse:
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Not Implemented")
+    try:
+        return service.get_dependent(current_user["id"], dependent_id)
+    except DependentNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
+    except DependentOwnershipError as error:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error)) from error
 
 
 @router.put(
@@ -71,12 +77,17 @@ def get_dependent(
     description="Atualiza os dados de um dependente do usuário logado.",
 )
 def update_dependent(
-    dependent_id: str,
+    dependent_id: UUID,
     body: DependentUpdate,
     service: Annotated[DependentService, Depends(get_dependent_service)],
     current_user: Annotated[dict, Depends(get_current_user)],
 ) -> DependentResponse:
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Not Implemented")
+    try:
+        return service.update_dependent(current_user["id"], dependent_id, body)
+    except DependentNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
+    except DependentOwnershipError as error:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error)) from error
 
 
 @router.delete(
@@ -86,8 +97,13 @@ def update_dependent(
     description="Remove um dependente do perfil do usuário logado.",
 )
 def delete_dependent(
-    dependent_id: str,
+    dependent_id: UUID,
     service: Annotated[DependentService, Depends(get_dependent_service)],
     current_user: Annotated[dict, Depends(get_current_user)],
 ) -> None:
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Not Implemented")
+    try:
+        service.delete_dependent(current_user["id"], dependent_id)
+    except DependentNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
+    except DependentOwnershipError as error:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error)) from error
