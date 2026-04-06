@@ -20,7 +20,8 @@ class RouteRepositoryImpl(IRouteRepository):
         return self.session.query(RouteModel).filter(RouteModel.id == route_id).first()
 
     def find_all_by_driver_id(self, driver_id: UUID) -> list[RouteModel]:
-        return self.session.query(RouteModel).filter(RouteModel.driver_id == driver_id).all()
+        routes = self.session.query(RouteModel).filter(RouteModel.driver_id == driver_id).all()
+        return routes
 
     def update_invite_code(self, route_id: UUID, new_code: str) -> RouteModel | None:
         route = self.session.query(RouteModel).filter(RouteModel.id == route_id).first()
