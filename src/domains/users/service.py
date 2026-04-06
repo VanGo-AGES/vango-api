@@ -1,6 +1,6 @@
 from src.domains.users.dtos import UserCreate, UserUpdate
 from src.domains.users.entity import UserModel
-from src.domains.users.errors import DuplicateEmailError
+from src.domains.users.errors import DuplicateEmailError, UserNotFoundError
 from src.domains.users.repository import IPasswordHasher, IUserRepository
 
 
@@ -30,10 +30,25 @@ class UserService:
         return self.repository.save(new_user)
 
     def get_user(self, user_id: str) -> UserModel:
-        pass
+        user = self.repository.find_by_id(user_id)
+        if not user:
+            raise UserNotFoundError()
+        return user
 
     def update_user(self, user_id: str, data: UserUpdate) -> UserModel:
-        pass
+        user = self.repository.find_by_id(user_id)
+        if not user:
+            raise UserNotFoundError()
+
+        update_data = data.dict(exclude_unset=True)
+        if "password" in update_data:
+            update_data["password_hash"] = self.password_hasher.hash(update_data.pop("password"))
+
+        self.repository.update(user_id, update_data)
+        return self.repository.find_by_id(user_id)
 
     def delete_user(self, user_id: str) -> None:
-        pass
+        user = self.repository.find_by_id(user_id)
+        if not user:
+            raise UserNotFoundError()
+        self.repository.delete(user_id)
