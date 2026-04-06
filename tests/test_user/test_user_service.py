@@ -175,7 +175,6 @@ def make_existing_user(**kwargs):
 # ----- GET USER -----
 
 # Teste 1: get_user retorna o usuário quando encontrado
-@pytest.mark.skip(reason="US02-TK03")
 def test_get_user_success():
     repo = Mock()
     hasher = Mock()
@@ -192,7 +191,6 @@ def test_get_user_success():
 
 
 # Teste 2: get_user lança UserNotFoundError quando usuário não existe
-@pytest.mark.skip(reason="US02-TK03")
 def test_get_user_not_found():
     repo = Mock()
     hasher = Mock()
@@ -209,7 +207,6 @@ def test_get_user_not_found():
 # ----- UPDATE USER -----
 
 # Teste 3: update_user com senha chama o hasher e salva o hash
-@pytest.mark.skip(reason="US02-TK03")
 def test_update_user_with_password_hashing():
     repo = Mock()
     hasher = Mock()
@@ -229,7 +226,6 @@ def test_update_user_with_password_hashing():
 
 
 # Teste 4: update_user sem senha não chama o hasher
-@pytest.mark.skip(reason="US02-TK03")
 def test_update_user_without_password():
     repo = Mock()
     hasher = Mock()
@@ -250,7 +246,6 @@ def test_update_user_without_password():
 
 
 # Teste 5: update_user lança UserNotFoundError e não chama repo.update
-@pytest.mark.skip(reason="US02-TK03")
 def test_update_user_not_found():
     repo = Mock()
     hasher = Mock()
@@ -269,7 +264,6 @@ def test_update_user_not_found():
 # ----- DELETE USER -----
 
 # Teste 6: delete_user verifica existência e chama repo.delete
-@pytest.mark.skip(reason="US02-TK03")
 def test_delete_user_success():
     repo = Mock()
     hasher = Mock()
@@ -286,7 +280,6 @@ def test_delete_user_success():
 
 
 # Teste 7: delete_user lança UserNotFoundError e não chama repo.delete
-@pytest.mark.skip(reason="US02-TK03")
 def test_delete_user_not_found():
     repo = Mock()
     hasher = Mock()
