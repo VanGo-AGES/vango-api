@@ -152,7 +152,6 @@ def test_create_route_response_has_correct_fields() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US05-TK05")
 def test_regenerate_invite_code_success_returns_200() -> None:
     """POST /routes/{id}/invite-code/regenerate deve retornar 200 com novo código."""
     route_id = uuid.uuid4()
@@ -170,7 +169,6 @@ def test_regenerate_invite_code_success_returns_200() -> None:
     assert response.json()["invite_code"] == "NEW99"
 
 
-@pytest.mark.skip(reason="US05-TK05")
 def test_regenerate_invite_code_not_found_returns_404() -> None:
     """POST /routes/{id}/invite-code/regenerate com rota inexistente deve retornar 404."""
     from src.domains.routes.errors import RouteNotFoundError
@@ -185,7 +183,6 @@ def test_regenerate_invite_code_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US05-TK05")
 def test_regenerate_invite_code_wrong_owner_returns_403() -> None:
     """POST /routes/{id}/invite-code/regenerate por motorista que não é dono deve retornar 403."""
     from src.domains.routes.errors import RouteOwnershipError
@@ -417,7 +414,6 @@ def test_integration_create_route_invalid_type_returns_422(integration_client, d
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US05-TK05")
 def test_integration_regenerate_invite_code_success(integration_client, db_session) -> None:
     """[Integração] POST regenerate deve retornar 200 com novo invite_code."""
     driver, vehicle = make_driver_with_vehicle(db_session)
@@ -433,7 +429,6 @@ def test_integration_regenerate_invite_code_success(integration_client, db_sessi
     assert response.json()["invite_code"] != original_code
 
 
-@pytest.mark.skip(reason="US05-TK05")
 def test_integration_regenerate_invite_code_not_found_returns_404(integration_client, db_session) -> None:
     """[Integração] POST regenerate com rota inexistente deve retornar 404."""
     driver, _ = make_driver_with_vehicle(db_session)
@@ -444,7 +439,6 @@ def test_integration_regenerate_invite_code_not_found_returns_404(integration_cl
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US05-TK05")
 def test_integration_regenerate_invite_code_wrong_owner_returns_403(integration_client, db_session) -> None:
     """[Integração] POST regenerate por motorista que não é dono deve retornar 403."""
     driver1, vehicle1 = make_driver_with_vehicle(db_session)
