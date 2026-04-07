@@ -22,9 +22,9 @@ class VehicleService:
         return self.repository.create(vehicle)
 
     def get_vehicles(self, user_id: str) -> list[VehicleModel]:
-        return self.repository.get_by_driver_id(user_id)
+        return self.repository.get_by_driver_id(uuid.UUID(user_id))
 
-    def get_vehicle(self, user_id: str, vehicle_id: str) -> VehicleModel:
+    def get_vehicle(self, user_id: str, vehicle_id: uuid.UUID) -> VehicleModel:
         vehicle = self.repository.get_by_id(vehicle_id)
         if vehicle is None:
             raise VehicleNotFoundError()
@@ -32,7 +32,7 @@ class VehicleService:
             raise VehicleOwnershipError()
         return vehicle
 
-    def update_vehicle(self, user_id: str, vehicle_id: str, data: VehicleUpdate) -> VehicleModel:
+    def update_vehicle(self, user_id: str, vehicle_id: uuid.UUID, data: VehicleUpdate) -> VehicleModel:
         vehicle = self.repository.get_by_id(vehicle_id)
         if vehicle is None:
             raise VehicleNotFoundError()
@@ -40,7 +40,7 @@ class VehicleService:
             raise VehicleOwnershipError()
         return self.repository.update(vehicle_id, data.model_dump(exclude_none=True))
 
-    def delete_vehicle(self, user_id: str, vehicle_id: str) -> None:
+    def delete_vehicle(self, user_id: str, vehicle_id: uuid.UUID) -> None:
         vehicle = self.repository.get_by_id(vehicle_id)
         if vehicle is None:
             raise VehicleNotFoundError()
