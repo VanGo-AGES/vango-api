@@ -66,8 +66,11 @@ def regenerate_invite_code(
 )
 def list_routes(
     service: Annotated[RouteService, Depends(get_route_service)],
+    x_user_id: Annotated[str, Header(alias="X-User-Id")],
 ) -> list[RouteResponse]:
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Not Implemented")
+    driver_id = UUID(x_user_id)
+    routes = service.get_routes(driver_id)
+    return [RouteResponse.from_orm(route) for route in routes]
 
 
 @router.get(
@@ -80,5 +83,13 @@ def list_routes(
 def get_route(
     route_id: UUID,
     service: Annotated[RouteService, Depends(get_route_service)],
+    x_user_id: Annotated[str, Header(alias="X-User-Id")],
 ) -> RouteResponse:
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Not Implemented")
+    driver_id = UUID(x_user_id)
+    try:
+        route = service.get_route(route_id, driver_id)
+        return RouteResponse.from_orm(route)
+    except RouteNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except RouteOwnershipError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc

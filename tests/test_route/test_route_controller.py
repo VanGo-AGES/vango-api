@@ -82,7 +82,6 @@ DRIVER_HEADERS = {"X-User-Id": str(uuid.uuid4()), "X-User-Role": "driver"}
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US05-TK04")
 def test_create_route_success_returns_201() -> None:
     """POST /routes/ com payload válido deve retornar 201 e a rota criada."""
     mock_service = Mock(spec=RouteService)
@@ -96,7 +95,6 @@ def test_create_route_success_returns_201() -> None:
     assert response.json()["invite_code"] == "A1B2C"
 
 
-@pytest.mark.skip(reason="US05-TK04")
 def test_create_route_missing_name_returns_422() -> None:
     """POST /routes/ sem nome deve retornar 422."""
     payload = make_route_payload()
@@ -105,21 +103,18 @@ def test_create_route_missing_name_returns_422() -> None:
     assert response.status_code == 422
 
 
-@pytest.mark.skip(reason="US05-TK04")
 def test_create_route_invalid_route_type_returns_422() -> None:
     """POST /routes/ com route_type inválido deve retornar 422."""
     response = client.post("/routes/", json=make_route_payload(route_type="ambos"), headers=DRIVER_HEADERS)
     assert response.status_code == 422
 
 
-@pytest.mark.skip(reason="US05-TK04")
 def test_create_route_invalid_recurrence_returns_422() -> None:
     """POST /routes/ com dias de recorrência inválidos deve retornar 422."""
     response = client.post("/routes/", json=make_route_payload(recurrence="monday,tuesday"), headers=DRIVER_HEADERS)
     assert response.status_code == 422
 
 
-@pytest.mark.skip(reason="US05-TK04")
 def test_create_route_no_vehicle_returns_400() -> None:
     """POST /routes/ quando motorista não tem veículo deve retornar 400."""
     from src.domains.routes.errors import NoVehicleError
@@ -134,7 +129,6 @@ def test_create_route_no_vehicle_returns_400() -> None:
     assert response.status_code == 400
 
 
-@pytest.mark.skip(reason="US05-TK04")
 def test_create_route_response_has_correct_fields() -> None:
     """A resposta deve conter todos os campos esperados incluindo endereços aninhados."""
     mock_service = Mock(spec=RouteService)
@@ -158,7 +152,6 @@ def test_create_route_response_has_correct_fields() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US05-TK05")
 def test_regenerate_invite_code_success_returns_200() -> None:
     """POST /routes/{id}/invite-code/regenerate deve retornar 200 com novo código."""
     route_id = uuid.uuid4()
@@ -176,7 +169,6 @@ def test_regenerate_invite_code_success_returns_200() -> None:
     assert response.json()["invite_code"] == "NEW99"
 
 
-@pytest.mark.skip(reason="US05-TK05")
 def test_regenerate_invite_code_not_found_returns_404() -> None:
     """POST /routes/{id}/invite-code/regenerate com rota inexistente deve retornar 404."""
     from src.domains.routes.errors import RouteNotFoundError
@@ -191,7 +183,6 @@ def test_regenerate_invite_code_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US05-TK05")
 def test_regenerate_invite_code_wrong_owner_returns_403() -> None:
     """POST /routes/{id}/invite-code/regenerate por motorista que não é dono deve retornar 403."""
     from src.domains.routes.errors import RouteOwnershipError
@@ -212,7 +203,6 @@ def test_regenerate_invite_code_wrong_owner_returns_403() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US07-TK04")
 def test_list_routes_success_returns_200() -> None:
     """GET /routes/ deve retornar 200 e lista de rotas do motorista."""
     mock_service = Mock(spec=RouteService)
@@ -226,7 +216,6 @@ def test_list_routes_success_returns_200() -> None:
     assert len(response.json()) == 2
 
 
-@pytest.mark.skip(reason="US07-TK04")
 def test_list_routes_empty_returns_empty_list() -> None:
     """GET /routes/ sem rotas deve retornar 200 com lista vazia."""
     mock_service = Mock(spec=RouteService)
@@ -240,7 +229,6 @@ def test_list_routes_empty_returns_empty_list() -> None:
     assert response.json() == []
 
 
-@pytest.mark.skip(reason="US07-TK04")
 def test_get_route_success_returns_200() -> None:
     """GET /routes/{id} deve retornar 200 com dados completos da rota."""
     route_id = uuid.uuid4()
@@ -257,7 +245,6 @@ def test_get_route_success_returns_200() -> None:
     assert "destination_address" in body
 
 
-@pytest.mark.skip(reason="US07-TK04")
 def test_get_route_not_found_returns_404() -> None:
     """GET /routes/{id} com rota inexistente deve retornar 404."""
     from src.domains.routes.errors import RouteNotFoundError
@@ -272,7 +259,6 @@ def test_get_route_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US07-TK04")
 def test_get_route_wrong_owner_returns_403() -> None:
     """GET /routes/{id} por motorista que não é dono deve retornar 403."""
     from src.domains.routes.errors import RouteOwnershipError
@@ -375,7 +361,6 @@ def route_payload(**kwargs) -> dict:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US05-TK04")
 def test_integration_create_route_success(integration_client, db_session) -> None:
     """[Integração] POST /routes/ com motorista e veículo deve retornar 201."""
     driver, vehicle = make_driver_with_vehicle(db_session)
@@ -389,7 +374,6 @@ def test_integration_create_route_success(integration_client, db_session) -> Non
     assert body["max_passengers"] == vehicle.capacity
 
 
-@pytest.mark.skip(reason="US05-TK04")
 def test_integration_create_route_no_vehicle_returns_400(integration_client, db_session) -> None:
     """[Integração] POST /routes/ por motorista sem veículo deve retornar 400."""
     driver = make_driver_only(db_session)
@@ -400,7 +384,6 @@ def test_integration_create_route_no_vehicle_returns_400(integration_client, db_
     assert response.status_code == 400
 
 
-@pytest.mark.skip(reason="US05-TK04")
 def test_integration_create_route_invalid_recurrence_returns_422(integration_client, db_session) -> None:
     """[Integração] POST /routes/ com recorrência inválida deve retornar 422."""
     driver, _ = make_driver_with_vehicle(db_session)
@@ -411,7 +394,6 @@ def test_integration_create_route_invalid_recurrence_returns_422(integration_cli
     assert response.status_code == 422
 
 
-@pytest.mark.skip(reason="US05-TK04")
 def test_integration_create_route_invalid_type_returns_422(integration_client, db_session) -> None:
     """[Integração] POST /routes/ com route_type inválido deve retornar 422."""
     driver, _ = make_driver_with_vehicle(db_session)
@@ -427,7 +409,6 @@ def test_integration_create_route_invalid_type_returns_422(integration_client, d
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US05-TK05")
 def test_integration_regenerate_invite_code_success(integration_client, db_session) -> None:
     """[Integração] POST regenerate deve retornar 200 com novo invite_code."""
     driver, vehicle = make_driver_with_vehicle(db_session)
@@ -443,7 +424,6 @@ def test_integration_regenerate_invite_code_success(integration_client, db_sessi
     assert response.json()["invite_code"] != original_code
 
 
-@pytest.mark.skip(reason="US05-TK05")
 def test_integration_regenerate_invite_code_not_found_returns_404(integration_client, db_session) -> None:
     """[Integração] POST regenerate com rota inexistente deve retornar 404."""
     driver, _ = make_driver_with_vehicle(db_session)
@@ -454,7 +434,6 @@ def test_integration_regenerate_invite_code_not_found_returns_404(integration_cl
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US05-TK05")
 def test_integration_regenerate_invite_code_wrong_owner_returns_403(integration_client, db_session) -> None:
     """[Integração] POST regenerate por motorista que não é dono deve retornar 403."""
     driver1, vehicle1 = make_driver_with_vehicle(db_session)
@@ -479,7 +458,6 @@ def test_integration_regenerate_invite_code_wrong_owner_returns_403(integration_
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US07-TK04")
 def test_integration_list_routes_empty(integration_client, db_session) -> None:
     """[Integração] GET /routes/ sem rotas deve retornar 200 com lista vazia."""
     driver, _ = make_driver_with_vehicle(db_session)
@@ -491,7 +469,6 @@ def test_integration_list_routes_empty(integration_client, db_session) -> None:
     assert response.json() == []
 
 
-@pytest.mark.skip(reason="US07-TK04")
 def test_integration_list_routes_returns_own_only(integration_client, db_session) -> None:
     """[Integração] GET /routes/ deve retornar apenas rotas do motorista autenticado."""
     driver1, _ = make_driver_with_vehicle(db_session)
@@ -512,7 +489,6 @@ def test_integration_list_routes_returns_own_only(integration_client, db_session
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US07-TK04")
 def test_integration_get_route_success(integration_client, db_session) -> None:
     """[Integração] GET /routes/{id} deve retornar 200 com dados completos da rota."""
     driver, _ = make_driver_with_vehicle(db_session)
@@ -530,7 +506,6 @@ def test_integration_get_route_success(integration_client, db_session) -> None:
     assert "invite_code" in body
 
 
-@pytest.mark.skip(reason="US07-TK04")
 def test_integration_get_route_not_found_returns_404(integration_client, db_session) -> None:
     """[Integração] GET /routes/{id} com id inexistente deve retornar 404."""
     driver, _ = make_driver_with_vehicle(db_session)
@@ -541,7 +516,6 @@ def test_integration_get_route_not_found_returns_404(integration_client, db_sess
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US07-TK04")
 def test_integration_get_route_wrong_owner_returns_403(integration_client, db_session) -> None:
     """[Integração] GET /routes/{id} por motorista que não é dono deve retornar 403."""
     driver1, _ = make_driver_with_vehicle(db_session)
@@ -551,6 +525,7 @@ def test_integration_get_route_wrong_owner_returns_403(integration_client, db_se
         "/routes/", json=route_payload(),
         headers={"X-User-Id": str(driver1.id), "X-User-Role": "driver"},
     )
+
     route_id = create_response.json()["id"]
 
     response = integration_client.get(
