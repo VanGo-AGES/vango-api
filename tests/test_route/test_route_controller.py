@@ -526,8 +526,6 @@ def test_integration_get_route_wrong_owner_returns_403(integration_client, db_se
         headers={"X-User-Id": str(driver1.id), "X-User-Role": "driver"},
     )
 
-    print(create_response.json())
-
     route_id = create_response.json()["id"]
 
     response = integration_client.get(
