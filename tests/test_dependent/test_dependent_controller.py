@@ -168,7 +168,6 @@ def make_dependent_list() -> list[DependentModel]:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_list_dependents_success(client):
     """GET /dependents/ deve retornar 200 com lista de dependentes."""
     mock_service = MagicMock(spec=DependentService)
@@ -186,7 +185,6 @@ def test_list_dependents_success(client):
     assert len(response.json()) == 2
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_list_dependents_empty(client):
     """GET /dependents/ deve retornar 200 com lista vazia quando não há dependentes."""
     mock_service = MagicMock(spec=DependentService)
@@ -208,7 +206,6 @@ def test_list_dependents_empty(client):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_get_dependent_by_id_success(client):
     """GET /dependents/{id} deve retornar 200 com o dependente do usuário."""
     dependent = make_mock_dependent()
@@ -226,7 +223,6 @@ def test_get_dependent_by_id_success(client):
     assert response.json()["id"] == str(dependent.id)
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_get_dependent_not_found_returns_404(client):
     """GET /dependents/{id} deve retornar 404 quando dependente não existe."""
     mock_service = MagicMock(spec=DependentService)
@@ -242,7 +238,6 @@ def test_get_dependent_not_found_returns_404(client):
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_get_dependent_wrong_owner_returns_403(client):
     """GET /dependents/{id} deve retornar 403 quando pertence a outro guardião."""
     mock_service = MagicMock(spec=DependentService)
@@ -263,7 +258,6 @@ def test_get_dependent_wrong_owner_returns_403(client):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_update_dependent_success(client):
     """PUT /dependents/{id} deve retornar 200 com o dependente atualizado."""
     dependent = make_mock_dependent(name="Ana Paula")
@@ -281,7 +275,6 @@ def test_update_dependent_success(client):
     assert response.json()["name"] == "Ana Paula"
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_update_dependent_not_found_returns_404(client):
     """PUT /dependents/{id} deve retornar 404 quando dependente não existe."""
     mock_service = MagicMock(spec=DependentService)
@@ -297,7 +290,6 @@ def test_update_dependent_not_found_returns_404(client):
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_update_dependent_wrong_owner_returns_403(client):
     """PUT /dependents/{id} deve retornar 403 quando pertence a outro guardião."""
     mock_service = MagicMock(spec=DependentService)
@@ -313,7 +305,6 @@ def test_update_dependent_wrong_owner_returns_403(client):
     assert response.status_code == 403
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_update_dependent_empty_name_returns_422(client):
     """PUT /dependents/{id} com name vazio deve retornar 422."""
     app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "passenger"}
@@ -330,7 +321,6 @@ def test_update_dependent_empty_name_returns_422(client):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_delete_dependent_success(client):
     """DELETE /dependents/{id} deve retornar 204 No Content."""
     mock_service = MagicMock(spec=DependentService)
@@ -346,7 +336,6 @@ def test_delete_dependent_success(client):
     assert response.status_code == 204
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_delete_dependent_not_found_returns_404(client):
     """DELETE /dependents/{id} deve retornar 404 quando dependente não existe."""
     mock_service = MagicMock(spec=DependentService)
@@ -362,7 +351,6 @@ def test_delete_dependent_not_found_returns_404(client):
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_delete_dependent_wrong_owner_returns_403(client):
     """DELETE /dependents/{id} deve retornar 403 quando pertence a outro guardião."""
     mock_service = MagicMock(spec=DependentService)
@@ -463,7 +451,6 @@ def test_integration_create_dependent_driver_returns_403(integration_client, db_
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_integration_list_dependents_empty(integration_client, db_session):
     """[Integração] GET /dependents/ sem dependentes deve retornar 200 com lista vazia."""
     guardian = make_guardian_in_db(db_session)
@@ -475,7 +462,6 @@ def test_integration_list_dependents_empty(integration_client, db_session):
     assert response.json() == []
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_integration_list_dependents_returns_own_only(integration_client, db_session):
     """[Integração] GET /dependents/ deve retornar apenas dependentes do guardião autenticado."""
     guardian1 = make_guardian_in_db(db_session)
@@ -497,7 +483,6 @@ def test_integration_list_dependents_returns_own_only(integration_client, db_ses
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_integration_get_dependent_by_id_success(integration_client, db_session):
     """[Integração] GET /dependents/{id} deve retornar 200 com dados do dependente."""
     guardian = make_guardian_in_db(db_session)
@@ -511,7 +496,6 @@ def test_integration_get_dependent_by_id_success(integration_client, db_session)
     assert response.json()["name"] == "Maria"
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_integration_get_dependent_not_found_returns_404(integration_client, db_session):
     """[Integração] GET /dependents/{id} com id inexistente deve retornar 404."""
     guardian = make_guardian_in_db(db_session)
@@ -522,7 +506,6 @@ def test_integration_get_dependent_not_found_returns_404(integration_client, db_
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_integration_get_dependent_wrong_owner_returns_403(integration_client, db_session):
     """[Integração] GET /dependents/{id} por guardião diferente do dono deve retornar 403."""
     guardian1 = make_guardian_in_db(db_session)
@@ -541,7 +524,6 @@ def test_integration_get_dependent_wrong_owner_returns_403(integration_client, d
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_integration_update_dependent_success(integration_client, db_session):
     """[Integração] PUT /dependents/{id} deve atualizar e retornar 200 com dados novos."""
     guardian = make_guardian_in_db(db_session)
@@ -555,7 +537,6 @@ def test_integration_update_dependent_success(integration_client, db_session):
     assert response.json()["name"] == "Ana Paula"
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_integration_update_dependent_not_found_returns_404(integration_client, db_session):
     """[Integração] PUT /dependents/{id} com id inexistente deve retornar 404."""
     guardian = make_guardian_in_db(db_session)
@@ -566,7 +547,6 @@ def test_integration_update_dependent_not_found_returns_404(integration_client, 
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_integration_update_dependent_wrong_owner_returns_403(integration_client, db_session):
     """[Integração] PUT /dependents/{id} por guardião diferente do dono deve retornar 403."""
     guardian1 = make_guardian_in_db(db_session)
@@ -585,7 +565,6 @@ def test_integration_update_dependent_wrong_owner_returns_403(integration_client
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_integration_delete_dependent_success(integration_client, db_session):
     """[Integração] DELETE /dependents/{id} deve remover do banco e retornar 204."""
     guardian = make_guardian_in_db(db_session)
@@ -598,7 +577,6 @@ def test_integration_delete_dependent_success(integration_client, db_session):
     assert response.status_code == 204
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_integration_delete_dependent_not_found_returns_404(integration_client, db_session):
     """[Integração] DELETE /dependents/{id} com id inexistente deve retornar 404."""
     guardian = make_guardian_in_db(db_session)
@@ -609,7 +587,6 @@ def test_integration_delete_dependent_not_found_returns_404(integration_client, 
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_integration_delete_dependent_wrong_owner_returns_403(integration_client, db_session):
     """[Integração] DELETE /dependents/{id} por guardião diferente do dono deve retornar 403."""
     guardian1 = make_guardian_in_db(db_session)

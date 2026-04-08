@@ -213,7 +213,6 @@ def make_vehicle_list() -> list[VehicleModel]:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_list_vehicles_success(client):
     """GET /vehicles/ deve retornar 200 com lista de veículos."""
     mock_service = MagicMock(spec=VehicleService)
@@ -231,7 +230,6 @@ def test_list_vehicles_success(client):
     assert len(response.json()) == 2
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_list_vehicles_empty(client):
     """GET /vehicles/ deve retornar 200 com lista vazia quando não há veículos."""
     mock_service = MagicMock(spec=VehicleService)
@@ -253,7 +251,6 @@ def test_list_vehicles_empty(client):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_get_vehicle_by_id_success(client):
     """GET /vehicles/{id} deve retornar 200 com o veículo do usuário."""
     vehicle = make_mock_vehicle()
@@ -271,7 +268,6 @@ def test_get_vehicle_by_id_success(client):
     assert response.json()["id"] == str(vehicle.id)
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_get_vehicle_not_found_returns_404(client):
     """GET /vehicles/{id} deve retornar 404 quando veículo não existe."""
     mock_service = MagicMock(spec=VehicleService)
@@ -287,7 +283,6 @@ def test_get_vehicle_not_found_returns_404(client):
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_get_vehicle_wrong_owner_returns_403(client):
     """GET /vehicles/{id} deve retornar 403 quando veículo pertence a outro driver."""
     mock_service = MagicMock(spec=VehicleService)
@@ -308,7 +303,6 @@ def test_get_vehicle_wrong_owner_returns_403(client):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_update_vehicle_success(client):
     """PUT /vehicles/{id} deve retornar 200 com o veículo atualizado."""
     vehicle = make_mock_vehicle(plate="NEW0001", capacity=6)
@@ -326,7 +320,6 @@ def test_update_vehicle_success(client):
     assert response.json()["plate"] == "NEW0001"
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_update_vehicle_not_found_returns_404(client):
     """PUT /vehicles/{id} deve retornar 404 quando veículo não existe."""
     mock_service = MagicMock(spec=VehicleService)
@@ -342,7 +335,6 @@ def test_update_vehicle_not_found_returns_404(client):
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_update_vehicle_wrong_owner_returns_403(client):
     """PUT /vehicles/{id} deve retornar 403 quando pertence a outro driver."""
     mock_service = MagicMock(spec=VehicleService)
@@ -358,7 +350,6 @@ def test_update_vehicle_wrong_owner_returns_403(client):
     assert response.status_code == 403
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_update_vehicle_invalid_payload_returns_422(client):
     """PUT /vehicles/{id} com capacity inválida deve retornar 422."""
     app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "driver"}
@@ -375,7 +366,6 @@ def test_update_vehicle_invalid_payload_returns_422(client):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_delete_vehicle_success(client):
     """DELETE /vehicles/{id} deve retornar 204 No Content."""
     mock_service = MagicMock(spec=VehicleService)
@@ -391,7 +381,6 @@ def test_delete_vehicle_success(client):
     assert response.status_code == 204
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_delete_vehicle_not_found_returns_404(client):
     """DELETE /vehicles/{id} deve retornar 404 quando veículo não existe."""
     mock_service = MagicMock(spec=VehicleService)
@@ -407,7 +396,6 @@ def test_delete_vehicle_not_found_returns_404(client):
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_delete_vehicle_wrong_owner_returns_403(client):
     """DELETE /vehicles/{id} deve retornar 403 quando pertence a outro driver."""
     mock_service = MagicMock(spec=VehicleService)
@@ -528,7 +516,6 @@ def test_integration_create_vehicle_guardian_returns_403(integration_client, db_
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_integration_list_vehicles_empty(integration_client, db_session):
     """[Integração] GET /vehicles/ sem veículos deve retornar 200 com lista vazia."""
     driver = make_driver_in_db(db_session)
@@ -540,7 +527,6 @@ def test_integration_list_vehicles_empty(integration_client, db_session):
     assert response.json() == []
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_integration_list_vehicles_returns_own_only(integration_client, db_session):
     """[Integração] GET /vehicles/ deve retornar apenas veículos do driver autenticado."""
     driver1 = make_driver_in_db(db_session)
@@ -562,7 +548,6 @@ def test_integration_list_vehicles_returns_own_only(integration_client, db_sessi
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_integration_get_vehicle_by_id_success(integration_client, db_session):
     """[Integração] GET /vehicles/{id} deve retornar 200 com dados do veículo."""
     driver = make_driver_in_db(db_session)
@@ -576,7 +561,6 @@ def test_integration_get_vehicle_by_id_success(integration_client, db_session):
     assert response.json()["plate"] == "GET0001"
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_integration_get_vehicle_not_found_returns_404(integration_client, db_session):
     """[Integração] GET /vehicles/{id} com id inexistente deve retornar 404."""
     driver = make_driver_in_db(db_session)
@@ -587,7 +571,6 @@ def test_integration_get_vehicle_not_found_returns_404(integration_client, db_se
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_integration_get_vehicle_wrong_owner_returns_403(integration_client, db_session):
     """[Integração] GET /vehicles/{id} por driver diferente do dono deve retornar 403."""
     driver1 = make_driver_in_db(db_session)
@@ -606,7 +589,6 @@ def test_integration_get_vehicle_wrong_owner_returns_403(integration_client, db_
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_integration_update_vehicle_success(integration_client, db_session):
     """[Integração] PUT /vehicles/{id} deve atualizar e retornar 200 com dados novos."""
     driver = make_driver_in_db(db_session)
@@ -620,7 +602,6 @@ def test_integration_update_vehicle_success(integration_client, db_session):
     assert response.json()["capacity"] == 8
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_integration_update_vehicle_not_found_returns_404(integration_client, db_session):
     """[Integração] PUT /vehicles/{id} com id inexistente deve retornar 404."""
     driver = make_driver_in_db(db_session)
@@ -631,7 +612,6 @@ def test_integration_update_vehicle_not_found_returns_404(integration_client, db
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_integration_update_vehicle_wrong_owner_returns_403(integration_client, db_session):
     """[Integração] PUT /vehicles/{id} por driver diferente do dono deve retornar 403."""
     driver1 = make_driver_in_db(db_session)
@@ -650,7 +630,6 @@ def test_integration_update_vehicle_wrong_owner_returns_403(integration_client, 
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_integration_delete_vehicle_success(integration_client, db_session):
     """[Integração] DELETE /vehicles/{id} deve remover do banco e retornar 204."""
     driver = make_driver_in_db(db_session)
@@ -663,7 +642,6 @@ def test_integration_delete_vehicle_success(integration_client, db_session):
     assert response.status_code == 204
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_integration_delete_vehicle_not_found_returns_404(integration_client, db_session):
     """[Integração] DELETE /vehicles/{id} com id inexistente deve retornar 404."""
     driver = make_driver_in_db(db_session)
@@ -674,7 +652,6 @@ def test_integration_delete_vehicle_not_found_returns_404(integration_client, db
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_integration_delete_vehicle_wrong_owner_returns_403(integration_client, db_session):
     """[Integração] DELETE /vehicles/{id} por driver diferente do dono deve retornar 403."""
     driver1 = make_driver_in_db(db_session)
