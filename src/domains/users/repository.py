@@ -25,6 +25,10 @@ class IUserRepository(ABC):
     def delete(self, user_id: UUID) -> bool:
         pass
 
+    @abstractmethod
+    def find_all(self) -> list[UserModel]:
+        pass
+
 
 class IPasswordHasher(ABC):
     @abstractmethod

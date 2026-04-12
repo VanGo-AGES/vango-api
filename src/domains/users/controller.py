@@ -29,6 +29,17 @@ def register_user(body: UserCreate, service: Annotated[UserService, Depends(get_
 
 
 @router.get(
+    "/",
+    response_model=list[UserResponse],
+    status_code=status.HTTP_200_OK,
+    summary="Listar todos os usuários",
+    description="Retorna a lista de todos os usuários cadastrados.",
+)
+def list_users(service: Annotated[UserService, Depends(get_user_service)]) -> list[UserResponse]:
+    return service.list_users()
+
+
+@router.get(
     "/{user_id}",
     response_model=UserResponse,
     status_code=status.HTTP_200_OK,

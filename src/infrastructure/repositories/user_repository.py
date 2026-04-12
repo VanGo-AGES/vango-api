@@ -43,6 +43,9 @@ class UserRepositoryImpl(IUserRepository):
         self.session.commit()
         return True
 
+    def find_all(self) -> list[UserModel]:
+        return self.session.query(UserModel).all()
+
 
 class PasswordHasherImpl(IPasswordHasher):
     def hash(self, password: str) -> str:

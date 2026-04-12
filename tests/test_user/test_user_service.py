@@ -293,3 +293,43 @@ def test_delete_user_not_found():
         service.delete_user(user_id)
 
     repo.delete.assert_not_called()
+
+
+# ===========================================================================
+# list_users
+# ===========================================================================
+
+
+# Teste 8: list_users retorna todos os usuários do repositório
+def test_list_users_returns_all_users():
+    """list_users deve delegar para repo.find_all e retornar o resultado."""
+    repo = Mock()
+    hasher = Mock()
+
+    users = [
+        make_existing_user(email="a@email.com"),
+        make_existing_user(email="b@email.com"),
+    ]
+    repo.find_all.return_value = users
+
+    service = UserService(repo, hasher)
+    result = service.list_users()
+
+    repo.find_all.assert_called_once()
+    assert result == users
+    assert len(result) == 2
+
+
+# Teste 9: list_users com repositório vazio retorna lista vazia
+def test_list_users_empty_returns_empty_list():
+    """list_users deve retornar lista vazia quando não há usuários."""
+    repo = Mock()
+    hasher = Mock()
+
+    repo.find_all.return_value = []
+
+    service = UserService(repo, hasher)
+    result = service.list_users()
+
+    repo.find_all.assert_called_once()
+    assert result == []

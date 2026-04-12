@@ -52,3 +52,6 @@ class UserService:
         if not user:
             raise UserNotFoundError()
         self.repository.delete(user_id)
+
+    def list_users(self) -> list[UserModel]:
+        return self.repository.find_all()

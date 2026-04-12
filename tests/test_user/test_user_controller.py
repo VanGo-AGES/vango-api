@@ -140,6 +140,49 @@ def test_register_user_with_cpf_returns_cpf_in_response():
 
 
 # ===========================================================================
+# GET /users/ — listar todos os usuários
+# ===========================================================================
+
+
+# Teste 1: retorna 200 com lista de usuários
+def test_list_users_returns_200_with_list():
+    """GET /users/ deve retornar 200 e uma lista de UserResponse."""
+    mock_service = Mock(spec=UserService)
+    mock_service.list_users.return_value = [
+        make_user_response(email="a@email.com"),
+        make_user_response(email="b@email.com"),
+    ]
+
+    app.dependency_overrides[get_user_service] = lambda: mock_service
+    client = TestClient(app)
+
+    response = client.get("/users/")
+
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)
+    assert len(response.json()) == 2
+
+    app.dependency_overrides.clear()
+
+
+# Teste 2: retorna 200 com lista vazia quando não há usuários
+def test_list_users_empty_returns_200_with_empty_list():
+    """GET /users/ sem usuários cadastrados deve retornar 200 e lista vazia."""
+    mock_service = Mock(spec=UserService)
+    mock_service.list_users.return_value = []
+
+    app.dependency_overrides[get_user_service] = lambda: mock_service
+    client = TestClient(app)
+
+    response = client.get("/users/")
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+    app.dependency_overrides.clear()
+
+
+# ===========================================================================
 # US02 - TK04: GET / PUT / DELETE /users/{user_id}
 # ===========================================================================
 
@@ -296,6 +339,37 @@ def make_user_payload(**kwargs) -> dict:
     }
     defaults.update(kwargs)
     return defaults
+
+
+# ---------------------------------------------------------------------------
+# GET /users/
+# ---------------------------------------------------------------------------
+
+
+def test_integration_list_users_returns_all(integration_client):
+    """[Integração] GET /users/ deve retornar 200 com todos os usuários cadastrados."""
+    payload_a = make_user_payload()
+    payload_b = make_user_payload()
+
+    integration_client.post("/users/", json=payload_a)
+    integration_client.post("/users/", json=payload_b)
+
+    response = integration_client.get("/users/")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert isinstance(body, list)
+    emails = [u["email"] for u in body]
+    assert payload_a["email"] in emails
+    assert payload_b["email"] in emails
+
+
+def test_integration_list_users_empty_returns_empty_list(integration_client):
+    """[Integração] GET /users/ sem usuários deve retornar 200 e lista vazia."""
+    response = integration_client.get("/users/")
+
+    assert response.status_code == 200
+    assert isinstance(response.json(), list)
 
 
 # ---------------------------------------------------------------------------
