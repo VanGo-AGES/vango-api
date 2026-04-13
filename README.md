@@ -53,6 +53,8 @@ alembic revision --autogenerate -m "nome_da_mudanca"
 ### Recriar o banco do zero
 
 Se você quer subir um banco limpo, recrie o schema antes de rodar o Alembic:
+
+IMPORTANTE: ANTES DE RODAR OS COMANDOS SAIA DO DEV CONTAINER (CLIQUE F1, ABRIR PALHETA DE COMANDOS E SELECIONE O COMANDO 'OPEN FOLDER LOCALLY (DEV CONTAINERS)')
 ```bash
 # Derruba o banco e remove o volume do Postgres
 docker compose down -v
@@ -60,13 +62,15 @@ docker compose down -v
 # Sobe apenas o banco novamente
 docker compose up -d db
 
-# Recria o schema padrão usado pelo projeto no container ativo vango_db
-docker exec -it vango_db psql -U root -d vango_db -c "CREATE SCHEMA IF NOT EXISTS public;"
-docker exec -it vango_db psql -U root -d vango_db -c "GRANT ALL ON SCHEMA public TO root;"
 
+
+```
+
+```bash
 # Aplica tudo no banco limpo
 alembic upgrade head
 ```
+
 
 ## 🧹 Qualidade de Código (Ruff)
 
