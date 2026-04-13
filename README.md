@@ -62,8 +62,6 @@ docker compose down -v
 # Sobe apenas o banco novamente
 docker compose up -d db
 
-
-
 ```
 
 ```bash
