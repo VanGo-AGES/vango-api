@@ -50,6 +50,30 @@ alembic upgrade head
 alembic revision --autogenerate -m "nome_da_mudanca"
 ```
 
+### Recriar o banco do zero
+
+Se você quer subir um banco limpo, recrie o schema antes de rodar o Alembic:
+
+PRIMEIRAMENTE SE CERTIFIQUE QUE ESTA COM A DEV MAIS ATUAL
+
+IMPORTANTE: ANTES DE RODAR OS COMANDOS SAIA DO DEV CONTAINER (CLIQUE F1, ABRIR PALHETA DE COMANDOS E SELECIONE O COMANDO 'OPEN FOLDER LOCALLY (DEV CONTAINERS)')
+```bash
+# Derruba o banco e remove o volume do Postgres
+docker compose down -v
+
+# Sobe apenas o banco novamente
+docker compose up -d db
+
+```
+
+AGORA PODE ENTRAR NO CONTAINER USANDO REOPEN IN CONTAINER E RODAR O COMANDO ABAIXO:
+
+```bash
+# Aplica tudo no banco limpo
+alembic upgrade head
+```
+
+
 ## 🧹 Qualidade de Código (Ruff)
 
 O linter e o formatador já estão configurados:
