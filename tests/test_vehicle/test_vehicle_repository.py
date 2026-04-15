@@ -33,7 +33,6 @@ def make_driver(db_session) -> UserModel:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US03-TK01")
 def test_create_vehicle_success(db_session):
     """Motorista cria veículo com placa e capacidade — retorna objeto persistido."""
     driver = make_driver(db_session)
@@ -48,7 +47,6 @@ def test_create_vehicle_success(db_session):
     assert result.driver_id == driver.id
 
 
-@pytest.mark.skip(reason="US03-TK01")
 def test_create_vehicle_persists_in_database(db_session):
     """Veículo criado deve ser recuperável em uma nova query na mesma sessão."""
     driver = make_driver(db_session)
@@ -63,7 +61,6 @@ def test_create_vehicle_persists_in_database(db_session):
     assert found.driver_id == driver.id
 
 
-@pytest.mark.skip(reason="US03-TK01")
 def test_create_vehicle_returns_object_with_generated_id(db_session):
     """ID deve ser gerado automaticamente (uuid4) ao persistir."""
     driver = make_driver(db_session)
@@ -82,7 +79,6 @@ def test_create_vehicle_returns_object_with_generated_id(db_session):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US03-TK01")
 def test_create_vehicle_without_notes(db_session):
     """notes é opcional — criar sem ele não deve lançar exceção."""
     driver = make_driver(db_session)
@@ -94,7 +90,6 @@ def test_create_vehicle_without_notes(db_session):
     assert result.notes is None
 
 
-@pytest.mark.skip(reason="US03-TK01")
 def test_create_vehicle_with_notes(db_session):
     """notes preenchido deve ser salvo corretamente."""
     driver = make_driver(db_session)
@@ -111,7 +106,6 @@ def test_create_vehicle_with_notes(db_session):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US03-TK01")
 def test_create_vehicle_default_status_is_active(db_session):
     """status deve ser True por padrão quando não informado."""
     driver = make_driver(db_session)
@@ -128,7 +122,6 @@ def test_create_vehicle_default_status_is_active(db_session):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US03-TK01")
 def test_create_vehicle_duplicate_plate_raises_integrity_error(db_session):
     """Placa duplicada deve lançar IntegrityError (constraint unique)."""
     driver = make_driver(db_session)
@@ -142,7 +135,6 @@ def test_create_vehicle_duplicate_plate_raises_integrity_error(db_session):
         repo.create(vehicle2)
 
 
-@pytest.mark.skip(reason="US03-TK01")
 def test_create_vehicle_associates_correctly_with_driver(db_session):
     """driver_id deve corresponder ao UUID do motorista passado."""
     driver = make_driver(db_session)
@@ -171,7 +163,6 @@ def make_vehicle(db_session, driver, plate: str = "ABC1D23", capacity: int = 4) 
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK01")
 def test_get_vehicle_by_id_success(db_session):
     """get_by_id deve retornar o veículo correto quando ele existe."""
     driver = make_driver(db_session)
@@ -185,7 +176,6 @@ def test_get_vehicle_by_id_success(db_session):
     assert result.plate == "GET0001"
 
 
-@pytest.mark.skip(reason="US04-TK01")
 def test_get_vehicle_by_id_not_found(db_session):
     """get_by_id deve retornar None para um UUID inexistente."""
     repo = VehicleRepositoryImpl(db_session)
@@ -200,7 +190,6 @@ def test_get_vehicle_by_id_not_found(db_session):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK01")
 def test_get_vehicles_by_driver_id_returns_list(db_session):
     """get_by_driver_id deve retornar todos os veículos do motorista."""
     driver = make_driver(db_session)
@@ -213,7 +202,6 @@ def test_get_vehicles_by_driver_id_returns_list(db_session):
     assert len(result) == 2
 
 
-@pytest.mark.skip(reason="US04-TK01")
 def test_get_vehicles_by_driver_id_empty(db_session):
     """get_by_driver_id deve retornar lista vazia quando motorista não tem veículos."""
     driver = make_driver(db_session)
@@ -224,7 +212,6 @@ def test_get_vehicles_by_driver_id_empty(db_session):
     assert result == []
 
 
-@pytest.mark.skip(reason="US04-TK01")
 def test_get_vehicles_by_driver_id_only_own(db_session):
     """get_by_driver_id não deve retornar veículos de outros motoristas."""
     driver1 = make_driver(db_session)
@@ -244,7 +231,6 @@ def test_get_vehicles_by_driver_id_only_own(db_session):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK01")
 def test_update_vehicle_success(db_session):
     """update deve aplicar os novos valores e retornar o objeto atualizado."""
     driver = make_driver(db_session)
@@ -258,7 +244,6 @@ def test_update_vehicle_success(db_session):
     assert result.capacity == 6
 
 
-@pytest.mark.skip(reason="US04-TK01")
 def test_update_vehicle_partial(db_session):
     """update com apenas um campo não deve alterar os demais."""
     driver = make_driver(db_session)
@@ -272,7 +257,6 @@ def test_update_vehicle_partial(db_session):
     assert result.capacity == 4
 
 
-@pytest.mark.skip(reason="US04-TK01")
 def test_update_vehicle_not_found(db_session):
     """update deve retornar None quando o veículo não existe."""
     repo = VehicleRepositoryImpl(db_session)
@@ -282,7 +266,6 @@ def test_update_vehicle_not_found(db_session):
     assert result is None
 
 
-@pytest.mark.skip(reason="US04-TK01")
 def test_update_vehicle_persists_in_database(db_session):
     """Alteração feita pelo update deve estar visível em uma nova query."""
     driver = make_driver(db_session)
@@ -300,7 +283,6 @@ def test_update_vehicle_persists_in_database(db_session):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK01")
 def test_delete_vehicle_success(db_session):
     """delete deve retornar True quando o veículo é removido com sucesso."""
     driver = make_driver(db_session)
@@ -312,7 +294,6 @@ def test_delete_vehicle_success(db_session):
     assert result is True
 
 
-@pytest.mark.skip(reason="US04-TK01")
 def test_delete_vehicle_removes_from_database(db_session):
     """Após delete, veículo não deve existir no banco."""
     driver = make_driver(db_session)
@@ -325,7 +306,6 @@ def test_delete_vehicle_removes_from_database(db_session):
     assert found is None
 
 
-@pytest.mark.skip(reason="US04-TK01")
 def test_delete_vehicle_not_found(db_session):
     """delete deve retornar False quando o veículo não existe."""
     repo = VehicleRepositoryImpl(db_session)

@@ -33,7 +33,6 @@ def make_mock_repo(plate: str = "ABC1D23", capacity: int = 4) -> MagicMock:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US03-TK03")
 def test_add_vehicle_driver_success():
     """Role 'driver' deve conseguir adicionar veículo sem exceção."""
     repo = make_mock_repo()
@@ -46,7 +45,6 @@ def test_add_vehicle_driver_success():
     repo.create.assert_called_once()
 
 
-@pytest.mark.skip(reason="US03-TK03")
 def test_add_vehicle_calls_repository_with_correct_model(db_session):
     """Service deve montar um VehicleModel com os dados do DTO e passar ao repositório."""
     repo = make_mock_repo(plate="XYZ9W99", capacity=6)
@@ -62,7 +60,6 @@ def test_add_vehicle_calls_repository_with_correct_model(db_session):
     assert call_args.notes == "Ar condicionado"
 
 
-@pytest.mark.skip(reason="US03-TK03")
 def test_add_vehicle_associates_user_id_to_vehicle(db_session):
     """driver_id no modelo criado deve ser o user_id recebido pelo service."""
     repo = make_mock_repo()
@@ -81,7 +78,6 @@ def test_add_vehicle_associates_user_id_to_vehicle(db_session):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US03-TK03")
 def test_add_vehicle_passenger_forbidden():
     """Role 'passenger' não pode adicionar veículo — deve lançar VehicleAccessDeniedError."""
     repo = make_mock_repo()
@@ -92,7 +88,6 @@ def test_add_vehicle_passenger_forbidden():
         service.add_vehicle(user_id=str(uuid.uuid4()), user_role="passenger", data=data)
 
 
-@pytest.mark.skip(reason="US03-TK03")
 def test_add_vehicle_guardian_forbidden():
     """Role 'guardian' não pode adicionar veículo — deve lançar VehicleAccessDeniedError."""
     repo = make_mock_repo()
@@ -108,7 +103,6 @@ def test_add_vehicle_guardian_forbidden():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US03-TK03")
 def test_add_vehicle_repository_not_called_when_passenger():
     """Quando role for 'passenger', repositório não deve ser chamado."""
     repo = make_mock_repo()
@@ -121,7 +115,6 @@ def test_add_vehicle_repository_not_called_when_passenger():
     repo.create.assert_not_called()
 
 
-@pytest.mark.skip(reason="US03-TK03")
 def test_add_vehicle_repository_not_called_when_guardian():
     """Quando role for 'guardian', repositório não deve ser chamado."""
     repo = make_mock_repo()
@@ -167,7 +160,6 @@ def make_other_vehicle() -> VehicleModel:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK03")
 def test_get_vehicles_returns_list():
     """get_vehicles deve delegar ao repositório e retornar a lista."""
     repo = MagicMock()
@@ -184,7 +176,6 @@ def test_get_vehicles_returns_list():
     repo.get_by_driver_id.assert_called_once()
 
 
-@pytest.mark.skip(reason="US04-TK03")
 def test_get_vehicles_empty_list():
     """get_vehicles deve retornar lista vazia quando não há veículos."""
     repo = MagicMock()
@@ -201,7 +192,6 @@ def test_get_vehicles_empty_list():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK03")
 def test_get_vehicle_success():
     """get_vehicle deve retornar o veículo quando pertence ao user_id."""
     user_id = str(uuid.uuid4())
@@ -215,7 +205,6 @@ def test_get_vehicle_success():
     assert result is not None
 
 
-@pytest.mark.skip(reason="US04-TK03")
 def test_get_vehicle_not_found():
     """get_vehicle deve lançar VehicleNotFoundError quando ID não existe."""
     repo = MagicMock()
@@ -226,7 +215,6 @@ def test_get_vehicle_not_found():
         service.get_vehicle(user_id=str(uuid.uuid4()), vehicle_id=str(uuid.uuid4()))
 
 
-@pytest.mark.skip(reason="US04-TK03")
 def test_get_vehicle_wrong_owner():
     """get_vehicle deve lançar VehicleOwnershipError quando o veículo é de outro driver."""
     repo = MagicMock()
@@ -242,7 +230,6 @@ def test_get_vehicle_wrong_owner():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK03")
 def test_update_vehicle_success():
     """update_vehicle deve chamar repositório e retornar veículo atualizado."""
     user_id = str(uuid.uuid4())
@@ -260,7 +247,6 @@ def test_update_vehicle_success():
     repo.update.assert_called_once()
 
 
-@pytest.mark.skip(reason="US04-TK03")
 def test_update_vehicle_not_found():
     """update_vehicle deve lançar VehicleNotFoundError quando ID não existe."""
     repo = MagicMock()
@@ -275,7 +261,6 @@ def test_update_vehicle_not_found():
         )
 
 
-@pytest.mark.skip(reason="US04-TK03")
 def test_update_vehicle_wrong_owner():
     """update_vehicle deve lançar VehicleOwnershipError quando pertence a outro driver."""
     repo = MagicMock()
@@ -290,7 +275,6 @@ def test_update_vehicle_wrong_owner():
         )
 
 
-@pytest.mark.skip(reason="US04-TK03")
 def test_update_vehicle_repo_not_called_when_wrong_owner():
     """Repositório de update não deve ser chamado quando ownership falha."""
     repo = MagicMock()
@@ -312,7 +296,6 @@ def test_update_vehicle_repo_not_called_when_wrong_owner():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK03")
 def test_delete_vehicle_success():
     """delete_vehicle deve chamar repositório sem lançar exceção."""
     user_id = str(uuid.uuid4())
@@ -327,7 +310,6 @@ def test_delete_vehicle_success():
     repo.delete.assert_called_once()
 
 
-@pytest.mark.skip(reason="US04-TK03")
 def test_delete_vehicle_not_found():
     """delete_vehicle deve lançar VehicleNotFoundError quando ID não existe."""
     repo = MagicMock()
@@ -338,7 +320,6 @@ def test_delete_vehicle_not_found():
         service.delete_vehicle(user_id=str(uuid.uuid4()), vehicle_id=str(uuid.uuid4()))
 
 
-@pytest.mark.skip(reason="US04-TK03")
 def test_delete_vehicle_wrong_owner():
     """delete_vehicle deve lançar VehicleOwnershipError quando pertence a outro driver."""
     repo = MagicMock()
@@ -349,7 +330,6 @@ def test_delete_vehicle_wrong_owner():
         service.delete_vehicle(user_id=str(uuid.uuid4()), vehicle_id=str(uuid.uuid4()))
 
 
-@pytest.mark.skip(reason="US04-TK03")
 def test_delete_vehicle_repo_not_called_when_wrong_owner():
     """Repositório de delete não deve ser chamado quando ownership falha."""
     repo = MagicMock()

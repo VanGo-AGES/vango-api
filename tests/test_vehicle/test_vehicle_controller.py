@@ -43,7 +43,6 @@ def client():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US03-TK04")
 def test_create_vehicle_driver_success(client):
     """POST /vehicles/ com role 'driver' deve retornar 201 Created."""
     mock_service = MagicMock(spec=VehicleService)
@@ -59,7 +58,6 @@ def test_create_vehicle_driver_success(client):
     assert response.status_code == 201
 
 
-@pytest.mark.skip(reason="US03-TK04")
 def test_create_vehicle_response_has_correct_fields(client):
     """Resposta 201 deve conter id, plate, capacity, driver_id, status e created_at."""
     vehicle = make_mock_vehicle()
@@ -83,7 +81,6 @@ def test_create_vehicle_response_has_correct_fields(client):
     assert "created_at" in body
 
 
-@pytest.mark.skip(reason="US03-TK04")
 def test_create_vehicle_with_notes_success(client):
     """POST com notes preenchido deve retornar 201 e incluir notes na resposta."""
     vehicle = make_mock_vehicle()
@@ -107,7 +104,6 @@ def test_create_vehicle_with_notes_success(client):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US03-TK04")
 def test_create_vehicle_passenger_returns_403(client):
     """POST /vehicles/ com role 'passenger' deve retornar 403 Forbidden."""
     mock_service = MagicMock(spec=VehicleService)
@@ -123,7 +119,6 @@ def test_create_vehicle_passenger_returns_403(client):
     assert response.status_code == 403
 
 
-@pytest.mark.skip(reason="US03-TK04")
 def test_create_vehicle_guardian_returns_403(client):
     """POST /vehicles/ com role 'guardian' deve retornar 403 Forbidden."""
     mock_service = MagicMock(spec=VehicleService)
@@ -144,7 +139,6 @@ def test_create_vehicle_guardian_returns_403(client):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US03-TK04")
 def test_create_vehicle_missing_plate_returns_422(client):
     """Payload sem plate deve retornar 422."""
     app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "driver"}
@@ -156,7 +150,6 @@ def test_create_vehicle_missing_plate_returns_422(client):
     assert response.status_code == 422
 
 
-@pytest.mark.skip(reason="US03-TK04")
 def test_create_vehicle_missing_capacity_returns_422(client):
     """Payload sem capacity deve retornar 422."""
     app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "driver"}
@@ -168,7 +161,6 @@ def test_create_vehicle_missing_capacity_returns_422(client):
     assert response.status_code == 422
 
 
-@pytest.mark.skip(reason="US03-TK04")
 def test_create_vehicle_empty_payload_returns_422(client):
     """Payload vazio deve retornar 422."""
     app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "driver"}
@@ -180,7 +172,6 @@ def test_create_vehicle_empty_payload_returns_422(client):
     assert response.status_code == 422
 
 
-@pytest.mark.skip(reason="US03-TK04")
 def test_create_vehicle_empty_plate_returns_422(client):
     """Plate vazia deve ser rejeitada com 422."""
     app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "driver"}
@@ -192,7 +183,6 @@ def test_create_vehicle_empty_plate_returns_422(client):
     assert response.status_code == 422
 
 
-@pytest.mark.skip(reason="US03-TK04")
 def test_create_vehicle_zero_capacity_returns_422(client):
     """Capacity igual a zero deve ser rejeitada com 422."""
     app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "driver"}
@@ -223,7 +213,6 @@ def make_vehicle_list() -> list[VehicleModel]:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_list_vehicles_success(client):
     """GET /vehicles/ deve retornar 200 com lista de veículos."""
     mock_service = MagicMock(spec=VehicleService)
@@ -241,7 +230,6 @@ def test_list_vehicles_success(client):
     assert len(response.json()) == 2
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_list_vehicles_empty(client):
     """GET /vehicles/ deve retornar 200 com lista vazia quando não há veículos."""
     mock_service = MagicMock(spec=VehicleService)
@@ -263,7 +251,6 @@ def test_list_vehicles_empty(client):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_get_vehicle_by_id_success(client):
     """GET /vehicles/{id} deve retornar 200 com o veículo do usuário."""
     vehicle = make_mock_vehicle()
@@ -281,7 +268,6 @@ def test_get_vehicle_by_id_success(client):
     assert response.json()["id"] == str(vehicle.id)
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_get_vehicle_not_found_returns_404(client):
     """GET /vehicles/{id} deve retornar 404 quando veículo não existe."""
     mock_service = MagicMock(spec=VehicleService)
@@ -297,7 +283,6 @@ def test_get_vehicle_not_found_returns_404(client):
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_get_vehicle_wrong_owner_returns_403(client):
     """GET /vehicles/{id} deve retornar 403 quando veículo pertence a outro driver."""
     mock_service = MagicMock(spec=VehicleService)
@@ -318,7 +303,6 @@ def test_get_vehicle_wrong_owner_returns_403(client):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_update_vehicle_success(client):
     """PUT /vehicles/{id} deve retornar 200 com o veículo atualizado."""
     vehicle = make_mock_vehicle(plate="NEW0001", capacity=6)
@@ -336,7 +320,6 @@ def test_update_vehicle_success(client):
     assert response.json()["plate"] == "NEW0001"
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_update_vehicle_not_found_returns_404(client):
     """PUT /vehicles/{id} deve retornar 404 quando veículo não existe."""
     mock_service = MagicMock(spec=VehicleService)
@@ -352,7 +335,6 @@ def test_update_vehicle_not_found_returns_404(client):
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_update_vehicle_wrong_owner_returns_403(client):
     """PUT /vehicles/{id} deve retornar 403 quando pertence a outro driver."""
     mock_service = MagicMock(spec=VehicleService)
@@ -368,7 +350,6 @@ def test_update_vehicle_wrong_owner_returns_403(client):
     assert response.status_code == 403
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_update_vehicle_invalid_payload_returns_422(client):
     """PUT /vehicles/{id} com capacity inválida deve retornar 422."""
     app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "driver"}
@@ -385,7 +366,6 @@ def test_update_vehicle_invalid_payload_returns_422(client):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_delete_vehicle_success(client):
     """DELETE /vehicles/{id} deve retornar 204 No Content."""
     mock_service = MagicMock(spec=VehicleService)
@@ -401,7 +381,6 @@ def test_delete_vehicle_success(client):
     assert response.status_code == 204
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_delete_vehicle_not_found_returns_404(client):
     """DELETE /vehicles/{id} deve retornar 404 quando veículo não existe."""
     mock_service = MagicMock(spec=VehicleService)
@@ -417,7 +396,6 @@ def test_delete_vehicle_not_found_returns_404(client):
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US04-TK04")
 def test_delete_vehicle_wrong_owner_returns_403(client):
     """DELETE /vehicles/{id} deve retornar 403 quando pertence a outro driver."""
     mock_service = MagicMock(spec=VehicleService)
@@ -429,5 +407,259 @@ def test_delete_vehicle_wrong_owner_returns_403(client):
     response = client.delete(f"/vehicles/{uuid.uuid4()}")
 
     app.dependency_overrides.clear()
+
+    assert response.status_code == 403
+
+
+# ===========================================================================
+# INTEGRAÇÃO — testes ponta a ponta (HTTP → controller → service → repo → DB)
+# Não mocka service nem repositório. Apenas get_db e get_current_user.
+# ===========================================================================
+
+from src.domains.users.entity import UserModel
+from src.infrastructure.database import get_db
+from src.infrastructure.repositories.vehicle_repository import VehicleRepositoryImpl
+
+
+def make_driver_in_db(db_session) -> UserModel:
+    user = UserModel(
+        name="Driver Integração",
+        email=f"driver_{uuid.uuid4()}@test.com",
+        phone="11999999999",
+        password_hash="hashed",
+        role="driver",
+    )
+    db_session.add(user)
+    db_session.flush()
+    return user
+
+
+@pytest.fixture
+def integration_client(db_session):
+    def override_db():
+        yield db_session
+
+    app.dependency_overrides[get_db] = override_db
+    yield TestClient(app)
+    app.dependency_overrides.clear()
+
+
+# ---------------------------------------------------------------------------
+# POST /vehicles/
+# ---------------------------------------------------------------------------
+
+
+def test_integration_create_vehicle_driver_success(integration_client, db_session):
+    """[Integração] POST /vehicles/ com driver real deve persistir e retornar 201."""
+    driver = make_driver_in_db(db_session)
+    app.dependency_overrides[get_current_user] = lambda: {"id": str(driver.id), "role": "driver"}
+
+    response = integration_client.post("/vehicles/", json={"plate": "ITG0001", "capacity": 4})
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["plate"] == "ITG0001"
+    assert body["driver_id"] == str(driver.id)
+
+
+def test_integration_create_vehicle_with_notes(integration_client, db_session):
+    """[Integração] POST /vehicles/ com notes deve persistir o campo no banco."""
+    driver = make_driver_in_db(db_session)
+    app.dependency_overrides[get_current_user] = lambda: {"id": str(driver.id), "role": "driver"}
+
+    response = integration_client.post(
+        "/vehicles/", json={"plate": "ITG0002", "capacity": 4, "notes": "Ar condicionado"}
+    )
+
+    assert response.status_code == 201
+    assert response.json()["notes"] == "Ar condicionado"
+
+
+def test_integration_create_vehicle_passenger_returns_403(integration_client, db_session):
+    """[Integração] POST /vehicles/ com role passenger deve retornar 403."""
+    user = UserModel(
+        name="Passageiro",
+        email=f"pass_{uuid.uuid4()}@test.com",
+        phone="11999999999",
+        password_hash="hashed",
+        role="passenger",
+    )
+    db_session.add(user)
+    db_session.flush()
+    app.dependency_overrides[get_current_user] = lambda: {"id": str(user.id), "role": "passenger"}
+
+    response = integration_client.post("/vehicles/", json={"plate": "ITG0003", "capacity": 4})
+
+    assert response.status_code == 403
+
+
+def test_integration_create_vehicle_guardian_returns_403(integration_client, db_session):
+    """[Integração] POST /vehicles/ com role guardian deve retornar 403."""
+    user = UserModel(
+        name="Guardião",
+        email=f"guard_{uuid.uuid4()}@test.com",
+        phone="11999999999",
+        password_hash="hashed",
+        role="guardian",
+    )
+    db_session.add(user)
+    db_session.flush()
+    app.dependency_overrides[get_current_user] = lambda: {"id": str(user.id), "role": "guardian"}
+
+    response = integration_client.post("/vehicles/", json={"plate": "ITG0004", "capacity": 4})
+
+    assert response.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# GET /vehicles/
+# ---------------------------------------------------------------------------
+
+
+def test_integration_list_vehicles_empty(integration_client, db_session):
+    """[Integração] GET /vehicles/ sem veículos deve retornar 200 com lista vazia."""
+    driver = make_driver_in_db(db_session)
+    app.dependency_overrides[get_current_user] = lambda: {"id": str(driver.id), "role": "driver"}
+
+    response = integration_client.get("/vehicles/")
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_integration_list_vehicles_returns_own_only(integration_client, db_session):
+    """[Integração] GET /vehicles/ deve retornar apenas veículos do driver autenticado."""
+    driver1 = make_driver_in_db(db_session)
+    driver2 = make_driver_in_db(db_session)
+    repo = VehicleRepositoryImpl(db_session)
+    repo.create(VehicleModel(driver_id=driver1.id, plate="LST0001", capacity=4))
+    repo.create(VehicleModel(driver_id=driver2.id, plate="LST0002", capacity=4))
+    app.dependency_overrides[get_current_user] = lambda: {"id": str(driver1.id), "role": "driver"}
+
+    response = integration_client.get("/vehicles/")
+
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+    assert response.json()[0]["plate"] == "LST0001"
+
+
+# ---------------------------------------------------------------------------
+# GET /vehicles/{vehicle_id}
+# ---------------------------------------------------------------------------
+
+
+def test_integration_get_vehicle_by_id_success(integration_client, db_session):
+    """[Integração] GET /vehicles/{id} deve retornar 200 com dados do veículo."""
+    driver = make_driver_in_db(db_session)
+    repo = VehicleRepositoryImpl(db_session)
+    vehicle = repo.create(VehicleModel(driver_id=driver.id, plate="GET0001", capacity=4))
+    app.dependency_overrides[get_current_user] = lambda: {"id": str(driver.id), "role": "driver"}
+
+    response = integration_client.get(f"/vehicles/{vehicle.id}")
+
+    assert response.status_code == 200
+    assert response.json()["plate"] == "GET0001"
+
+
+def test_integration_get_vehicle_not_found_returns_404(integration_client, db_session):
+    """[Integração] GET /vehicles/{id} com id inexistente deve retornar 404."""
+    driver = make_driver_in_db(db_session)
+    app.dependency_overrides[get_current_user] = lambda: {"id": str(driver.id), "role": "driver"}
+
+    response = integration_client.get(f"/vehicles/{uuid.uuid4()}")
+
+    assert response.status_code == 404
+
+
+def test_integration_get_vehicle_wrong_owner_returns_403(integration_client, db_session):
+    """[Integração] GET /vehicles/{id} por driver diferente do dono deve retornar 403."""
+    driver1 = make_driver_in_db(db_session)
+    driver2 = make_driver_in_db(db_session)
+    repo = VehicleRepositoryImpl(db_session)
+    vehicle = repo.create(VehicleModel(driver_id=driver1.id, plate="OWN0001", capacity=4))
+    app.dependency_overrides[get_current_user] = lambda: {"id": str(driver2.id), "role": "driver"}
+
+    response = integration_client.get(f"/vehicles/{vehicle.id}")
+
+    assert response.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# PUT /vehicles/{vehicle_id}
+# ---------------------------------------------------------------------------
+
+
+def test_integration_update_vehicle_success(integration_client, db_session):
+    """[Integração] PUT /vehicles/{id} deve atualizar e retornar 200 com dados novos."""
+    driver = make_driver_in_db(db_session)
+    repo = VehicleRepositoryImpl(db_session)
+    vehicle = repo.create(VehicleModel(driver_id=driver.id, plate="UPD0001", capacity=4))
+    app.dependency_overrides[get_current_user] = lambda: {"id": str(driver.id), "role": "driver"}
+
+    response = integration_client.put(f"/vehicles/{vehicle.id}", json={"capacity": 8})
+
+    assert response.status_code == 200
+    assert response.json()["capacity"] == 8
+
+
+def test_integration_update_vehicle_not_found_returns_404(integration_client, db_session):
+    """[Integração] PUT /vehicles/{id} com id inexistente deve retornar 404."""
+    driver = make_driver_in_db(db_session)
+    app.dependency_overrides[get_current_user] = lambda: {"id": str(driver.id), "role": "driver"}
+
+    response = integration_client.put(f"/vehicles/{uuid.uuid4()}", json={"capacity": 8})
+
+    assert response.status_code == 404
+
+
+def test_integration_update_vehicle_wrong_owner_returns_403(integration_client, db_session):
+    """[Integração] PUT /vehicles/{id} por driver diferente do dono deve retornar 403."""
+    driver1 = make_driver_in_db(db_session)
+    driver2 = make_driver_in_db(db_session)
+    repo = VehicleRepositoryImpl(db_session)
+    vehicle = repo.create(VehicleModel(driver_id=driver1.id, plate="UPD0002", capacity=4))
+    app.dependency_overrides[get_current_user] = lambda: {"id": str(driver2.id), "role": "driver"}
+
+    response = integration_client.put(f"/vehicles/{vehicle.id}", json={"capacity": 8})
+
+    assert response.status_code == 403
+
+
+# ---------------------------------------------------------------------------
+# DELETE /vehicles/{vehicle_id}
+# ---------------------------------------------------------------------------
+
+
+def test_integration_delete_vehicle_success(integration_client, db_session):
+    """[Integração] DELETE /vehicles/{id} deve remover do banco e retornar 204."""
+    driver = make_driver_in_db(db_session)
+    repo = VehicleRepositoryImpl(db_session)
+    vehicle = repo.create(VehicleModel(driver_id=driver.id, plate="DEL0001", capacity=4))
+    app.dependency_overrides[get_current_user] = lambda: {"id": str(driver.id), "role": "driver"}
+
+    response = integration_client.delete(f"/vehicles/{vehicle.id}")
+
+    assert response.status_code == 204
+
+
+def test_integration_delete_vehicle_not_found_returns_404(integration_client, db_session):
+    """[Integração] DELETE /vehicles/{id} com id inexistente deve retornar 404."""
+    driver = make_driver_in_db(db_session)
+    app.dependency_overrides[get_current_user] = lambda: {"id": str(driver.id), "role": "driver"}
+
+    response = integration_client.delete(f"/vehicles/{uuid.uuid4()}")
+
+    assert response.status_code == 404
+
+
+def test_integration_delete_vehicle_wrong_owner_returns_403(integration_client, db_session):
+    """[Integração] DELETE /vehicles/{id} por driver diferente do dono deve retornar 403."""
+    driver1 = make_driver_in_db(db_session)
+    driver2 = make_driver_in_db(db_session)
+    repo = VehicleRepositoryImpl(db_session)
+    vehicle = repo.create(VehicleModel(driver_id=driver1.id, plate="DEL0002", capacity=4))
+    app.dependency_overrides[get_current_user] = lambda: {"id": str(driver2.id), "role": "driver"}
+
+    response = integration_client.delete(f"/vehicles/{vehicle.id}")
 
     assert response.status_code == 403

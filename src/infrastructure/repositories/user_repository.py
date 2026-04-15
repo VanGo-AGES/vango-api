@@ -24,10 +24,27 @@ class UserRepositoryImpl(IUserRepository):
         return self.session.query(UserModel).filter(UserModel.id == user_id).first()
 
     def update(self, user_id: UUID, data: dict) -> UserModel | None:
-        pass
+        user = self.find_by_id(user_id)
+        if not user:
+            return None
+
+        for key, value in data.items():
+            setattr(user, key, value)
+        self.session.commit()
+        self.session.refresh(user)
+        return user
 
     def delete(self, user_id: UUID) -> bool:
-        pass
+        user = self.find_by_id(user_id)
+        if not user:
+            return False
+
+        self.session.delete(user)
+        self.session.commit()
+        return True
+
+    def find_all(self) -> list[UserModel]:
+        return self.session.query(UserModel).all()
 
 
 class PasswordHasherImpl(IPasswordHasher):

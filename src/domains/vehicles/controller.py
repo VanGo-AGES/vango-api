@@ -1,4 +1,5 @@
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
@@ -6,6 +7,7 @@ from src.infrastructure.dependencies.auth_dependencies import get_current_user
 from src.infrastructure.dependencies.vehicle_dependencies import get_vehicle_service
 
 from .dtos import VehicleCreate, VehicleResponse, VehicleUpdate
+from .errors import VehicleAccessDeniedError, VehicleNotFoundError, VehicleOwnershipError
 from .service import VehicleService
 
 router = APIRouter(prefix="/vehicles", tags=["Vehicles"])
@@ -23,7 +25,14 @@ def create_vehicle(
     service: Annotated[VehicleService, Depends(get_vehicle_service)],
     current_user: Annotated[dict, Depends(get_current_user)],
 ) -> VehicleResponse:
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Not Implemented")
+    try:
+        return service.add_vehicle(
+            user_id=current_user["id"],
+            user_role=current_user["role"],
+            data=body,
+        )
+    except VehicleAccessDeniedError as error:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error)) from error
 
 
 @router.get(
@@ -37,7 +46,7 @@ def list_vehicles(
     service: Annotated[VehicleService, Depends(get_vehicle_service)],
     current_user: Annotated[dict, Depends(get_current_user)],
 ) -> list[VehicleResponse]:
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Not Implemented")
+    return service.get_vehicles(current_user["id"])
 
 
 @router.get(
@@ -48,11 +57,16 @@ def list_vehicles(
     description="Retorna um veículo específico do motorista logado.",
 )
 def get_vehicle(
-    vehicle_id: str,
+    vehicle_id: UUID,
     service: Annotated[VehicleService, Depends(get_vehicle_service)],
     current_user: Annotated[dict, Depends(get_current_user)],
 ) -> VehicleResponse:
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Not Implemented")
+    try:
+        return service.get_vehicle(current_user["id"], vehicle_id)
+    except VehicleNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
+    except VehicleOwnershipError as error:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error)) from error
 
 
 @router.put(
@@ -63,12 +77,17 @@ def get_vehicle(
     description="Atualiza os dados de um veículo do motorista logado.",
 )
 def update_vehicle(
-    vehicle_id: str,
+    vehicle_id: UUID,
     body: VehicleUpdate,
     service: Annotated[VehicleService, Depends(get_vehicle_service)],
     current_user: Annotated[dict, Depends(get_current_user)],
 ) -> VehicleResponse:
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Not Implemented")
+    try:
+        return service.update_vehicle(current_user["id"], vehicle_id, body)
+    except VehicleNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
+    except VehicleOwnershipError as error:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error)) from error
 
 
 @router.delete(
@@ -78,8 +97,13 @@ def update_vehicle(
     description="Remove um veículo do perfil do motorista logado.",
 )
 def delete_vehicle(
-    vehicle_id: str,
+    vehicle_id: UUID,
     service: Annotated[VehicleService, Depends(get_vehicle_service)],
     current_user: Annotated[dict, Depends(get_current_user)],
 ) -> None:
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Not Implemented")
+    try:
+        service.delete_vehicle(current_user["id"], vehicle_id)
+    except VehicleNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
+    except VehicleOwnershipError as error:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error)) from error

@@ -175,7 +175,6 @@ def make_existing_user(**kwargs):
 # ----- GET USER -----
 
 # Teste 1: get_user retorna o usuário quando encontrado
-@pytest.mark.skip(reason="US02-TK03")
 def test_get_user_success():
     repo = Mock()
     hasher = Mock()
@@ -192,7 +191,6 @@ def test_get_user_success():
 
 
 # Teste 2: get_user lança UserNotFoundError quando usuário não existe
-@pytest.mark.skip(reason="US02-TK03")
 def test_get_user_not_found():
     repo = Mock()
     hasher = Mock()
@@ -209,7 +207,6 @@ def test_get_user_not_found():
 # ----- UPDATE USER -----
 
 # Teste 3: update_user com senha chama o hasher e salva o hash
-@pytest.mark.skip(reason="US02-TK03")
 def test_update_user_with_password_hashing():
     repo = Mock()
     hasher = Mock()
@@ -229,7 +226,6 @@ def test_update_user_with_password_hashing():
 
 
 # Teste 4: update_user sem senha não chama o hasher
-@pytest.mark.skip(reason="US02-TK03")
 def test_update_user_without_password():
     repo = Mock()
     hasher = Mock()
@@ -250,7 +246,6 @@ def test_update_user_without_password():
 
 
 # Teste 5: update_user lança UserNotFoundError e não chama repo.update
-@pytest.mark.skip(reason="US02-TK03")
 def test_update_user_not_found():
     repo = Mock()
     hasher = Mock()
@@ -269,7 +264,6 @@ def test_update_user_not_found():
 # ----- DELETE USER -----
 
 # Teste 6: delete_user verifica existência e chama repo.delete
-@pytest.mark.skip(reason="US02-TK03")
 def test_delete_user_success():
     repo = Mock()
     hasher = Mock()
@@ -286,7 +280,6 @@ def test_delete_user_success():
 
 
 # Teste 7: delete_user lança UserNotFoundError e não chama repo.delete
-@pytest.mark.skip(reason="US02-TK03")
 def test_delete_user_not_found():
     repo = Mock()
     hasher = Mock()
@@ -300,3 +293,43 @@ def test_delete_user_not_found():
         service.delete_user(user_id)
 
     repo.delete.assert_not_called()
+
+
+# ===========================================================================
+# list_users
+# ===========================================================================
+
+
+# Teste 8: list_users retorna todos os usuários do repositório
+def test_list_users_returns_all_users():
+    """list_users deve delegar para repo.find_all e retornar o resultado."""
+    repo = Mock()
+    hasher = Mock()
+
+    users = [
+        make_existing_user(email="a@email.com"),
+        make_existing_user(email="b@email.com"),
+    ]
+    repo.find_all.return_value = users
+
+    service = UserService(repo, hasher)
+    result = service.list_users()
+
+    repo.find_all.assert_called_once()
+    assert result == users
+    assert len(result) == 2
+
+
+# Teste 9: list_users com repositório vazio retorna lista vazia
+def test_list_users_empty_returns_empty_list():
+    """list_users deve retornar lista vazia quando não há usuários."""
+    repo = Mock()
+    hasher = Mock()
+
+    repo.find_all.return_value = []
+
+    service = UserService(repo, hasher)
+    result = service.list_users()
+
+    repo.find_all.assert_called_once()
+    assert result == []

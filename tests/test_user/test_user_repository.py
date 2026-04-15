@@ -118,7 +118,6 @@ def test_user_repository_save_with_photo_url(db_session):
 # Para ativar: remova @pytest.mark.skip dos testes abaixo
 
 # Teste 6: update happy path
-@pytest.mark.skip(reason="US02-TK01")
 def test_user_repository_update(db_session):
     repo = UserRepositoryImpl(db_session)
 
@@ -145,7 +144,6 @@ def test_user_repository_update(db_session):
 
 
 # Teste 7: update usuário inexistente retorna None
-@pytest.mark.skip(reason="US02-TK01")
 def test_user_repository_update_not_found(db_session):
     repo = UserRepositoryImpl(db_session)
 
@@ -155,7 +153,6 @@ def test_user_repository_update_not_found(db_session):
 
 
 # Teste 8: delete com cascata (veículo e dependente devem ser removidos)
-@pytest.mark.skip(reason="US02-TK01")
 def test_user_repository_delete_cascade(db_session):
     repo = UserRepositoryImpl(db_session)
 
@@ -190,10 +187,52 @@ def test_user_repository_delete_cascade(db_session):
 
 
 # Teste 9: delete usuário inexistente retorna False
-@pytest.mark.skip(reason="US02-TK01")
 def test_user_repository_delete_not_found(db_session):
     repo = UserRepositoryImpl(db_session)
 
     result = repo.delete(uuid4())
 
     assert result is False
+
+
+# ===========================================================================
+# find_all
+# ===========================================================================
+
+
+# Teste 10: find_all retorna todos os usuários salvos
+def test_user_repository_find_all_returns_all_users(db_session):
+    """find_all deve retornar todos os usuários presentes no banco."""
+    repo = UserRepositoryImpl(db_session)
+
+    repo.save(UserModel(
+        name="Alice",
+        email=f"alice_{uuid4()}@email.com",
+        phone="54999999999",
+        password_hash="hash",
+        role="driver",
+    ))
+    repo.save(UserModel(
+        name="Bob",
+        email=f"bob_{uuid4()}@email.com",
+        phone="54888888888",
+        password_hash="hash",
+        role="passenger",
+    ))
+
+    result = repo.find_all()
+
+    assert len(result) >= 2
+    names = [u.name for u in result]
+    assert "Alice" in names
+    assert "Bob" in names
+
+
+# Teste 11: find_all com banco vazio retorna lista vazia
+def test_user_repository_find_all_empty(db_session):
+    """find_all com nenhum usuário no banco deve retornar lista vazia."""
+    repo = UserRepositoryImpl(db_session)
+
+    result = repo.find_all()
+
+    assert isinstance(result, list)

@@ -21,7 +21,6 @@ client = TestClient(app, raise_server_exceptions=False)
 # --- US01-TK05: IPhotoUploader — interface e implementação concreta ---
 
 
-@pytest.mark.skip(reason="US01-TK05")
 def test_photo_uploader_interface_defines_upload_method() -> None:
     """IPhotoUploader deve declarar o método upload(file) -> str."""
     from src.infrastructure.utils.photo_uploader import IPhotoUploader
@@ -29,7 +28,6 @@ def test_photo_uploader_interface_defines_upload_method() -> None:
     assert hasattr(IPhotoUploader, "upload")
 
 
-@pytest.mark.skip(reason="US01-TK05")
 def test_firebase_photo_uploader_implements_interface() -> None:
     """FirebasePhotoUploader deve ser subclasse de IPhotoUploader."""
     from src.infrastructure.utils.photo_uploader import FirebasePhotoUploader, IPhotoUploader
@@ -37,7 +35,6 @@ def test_firebase_photo_uploader_implements_interface() -> None:
     assert issubclass(FirebasePhotoUploader, IPhotoUploader)
 
 
-@pytest.mark.skip(reason="US01-TK05")
 def test_firebase_photo_uploader_upload_returns_url() -> None:
     """FirebasePhotoUploader.upload deve retornar uma URL pública não-vazia."""
     from unittest.mock import MagicMock
@@ -58,7 +55,6 @@ def test_firebase_photo_uploader_upload_returns_url() -> None:
 # --- US01-TK05: POST /uploads/photo — endpoint ---
 
 
-@pytest.mark.skip(reason="US01-TK05")
 def test_upload_photo_returns_201_with_url() -> None:
     """POST /uploads/photo com imagem válida deve retornar 201 e {"url": "..."}."""
     image_bytes = io.BytesIO(b"fake-image-content")
@@ -73,7 +69,6 @@ def test_upload_photo_returns_201_with_url() -> None:
     assert body["url"].startswith("https://")
 
 
-@pytest.mark.skip(reason="US01-TK05")
 def test_upload_photo_invalid_content_type_returns_422() -> None:
     """POST /uploads/photo com arquivo não-imagem deve retornar 422."""
     pdf_bytes = io.BytesIO(b"%PDF-fake")
@@ -85,7 +80,6 @@ def test_upload_photo_invalid_content_type_returns_422() -> None:
     assert response.status_code == 422
 
 
-@pytest.mark.skip(reason="US01-TK05")
 def test_upload_photo_missing_file_returns_422() -> None:
     """POST /uploads/photo sem campo file deve retornar 422."""
     response = client.post("/uploads/photo")

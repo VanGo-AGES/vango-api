@@ -1,11 +1,12 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 
 from src.infrastructure.dependencies.route_dependencies import get_route_service
 
 from .dtos import RouteCreate, RouteResponse
+from .errors import NoVehicleError, RouteNotFoundError, RouteOwnershipError
 from .service import RouteService
 
 router = APIRouter(prefix="/routes", tags=["Routes"])
@@ -26,8 +27,13 @@ _DESCRIPTION_CREATE = (
 def create_route(
     body: RouteCreate,
     service: Annotated[RouteService, Depends(get_route_service)],
+    driver_id: Annotated[UUID, Header(alias="X-User-Id")],
 ) -> RouteResponse:
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Not Implemented")
+    try:
+        created_route = service.create_route(driver_id, body)
+        return created_route
+    except NoVehicleError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
 
 
 @router.post(
@@ -40,8 +46,15 @@ def create_route(
 def regenerate_invite_code(
     route_id: UUID,
     service: Annotated[RouteService, Depends(get_route_service)],
+    driver_id: Annotated[UUID, Header(alias="X-User-Id")],
 ) -> RouteResponse:
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Not Implemented")
+    try:
+        updated_route = service.regenerate_invite_code(route_id, driver_id)
+        return updated_route
+    except RouteNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
+    except RouteOwnershipError as error:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error)) from error
 
 
 @router.get(
@@ -53,8 +66,11 @@ def regenerate_invite_code(
 )
 def list_routes(
     service: Annotated[RouteService, Depends(get_route_service)],
+    x_user_id: Annotated[str, Header(alias="X-User-Id")],
 ) -> list[RouteResponse]:
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Not Implemented")
+    driver_id = UUID(x_user_id)
+    routes = service.get_routes(driver_id)
+    return [RouteResponse.from_orm(route) for route in routes]
 
 
 @router.get(
@@ -67,5 +83,13 @@ def list_routes(
 def get_route(
     route_id: UUID,
     service: Annotated[RouteService, Depends(get_route_service)],
+    x_user_id: Annotated[str, Header(alias="X-User-Id")],
 ) -> RouteResponse:
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="Not Implemented")
+    driver_id = UUID(x_user_id)
+    try:
+        route = service.get_route(route_id, driver_id)
+        return RouteResponse.from_orm(route)
+    except RouteNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except RouteOwnershipError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
