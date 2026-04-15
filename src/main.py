@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 
 import firebase_admin
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from firebase_admin import credentials
 from sqlalchemy import text
@@ -78,6 +79,14 @@ async def catch_all_handler(request: Request, exc: Exception) -> JSONResponse:
         },
     )
 
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:8081"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(user_controller)
 app.include_router(vehicle_controller)
