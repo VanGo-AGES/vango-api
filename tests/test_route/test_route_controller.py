@@ -534,3 +534,179 @@ def test_integration_get_route_wrong_owner_returns_403(integration_client, db_se
     )
 
     assert response.status_code == 403
+
+
+# ===========================================================================
+# US06 - TK04: PUT /routes/{route_id} — editar rota
+# Arquivo:     src/domains/routes/controller.py
+# ===========================================================================
+
+
+@pytest.mark.skip(reason="US06-TK04")
+def test_update_route_success_returns_200() -> None:
+    """PUT /routes/{id} com payload válido deve retornar 200 e a rota atualizada."""
+    route_id = uuid.uuid4()
+    mock_service = Mock(spec=RouteService)
+    mock_service.update_route.return_value = make_route_response_mock()
+    app.dependency_overrides[get_route_service] = lambda: mock_service
+
+    response = client.put(f"/routes/{route_id}", json={"name": "Nova"}, headers=DRIVER_HEADERS)
+
+    app.dependency_overrides.clear()
+    assert response.status_code == 200
+
+
+@pytest.mark.skip(reason="US06-TK04")
+def test_update_route_not_found_returns_404() -> None:
+    from src.domains.routes.errors import RouteNotFoundError
+
+    mock_service = Mock(spec=RouteService)
+    mock_service.update_route.side_effect = RouteNotFoundError()
+    app.dependency_overrides[get_route_service] = lambda: mock_service
+
+    response = client.put(f"/routes/{uuid.uuid4()}", json={"name": "Nova"}, headers=DRIVER_HEADERS)
+
+    app.dependency_overrides.clear()
+    assert response.status_code == 404
+
+
+@pytest.mark.skip(reason="US06-TK04")
+def test_update_route_wrong_owner_returns_403() -> None:
+    from src.domains.routes.errors import RouteOwnershipError
+
+    mock_service = Mock(spec=RouteService)
+    mock_service.update_route.side_effect = RouteOwnershipError()
+    app.dependency_overrides[get_route_service] = lambda: mock_service
+
+    response = client.put(f"/routes/{uuid.uuid4()}", json={"name": "Nova"}, headers=DRIVER_HEADERS)
+
+    app.dependency_overrides.clear()
+    assert response.status_code == 403
+
+
+@pytest.mark.skip(reason="US06-TK04")
+def test_update_route_in_progress_returns_409() -> None:
+    from src.domains.routes.errors import RouteInProgressError
+
+    mock_service = Mock(spec=RouteService)
+    mock_service.update_route.side_effect = RouteInProgressError()
+    app.dependency_overrides[get_route_service] = lambda: mock_service
+
+    response = client.put(f"/routes/{uuid.uuid4()}", json={"name": "Nova"}, headers=DRIVER_HEADERS)
+
+    app.dependency_overrides.clear()
+    assert response.status_code == 409
+
+
+@pytest.mark.skip(reason="US06-TK04")
+def test_update_route_invalid_recurrence_returns_422() -> None:
+    response = client.put(
+        f"/routes/{uuid.uuid4()}",
+        json={"recurrence": "monday,tuesday"},
+        headers=DRIVER_HEADERS,
+    )
+    assert response.status_code == 422
+
+
+@pytest.mark.skip(reason="US06-TK04")
+def test_update_route_invalid_route_type_returns_422() -> None:
+    response = client.put(
+        f"/routes/{uuid.uuid4()}", json={"route_type": "ambos"}, headers=DRIVER_HEADERS
+    )
+    assert response.status_code == 422
+
+
+# --- Integração ---
+
+
+@pytest.mark.skip(reason="US06-TK04")
+def test_integration_update_route_success_updates_name(integration_client, db_session) -> None:
+    driver, _ = make_driver_with_vehicle(db_session)
+    headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+
+    create_response = integration_client.post("/routes/", json=route_payload(), headers=headers)
+    route_id = create_response.json()["id"]
+
+    response = integration_client.put(f"/routes/{route_id}", json={"name": "Rota Editada"}, headers=headers)
+
+    assert response.status_code == 200
+    assert response.json()["name"] == "Rota Editada"
+
+
+@pytest.mark.skip(reason="US06-TK04")
+def test_integration_update_route_replaces_origin_address(integration_client, db_session) -> None:
+    driver, _ = make_driver_with_vehicle(db_session)
+    headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+
+    create_response = integration_client.post("/routes/", json=route_payload(), headers=headers)
+    route_id = create_response.json()["id"]
+    old_origin_id = create_response.json()["origin_address"]["id"]
+
+    new_origin = {
+        "label": "Nova Casa",
+        "street": "Rua Nova",
+        "number": "100",
+        "neighborhood": "Menino Deus",
+        "zip": "90000-000",
+        "city": "Porto Alegre",
+        "state": "RS",
+    }
+    response = integration_client.put(f"/routes/{route_id}", json={"origin": new_origin}, headers=headers)
+
+    assert response.status_code == 200
+    assert response.json()["origin_address"]["id"] != old_origin_id
+
+
+@pytest.mark.skip(reason="US06-TK04")
+def test_integration_update_route_in_progress_returns_409(integration_client, db_session) -> None:
+    from src.domains.routes.entity import RouteModel
+
+    driver, _ = make_driver_with_vehicle(db_session)
+    headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+
+    create_response = integration_client.post("/routes/", json=route_payload(), headers=headers)
+    route_id = create_response.json()["id"]
+
+    # Força status em_andamento direto no banco
+    route = db_session.query(RouteModel).filter_by(id=uuid.UUID(route_id)).first()
+    route.status = "em_andamento"
+    db_session.commit()
+
+    response = integration_client.put(f"/routes/{route_id}", json={"name": "X"}, headers=headers)
+
+    assert response.status_code == 409
+
+
+@pytest.mark.skip(reason="US06-TK04")
+def test_integration_update_route_wrong_owner_returns_403(integration_client, db_session) -> None:
+    driver1, _ = make_driver_with_vehicle(db_session)
+    driver2, _ = make_driver_with_vehicle(db_session)
+
+    create_response = integration_client.post(
+        "/routes/", json=route_payload(),
+        headers={"X-User-Id": str(driver1.id), "X-User-Role": "driver"},
+    )
+    route_id = create_response.json()["id"]
+
+    response = integration_client.put(
+        f"/routes/{route_id}", json={"name": "X"},
+        headers={"X-User-Id": str(driver2.id), "X-User-Role": "driver"},
+    )
+
+    assert response.status_code == 403
+
+
+@pytest.mark.skip(reason="US06-TK04")
+def test_integration_update_route_partial_preserves_unchanged_fields(integration_client, db_session) -> None:
+    driver, _ = make_driver_with_vehicle(db_session)
+    headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+
+    create_response = integration_client.post("/routes/", json=route_payload(), headers=headers)
+    route_id = create_response.json()["id"]
+    original_recurrence = create_response.json()["recurrence"]
+
+    response = integration_client.put(f"/routes/{route_id}", json={"name": "Só o nome"}, headers=headers)
+
+    assert response.status_code == 200
+    assert response.json()["name"] == "Só o nome"
+    assert response.json()["recurrence"] == original_recurrence

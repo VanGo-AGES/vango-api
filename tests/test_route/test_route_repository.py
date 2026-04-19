@@ -281,3 +281,105 @@ def test_route_repository_find_all_by_driver_id_only_own(db_session) -> None:
     routes = repo.find_all_by_driver_id(driver_a.id)
     assert len(routes) == 1
     assert routes[0].driver_id == driver_a.id
+
+
+# ===========================================================================
+# US06 - TK02: RouteRepository.update — atualização genérica por dict
+# Arquivo:     src/infrastructure/repositories/route_repository.py
+# ===========================================================================
+
+
+@pytest.mark.skip(reason="US06-TK02")
+def test_route_repository_update_returns_updated_route(db_session) -> None:
+    from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
+
+    driver = make_driver(db_session)
+    origin = make_address(db_session, driver.id, "Casa")
+    destination = make_address(db_session, driver.id, "PUCRS")
+    route = make_route(db_session, driver.id, origin.id, destination.id)
+    db_session.commit()
+
+    repo = RouteRepositoryImpl(db_session)
+    updated = repo.update(route.id, {"name": "Nova Rota"})
+    assert updated is not None
+    assert updated.name == "Nova Rota"
+
+
+@pytest.mark.skip(reason="US06-TK02")
+def test_route_repository_update_changes_name(db_session) -> None:
+    from src.domains.routes.entity import RouteModel
+    from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
+
+    driver = make_driver(db_session)
+    origin = make_address(db_session, driver.id, "Casa")
+    destination = make_address(db_session, driver.id, "PUCRS")
+    route = make_route(db_session, driver.id, origin.id, destination.id)
+    db_session.commit()
+
+    repo = RouteRepositoryImpl(db_session)
+    repo.update(route.id, {"name": "Escola Manhã"})
+
+    found = db_session.query(RouteModel).filter_by(id=route.id).first()
+    assert found.name == "Escola Manhã"
+
+
+@pytest.mark.skip(reason="US06-TK02")
+def test_route_repository_update_changes_origin_address_id(db_session) -> None:
+    from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
+
+    driver = make_driver(db_session)
+    origin = make_address(db_session, driver.id, "Casa")
+    destination = make_address(db_session, driver.id, "PUCRS")
+    new_origin = make_address(db_session, driver.id, "Nova Casa")
+    route = make_route(db_session, driver.id, origin.id, destination.id)
+    db_session.commit()
+
+    repo = RouteRepositoryImpl(db_session)
+    updated = repo.update(route.id, {"origin_address_id": new_origin.id})
+    assert updated.origin_address_id == new_origin.id
+
+
+@pytest.mark.skip(reason="US06-TK02")
+def test_route_repository_update_not_found_returns_none(db_session) -> None:
+    import uuid as _uuid
+
+    from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
+
+    repo = RouteRepositoryImpl(db_session)
+    result = repo.update(_uuid.uuid4(), {"name": "X"})
+    assert result is None
+
+
+@pytest.mark.skip(reason="US06-TK02")
+def test_route_repository_update_preserves_unchanged_fields(db_session) -> None:
+    from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
+
+    driver = make_driver(db_session)
+    origin = make_address(db_session, driver.id, "Casa")
+    destination = make_address(db_session, driver.id, "PUCRS")
+    route = make_route(
+        db_session, driver.id, origin.id, destination.id, name="Original", recurrence="seg,ter"
+    )
+    db_session.commit()
+
+    repo = RouteRepositoryImpl(db_session)
+    updated = repo.update(route.id, {"name": "Alterado"})
+    assert updated.name == "Alterado"
+    assert updated.recurrence == "seg,ter"
+    assert updated.invite_code == "A1B2C"
+
+
+@pytest.mark.skip(reason="US06-TK02")
+def test_route_repository_update_empty_dict_is_noop(db_session) -> None:
+    from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
+
+    driver = make_driver(db_session)
+    origin = make_address(db_session, driver.id, "Casa")
+    destination = make_address(db_session, driver.id, "PUCRS")
+    route = make_route(db_session, driver.id, origin.id, destination.id, name="Inalterado")
+    db_session.commit()
+
+    repo = RouteRepositoryImpl(db_session)
+    updated = repo.update(route.id, {})
+    assert updated is not None
+    assert updated.name == "Inalterado"

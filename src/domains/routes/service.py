@@ -3,9 +3,13 @@ import string
 from uuid import UUID
 
 from src.domains.addresses.entity import AddressModel
-from src.domains.routes.dtos import RouteCreate
+from src.domains.routes.dtos import RouteCreate, RouteUpdate
 from src.domains.routes.entity import RouteModel
-from src.domains.routes.errors import NoVehicleError, RouteNotFoundError, RouteOwnershipError
+from src.domains.routes.errors import (
+    NoVehicleError,
+    RouteNotFoundError,
+    RouteOwnershipError,
+)
 from src.domains.routes.repository import IAddressRepository, IRouteRepository
 from src.domains.vehicles.repository import IVehicleRepository
 
@@ -85,6 +89,20 @@ class RouteService:
     def get_routes(self, driver_id: UUID) -> list[RouteModel]:
         """Retorna todas as rotas do motorista independente de status."""
         return self.route_repository.find_all_by_driver_id(driver_id)
+
+    # US06-TK03
+    def update_route(self, route_id: UUID, driver_id: UUID, data: RouteUpdate) -> RouteModel:
+        """
+        Atualiza uma rota existente.
+
+        Regras:
+        - 404 se não existir
+        - 403 se driver não for dono
+        - 409 (RouteInProgressError) se status == 'em_andamento'
+        - Se origin/destination presentes, cria novos AddressModel via address_repository.save
+        - Envia para route_repository.update apenas campos != None
+        """
+        pass
 
     def get_route(self, route_id: UUID, driver_id: UUID) -> RouteModel:
         """

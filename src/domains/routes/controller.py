@@ -5,8 +5,12 @@ from fastapi import APIRouter, Depends, Header, HTTPException, status
 
 from src.infrastructure.dependencies.route_dependencies import get_route_service
 
-from .dtos import RouteCreate, RouteResponse
-from .errors import NoVehicleError, RouteNotFoundError, RouteOwnershipError
+from .dtos import RouteCreate, RouteResponse, RouteUpdate
+from .errors import (
+    NoVehicleError,
+    RouteNotFoundError,
+    RouteOwnershipError,
+)
 from .service import RouteService
 
 router = APIRouter(prefix="/routes", tags=["Routes"])
@@ -71,6 +75,27 @@ def list_routes(
     driver_id = UUID(x_user_id)
     routes = service.get_routes(driver_id)
     return [RouteResponse.from_orm(route) for route in routes]
+
+
+# US06-TK04
+@router.put(
+    "/{route_id}",
+    response_model=RouteResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Editar rota",
+    description=(
+        "Atualiza uma rota existente do motorista. Permite alteração parcial "
+        "(name, route_type, origin, destination, expected_time, recurrence). "
+        "Rotas com status='em_andamento' não podem ser editadas."
+    ),
+)
+def update_route(
+    route_id: UUID,
+    body: RouteUpdate,
+    service: Annotated[RouteService, Depends(get_route_service)],
+    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+) -> RouteResponse:
+    pass
 
 
 @router.get(

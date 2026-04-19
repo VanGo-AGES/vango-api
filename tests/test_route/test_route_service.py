@@ -324,3 +324,225 @@ def test_get_route_wrong_owner_raises_error() -> None:
     service = RouteService(route_repo, Mock(), Mock())
     with pytest.raises(RouteOwnershipError):
         service.get_route(route.id, uuid.uuid4())
+
+
+# ===========================================================================
+# US06 - TK03: RouteService.update_route — atualização de rota
+# Arquivo:     src/domains/routes/service.py
+# Regras:      ownership, 409 se em_andamento, cria novos Address se origin/destination
+# ===========================================================================
+
+
+def make_route_update(**kwargs):
+    from src.domains.routes.dtos import RouteUpdate
+
+    return RouteUpdate(**kwargs)
+
+
+def make_address_create_helper(**kwargs):
+    from src.domains.routes.dtos import AddressCreate
+
+    defaults = {
+        "label": "Casa",
+        "street": "Av. Coronel Marcos",
+        "number": "861",
+        "neighborhood": "Três Figueiras",
+        "zip": "91760-000",
+        "city": "Porto Alegre",
+        "state": "RS",
+    }
+    defaults.update(kwargs)
+    return AddressCreate(**defaults)
+
+
+@pytest.mark.skip(reason="US06-TK03")
+def test_update_route_success_partial_only_name() -> None:
+    from src.domains.routes.service import RouteService
+
+    driver_id = uuid.uuid4()
+    route = make_route_mock(driver_id)
+    route.status = "inativa"
+    updated = make_route_mock(driver_id)
+    updated.name = "Nova"
+
+    route_repo = Mock()
+    route_repo.find_by_id.return_value = route
+    route_repo.update.return_value = updated
+
+    service = RouteService(route_repo, Mock(), Mock())
+    result = service.update_route(route.id, driver_id, make_route_update(name="Nova"))
+
+    assert result.name == "Nova"
+    route_repo.update.assert_called_once()
+
+
+@pytest.mark.skip(reason="US06-TK03")
+def test_update_route_success_full_replaces_all_fields() -> None:
+    from src.domains.routes.service import RouteService
+
+    driver_id = uuid.uuid4()
+    route = make_route_mock(driver_id)
+    route.status = "inativa"
+
+    route_repo = Mock()
+    address_repo = Mock()
+    route_repo.find_by_id.return_value = route
+    route_repo.update.return_value = route
+    address_repo.save.side_effect = [make_address_mock("Casa"), make_address_mock("PUCRS")]
+
+    payload = make_route_update(
+        name="Nova",
+        route_type="inbound",
+        origin=make_address_create_helper(label="Casa"),
+        destination=make_address_create_helper(
+            label="PUCRS", street="Av. Ipiranga", number="6681", zip="90619-900"
+        ),
+        expected_time="09:00:00",
+        recurrence="seg,qua,sex",
+    )
+
+    service = RouteService(route_repo, address_repo, Mock())
+    service.update_route(route.id, driver_id, payload)
+
+    assert address_repo.save.call_count == 2
+    route_repo.update.assert_called_once()
+
+
+@pytest.mark.skip(reason="US06-TK03")
+def test_update_route_not_found_raises_error() -> None:
+    from src.domains.routes.errors import RouteNotFoundError
+    from src.domains.routes.service import RouteService
+
+    route_repo = Mock()
+    route_repo.find_by_id.return_value = None
+
+    service = RouteService(route_repo, Mock(), Mock())
+    with pytest.raises(RouteNotFoundError):
+        service.update_route(uuid.uuid4(), uuid.uuid4(), make_route_update(name="X"))
+
+
+@pytest.mark.skip(reason="US06-TK03")
+def test_update_route_wrong_owner_raises_error() -> None:
+    from src.domains.routes.errors import RouteOwnershipError
+    from src.domains.routes.service import RouteService
+
+    owner_id = uuid.uuid4()
+    route = make_route_mock(owner_id)
+    route.status = "inativa"
+
+    route_repo = Mock()
+    route_repo.find_by_id.return_value = route
+
+    service = RouteService(route_repo, Mock(), Mock())
+    with pytest.raises(RouteOwnershipError):
+        service.update_route(route.id, uuid.uuid4(), make_route_update(name="X"))
+
+
+@pytest.mark.skip(reason="US06-TK03")
+def test_update_route_in_progress_raises_error() -> None:
+    from src.domains.routes.errors import RouteInProgressError
+    from src.domains.routes.service import RouteService
+
+    driver_id = uuid.uuid4()
+    route = make_route_mock(driver_id)
+    route.status = "em_andamento"
+
+    route_repo = Mock()
+    route_repo.find_by_id.return_value = route
+
+    service = RouteService(route_repo, Mock(), Mock())
+    with pytest.raises(RouteInProgressError):
+        service.update_route(route.id, driver_id, make_route_update(name="X"))
+
+
+@pytest.mark.skip(reason="US06-TK03")
+def test_update_route_replaces_origin_creates_new_address() -> None:
+    from src.domains.routes.service import RouteService
+
+    driver_id = uuid.uuid4()
+    route = make_route_mock(driver_id)
+    route.status = "inativa"
+    new_origin_model = make_address_mock("Nova Casa")
+
+    route_repo = Mock()
+    address_repo = Mock()
+    route_repo.find_by_id.return_value = route
+    route_repo.update.return_value = route
+    address_repo.save.return_value = new_origin_model
+
+    service = RouteService(route_repo, address_repo, Mock())
+    service.update_route(
+        route.id, driver_id, make_route_update(origin=make_address_create_helper())
+    )
+
+    address_repo.save.assert_called_once()
+    call_args = route_repo.update.call_args
+    update_dict = call_args.args[1] if len(call_args.args) > 1 else call_args.kwargs.get("data", {})
+    assert "origin_address_id" in update_dict
+
+
+@pytest.mark.skip(reason="US06-TK03")
+def test_update_route_replaces_destination_creates_new_address() -> None:
+    from src.domains.routes.service import RouteService
+
+    driver_id = uuid.uuid4()
+    route = make_route_mock(driver_id)
+    route.status = "inativa"
+
+    route_repo = Mock()
+    address_repo = Mock()
+    route_repo.find_by_id.return_value = route
+    route_repo.update.return_value = route
+    address_repo.save.return_value = make_address_mock("Novo Destino")
+
+    service = RouteService(route_repo, address_repo, Mock())
+    service.update_route(
+        route.id,
+        driver_id,
+        make_route_update(
+            destination=make_address_create_helper(
+                label="Novo", street="X", number="1", zip="90000-000"
+            )
+        ),
+    )
+
+    address_repo.save.assert_called_once()
+
+
+@pytest.mark.skip(reason="US06-TK03")
+def test_update_route_empty_payload_returns_route_unchanged() -> None:
+    from src.domains.routes.service import RouteService
+
+    driver_id = uuid.uuid4()
+    route = make_route_mock(driver_id)
+    route.status = "inativa"
+
+    route_repo = Mock()
+    route_repo.find_by_id.return_value = route
+    route_repo.update.return_value = route
+
+    service = RouteService(route_repo, Mock(), Mock())
+    result = service.update_route(route.id, driver_id, make_route_update())
+
+    assert result == route
+
+
+@pytest.mark.skip(reason="US06-TK03")
+def test_update_route_excludes_none_fields_from_repo_call() -> None:
+    """O dict passado ao repo.update NÃO deve conter chaves cujo valor seja None."""
+    from src.domains.routes.service import RouteService
+
+    driver_id = uuid.uuid4()
+    route = make_route_mock(driver_id)
+    route.status = "inativa"
+
+    route_repo = Mock()
+    route_repo.find_by_id.return_value = route
+    route_repo.update.return_value = route
+
+    service = RouteService(route_repo, Mock(), Mock())
+    service.update_route(route.id, driver_id, make_route_update(name="X"))
+
+    call_args = route_repo.update.call_args
+    update_dict = call_args.args[1] if len(call_args.args) > 1 else call_args.kwargs.get("data", {})
+    assert all(v is not None for v in update_dict.values())

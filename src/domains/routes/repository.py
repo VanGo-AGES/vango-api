@@ -27,3 +27,8 @@ class IRouteRepository(ABC):
     @abstractmethod
     def update_invite_code(self, route_id: UUID, new_code: str) -> RouteModel | None:
         pass
+
+    # US06-TK02
+    @abstractmethod
+    def update(self, route_id: UUID, data: dict) -> RouteModel | None:
+        pass
