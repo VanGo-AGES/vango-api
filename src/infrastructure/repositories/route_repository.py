@@ -33,3 +33,7 @@ class RouteRepositoryImpl(IRouteRepository):
         self.session.commit()
         self.session.refresh(route)
         return route
+
+    # US06-TK02
+    def update(self, route_id: UUID, data: dict) -> RouteModel | None:
+        pass
