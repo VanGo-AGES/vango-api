@@ -89,3 +89,34 @@ class RouteResponse(BaseModel):
     max_passengers: int
     origin_address: AddressResponse
     destination_address: AddressResponse
+
+
+# ---------------------------------------------------------------------------
+# RouteUpdate
+# ---------------------------------------------------------------------------
+
+
+class RouteUpdate(BaseModel):
+    """DTO de atualização parcial de rota. Todos os campos são opcionais.
+
+    Regras:
+    - route_type: "outbound" ou "inbound"
+    - recurrence: mesma validação de RouteCreate (dias válidos, sem duplicatas, >=1 dia)
+    - origin != destination quando AMBOS estão presentes
+    """
+
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    route_type: str | None = Field(default=None, pattern="^(outbound|inbound)$")
+    origin: AddressCreate | None = None
+    destination: AddressCreate | None = None
+    expected_time: time | None = None
+    recurrence: str | None = None
+
+    @field_validator("recurrence")
+    @classmethod
+    def validate_recurrence(cls, v: str | None) -> str | None:
+        pass
+
+    @model_validator(mode="after")
+    def validate_origin_differs_from_destination(self) -> "RouteUpdate":
+        pass

@@ -199,3 +199,99 @@ def test_route_create_different_origin_and_destination_is_valid() -> None:
 
     route = RouteCreate(**make_route_payload())
     assert route.origin.street != route.destination.street
+
+
+# ===========================================================================
+# US06 - TK01: RouteUpdate — atualização parcial de rota
+# Arquivo:     src/domains/routes/dtos.py
+# Critérios:   Todos os campos opcionais; valida route_type, recurrence,
+#              e origin != destination quando ambos presentes.
+# ===========================================================================
+
+
+@pytest.mark.skip(reason="US06-TK01")
+def test_route_update_all_fields_optional() -> None:
+    from src.domains.routes.dtos import RouteUpdate
+
+    update = RouteUpdate()
+    assert update.name is None
+    assert update.recurrence is None
+    assert update.origin is None
+    assert update.destination is None
+
+
+@pytest.mark.skip(reason="US06-TK01")
+def test_route_update_partial_only_name() -> None:
+    from src.domains.routes.dtos import RouteUpdate
+
+    update = RouteUpdate(name="Nova Rota")
+    assert update.name == "Nova Rota"
+    assert update.route_type is None
+
+
+@pytest.mark.skip(reason="US06-TK01")
+def test_route_update_partial_only_recurrence() -> None:
+    from src.domains.routes.dtos import RouteUpdate
+
+    update = RouteUpdate(recurrence="seg,ter")
+    assert update.recurrence == "seg,ter"
+
+
+@pytest.mark.skip(reason="US06-TK01")
+def test_route_update_invalid_route_type() -> None:
+    from pydantic import ValidationError
+
+    from src.domains.routes.dtos import RouteUpdate
+
+    with pytest.raises(ValidationError):
+        RouteUpdate(route_type="ambos")
+
+
+@pytest.mark.skip(reason="US06-TK01")
+def test_route_update_invalid_recurrence_day() -> None:
+    from pydantic import ValidationError
+
+    from src.domains.routes.dtos import RouteUpdate
+
+    with pytest.raises(ValidationError):
+        RouteUpdate(recurrence="mon,tue")
+
+
+@pytest.mark.skip(reason="US06-TK01")
+def test_route_update_recurrence_duplicate_days() -> None:
+    from pydantic import ValidationError
+
+    from src.domains.routes.dtos import RouteUpdate
+
+    with pytest.raises(ValidationError):
+        RouteUpdate(recurrence="seg,seg,ter")
+
+
+@pytest.mark.skip(reason="US06-TK01")
+def test_route_update_origin_and_destination_cannot_be_equal() -> None:
+    from pydantic import ValidationError
+
+    from src.domains.routes.dtos import RouteUpdate
+
+    same = make_address_payload()
+    with pytest.raises(ValidationError):
+        RouteUpdate(origin=same, destination=same)
+
+
+@pytest.mark.skip(reason="US06-TK01")
+def test_route_update_accepts_only_origin_without_destination() -> None:
+    from src.domains.routes.dtos import RouteUpdate
+
+    update = RouteUpdate(origin=make_address_payload())
+    assert update.origin is not None
+    assert update.destination is None
+
+
+@pytest.mark.skip(reason="US06-TK01")
+def test_route_update_expected_time_valid() -> None:
+    from datetime import time
+
+    from src.domains.routes.dtos import RouteUpdate
+
+    update = RouteUpdate(expected_time="09:30:00")
+    assert update.expected_time == time(9, 30)

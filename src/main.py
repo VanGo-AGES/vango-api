@@ -13,6 +13,7 @@ from src.config import settings
 from src.domains.addresses.entity import AddressModel
 from src.domains.dependents.controller import router as dependent_controller
 from src.domains.dependents.entity import DependentModel
+from src.domains.route_passangers.controller import router as route_passanger_controller
 from src.domains.route_passangers.entity import RoutePassangerModel
 from src.domains.routes.controller import router as route_controller
 from src.domains.routes.entity import RouteModel
@@ -92,6 +93,7 @@ app.include_router(user_controller)
 app.include_router(vehicle_controller)
 app.include_router(dependent_controller)
 app.include_router(route_controller)
+app.include_router(route_passanger_controller)
 app.include_router(upload_controller)
 
 
