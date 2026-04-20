@@ -37,3 +37,11 @@ class RouteRepositoryImpl(IRouteRepository):
     # US06-TK02
     def update(self, route_id: UUID, data: dict) -> RouteModel | None:
         pass
+
+    # US08-TK05
+    def find_by_invite_code(self, invite_code: str) -> RouteModel | None:
+        pass
+
+    # US06-TK17
+    def delete(self, route_id: UUID) -> bool:
+        pass

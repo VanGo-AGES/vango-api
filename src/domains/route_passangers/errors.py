@@ -15,3 +15,9 @@ class RouteCapacityExceededError(Exception):
 
 class RoutePassangerAlreadyProcessedError(Exception):
     pass
+
+
+class DuplicateRoutePassangerError(Exception):
+    """US08 — passageiro já possui vínculo ativo (pending/accepted) com a rota."""
+
+    pass

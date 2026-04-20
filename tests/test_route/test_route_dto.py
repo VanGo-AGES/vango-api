@@ -295,3 +295,106 @@ def test_route_update_expected_time_valid() -> None:
 
     update = RouteUpdate(expected_time="09:30:00")
     assert update.expected_time == time(9, 30)
+
+
+# ===========================================================================
+# US08 - TK01: RouteInviteSummaryResponse — resumo da rota para o passageiro
+# Arquivo: src/domains/routes/dtos.py
+# Critérios:
+#   Fields: id (UUID), name (str), route_type (str), recurrence (str),
+#           expected_time (time), max_passengers (int), accepted_count (int),
+#           origin_address (AddressResponse), destination_address (AddressResponse)
+#   Não expõe: invite_code, passageiros, stops, status
+# ===========================================================================
+
+
+@pytest.mark.skip(reason="US08-TK01")
+def test_route_invite_summary_response_accepts_valid_payload() -> None:
+    from datetime import time
+    from uuid import uuid4
+
+    from src.domains.routes.dtos import RouteInviteSummaryResponse
+
+    payload = {
+        "id": uuid4(),
+        "name": "PUCRS",
+        "route_type": "outbound",
+        "recurrence": "seg,ter,qua",
+        "expected_time": time(8, 0),
+        "max_passengers": 5,
+        "accepted_count": 2,
+        "origin_address": {
+            "id": uuid4(),
+            "label": "Casa",
+            "street": "Av. Coronel Marcos",
+            "number": "861",
+            "neighborhood": "Três Figueiras",
+            "zip": "91760-000",
+            "city": "Porto Alegre",
+            "state": "RS",
+        },
+        "destination_address": {
+            "id": uuid4(),
+            "label": "PUCRS",
+            "street": "Av. Ipiranga",
+            "number": "6681",
+            "neighborhood": "Partenon",
+            "zip": "90619-900",
+            "city": "Porto Alegre",
+            "state": "RS",
+        },
+    }
+    response = RouteInviteSummaryResponse(**payload)
+    assert response.name == "PUCRS"
+    assert response.max_passengers == 5
+    assert response.accepted_count == 2
+
+
+@pytest.mark.skip(reason="US08-TK01")
+def test_route_invite_summary_response_does_not_expose_invite_code() -> None:
+    from src.domains.routes.dtos import RouteInviteSummaryResponse
+
+    assert "invite_code" not in RouteInviteSummaryResponse.model_fields
+
+
+@pytest.mark.skip(reason="US08-TK01")
+def test_route_invite_summary_response_does_not_expose_status() -> None:
+    from src.domains.routes.dtos import RouteInviteSummaryResponse
+
+    assert "status" not in RouteInviteSummaryResponse.model_fields
+
+
+@pytest.mark.skip(reason="US08-TK01")
+def test_route_invite_summary_response_does_not_expose_stops() -> None:
+    from src.domains.routes.dtos import RouteInviteSummaryResponse
+
+    assert "stops" not in RouteInviteSummaryResponse.model_fields
+
+
+@pytest.mark.skip(reason="US08-TK01")
+def test_route_invite_summary_response_requires_accepted_count() -> None:
+    from datetime import time
+    from uuid import uuid4
+
+    from pydantic import ValidationError
+
+    from src.domains.routes.dtos import RouteInviteSummaryResponse
+
+    payload = {
+        "id": uuid4(),
+        "name": "PUCRS",
+        "route_type": "outbound",
+        "recurrence": "seg",
+        "expected_time": time(8, 0),
+        "max_passengers": 5,
+        "origin_address": {
+            "id": uuid4(), "label": "o", "street": "o", "number": "1",
+            "neighborhood": "o", "zip": "12345-000", "city": "o", "state": "RS",
+        },
+        "destination_address": {
+            "id": uuid4(), "label": "d", "street": "d", "number": "1",
+            "neighborhood": "d", "zip": "12345-000", "city": "d", "state": "RS",
+        },
+    }
+    with pytest.raises(ValidationError):
+        RouteInviteSummaryResponse(**payload)

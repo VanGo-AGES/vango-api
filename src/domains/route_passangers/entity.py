@@ -16,6 +16,7 @@ class RoutePassangerModel(Base):
     dependent_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("dependents.id", ondelete="CASCADE"), nullable=True
     )
+    pickup_address_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("addresses.id"), nullable=False)
     status: Mapped[str] = mapped_column(String, nullable=False)
     joined_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     requested_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -24,3 +25,12 @@ class RoutePassangerModel(Base):
     route = relationship("RouteModel", back_populates="passengers")
     user = relationship("UserModel")
     dependent = relationship("DependentModel")
+    pickup_address = relationship("AddressModel", foreign_keys=[pickup_address_id])
+    # US07 — stop associada a este passageiro (a stop referencia o rp via FK)
+    stop = relationship("StopModel", back_populates="route_passanger", uselist=False, cascade="all, delete-orphan")
+    # US08 — dias em que o passageiro participa (cada schedule tem dia + endereço)
+    schedules = relationship(
+        "RoutePassangerScheduleModel",
+        back_populates="route_passanger",
+        cascade="all, delete-orphan",
+    )

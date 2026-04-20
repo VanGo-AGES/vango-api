@@ -17,10 +17,19 @@ from uuid import UUID
 
 from src.domains.dependents.repository import IDependentRepository
 from src.domains.notifications.service import INotificationService
-from src.domains.route_passangers.dtos import RoutePassangerResponse
+from src.domains.route_passangers.dtos import (
+    JoinRouteRequest,
+    PassangerRouteResponse,
+    RoutePassangerResponse,
+    UpdateSchedulesRequest,
+)
 from src.domains.route_passangers.entity import RoutePassangerModel
 from src.domains.route_passangers.repository import IRoutePassangerRepository
+from src.domains.route_passangers.schedule_repository import (
+    IRoutePassangerScheduleRepository,
+)
 from src.domains.routes.repository import IRouteRepository
+from src.domains.stops.repository import IStopRepository
 from src.domains.users.repository import IUserRepository
 
 
@@ -32,12 +41,16 @@ class RoutePassangerService:
         user_repository: IUserRepository,
         dependent_repository: IDependentRepository,
         notification_service: INotificationService,
+        stop_repository: IStopRepository,
+        schedule_repository: IRoutePassangerScheduleRepository,
     ):
         self.route_passanger_repository = route_passanger_repository
         self.route_repository = route_repository
         self.user_repository = user_repository
         self.dependent_repository = dependent_repository
         self.notification_service = notification_service
+        self.stop_repository = stop_repository
+        self.schedule_repository = schedule_repository
 
     # US06-TK08
     def accept_request(self, route_id: UUID, rp_id: UUID, driver_id: UUID) -> RoutePassangerResponse:
@@ -50,6 +63,10 @@ class RoutePassangerService:
         - 409 RoutePassangerAlreadyProcessedError se rp.status != 'pending'
         - 409 RouteCapacityExceededError se count_accepted >= max_passengers
         - Atualiza status para 'accepted' e joined_at=now
+        - Cria Stop vinculada ao rp:
+            - address_id = rp.pickup_address_id
+            - type = 'embarque' se route.route_type == 'outbound', senão 'desembarque'
+            - order_index = max(order_index das stops da rota) + 1 (ou 0 se não houver)
         - Chama notification_service.notify_passanger_accepted(rp)
         """
         pass
@@ -78,6 +95,7 @@ class RoutePassangerService:
         - 403 se driver não for dono
         - 409 RouteInProgressError se status='em_andamento'
         - Chama notification_service.notify_passanger_removed(rp) ANTES do delete
+        - Remove a Stop vinculada ao rp (stop_repository.delete_by_route_passanger_id) ANTES do delete do rp
         - Chama repository.delete(rp_id)
         - Retorna None
         """
@@ -98,4 +116,89 @@ class RoutePassangerService:
     # Helper interno (sem @abstractmethod — não está na interface)
     def _to_response(self, rp: RoutePassangerModel) -> RoutePassangerResponse:
         """Constrói RoutePassangerResponse resolvendo nomes de user/dependent/guardian."""
+        pass
+
+    # -----------------------------------------------------------------
+    # US08 — operações originadas pelo passageiro
+    # -----------------------------------------------------------------
+
+    # US08-TK07
+    def join_route(
+        self,
+        route_id: UUID,
+        user_id: UUID,
+        data: JoinRouteRequest,
+    ) -> RoutePassangerResponse:
+        """
+        Passageiro (ou guardian em nome do dependente) solicita entrada.
+
+        - 404 RouteNotFoundError se rota não existir
+        - 409 RouteInProgressError se status='em_andamento'
+        - 409 RouteCapacityExceededError se count_accepted >= max_passengers
+        - 409 DuplicateRoutePassangerError se já existir vínculo ativo
+          (pending/accepted) para (user_id, dependent_id) nessa rota
+        - Cria RoutePassangerModel com status='pending',
+          pickup_address_id = data.schedules[0].address_id
+        - Persiste schedules via schedule_repository.save_many
+        - Notifica motorista via notify_driver_passanger_requested
+        """
+        pass
+
+    # US08-TK09
+    def leave_route(
+        self,
+        route_id: UUID,
+        user_id: UUID,
+        dependent_id: UUID | None = None,
+    ) -> None:
+        """
+        Passageiro (ou guardian em nome do dependente) sai da rota.
+
+        - 404 RouteNotFoundError se rota não existir
+        - 409 RouteInProgressError se status='em_andamento'
+        - 404 RoutePassangerNotFoundError se não houver RP ativo
+          para (user_id, dependent_id) nessa rota
+        - Notifica motorista via notify_driver_passanger_left ANTES de qualquer delete
+        - Remove a Stop vinculada via stop_repository.delete_by_route_passanger_id
+          (chamada explícita, não confiar na cascade do ORM — precisamos do hook
+          para disparar push notification no futuro)
+        - Deleta RP via route_passanger_repository.delete (schedules caem na cascade)
+        """
+        pass
+
+    # US08-TK11
+    def update_schedules(
+        self,
+        route_id: UUID,
+        user_id: UUID,
+        data: UpdateSchedulesRequest,
+        dependent_id: UUID | None = None,
+    ) -> RoutePassangerResponse:
+        """
+        Passageiro atualiza seus dias (schedules) na rota.
+
+        - 404 RouteNotFoundError se rota não existir
+        - 409 RouteInProgressError se status='em_andamento'
+        - 404 RoutePassangerNotFoundError se não houver RP ativo
+        - Substitui schedules via schedule_repository.replace
+        - Notifica motorista via notify_driver_passanger_schedules_changed
+        """
+        pass
+
+    # US08-TK14
+    def list_my_routes(self, user_id: UUID) -> list[PassangerRouteResponse]:
+        """
+        Retorna as rotas ativas (pending + accepted) do usuário para a home do
+        passageiro, incluindo vínculos em que o usuário é guardian de um
+        dependente.
+
+        - Usa route_passanger_repository.find_active_with_route_by_user(user_id).
+        - Ordena por joined_at desc (já garantido pelo repo).
+        - Resolve:
+            - driver_name via user_repository
+            - origin_label / destination_label via endereços da rota
+            - dependent_name via dependent_repository quando rp.dependent_id != None
+            - schedules a partir de rp.schedules
+        - Se o usuário não tiver nenhum vínculo ativo, retorna [].
+        """
         pass

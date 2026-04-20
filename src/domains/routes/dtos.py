@@ -3,6 +3,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from src.domains.stops.dtos import StopResponse
+
 VALID_RECURRENCE_DAYS = {"seg", "ter", "qua", "qui", "sex", "sab", "dom"}
 
 
@@ -89,6 +91,20 @@ class RouteResponse(BaseModel):
     max_passengers: int
     origin_address: AddressResponse
     destination_address: AddressResponse
+    # US07-TK-S05 — paradas da rota (geradas a partir de passageiros aceitos)
+    stops: list[StopResponse] = Field(default_factory=list)
+
+
+# US08-TK01
+class RouteInviteSummaryResponse(BaseModel):
+    """Resumo da rota retornado ao passageiro durante a busca por invite_code.
+
+    Expõe apenas o que o passageiro precisa para decidir se quer solicitar
+    entrada: dados básicos da rota + capacidade e quantos já foram aceitos.
+    Não expõe lista de passageiros nem stops.
+    """
+
+    pass
 
 
 # ---------------------------------------------------------------------------

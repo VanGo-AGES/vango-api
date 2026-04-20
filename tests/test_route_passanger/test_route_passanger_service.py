@@ -1,5 +1,5 @@
 import uuid
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock
 
 import pytest
 
@@ -25,7 +25,7 @@ import pytest
 # ---------------------------------------------------------------------------
 
 
-def make_route_mock(driver_id: uuid.UUID, status: str = "ativa", max_passengers: int = 5):
+def make_route_mock(driver_id: uuid.UUID, status: str = "ativa", max_passengers: int = 5, route_type: str = "outbound"):
     from src.domains.routes.entity import RouteModel
 
     route = Mock(spec=RouteModel)
@@ -33,10 +33,17 @@ def make_route_mock(driver_id: uuid.UUID, status: str = "ativa", max_passengers:
     route.driver_id = driver_id
     route.status = status
     route.max_passengers = max_passengers
+    route.route_type = route_type
     return route
 
 
-def make_rp_mock(route_id: uuid.UUID, user_id: uuid.UUID, status: str = "pending", dependent_id=None):
+def make_rp_mock(
+    route_id: uuid.UUID,
+    user_id: uuid.UUID,
+    status: str = "pending",
+    dependent_id=None,
+    pickup_address_id=None,
+):
     from src.domains.route_passangers.entity import RoutePassangerModel
 
     rp = Mock(spec=RoutePassangerModel)
@@ -44,17 +51,19 @@ def make_rp_mock(route_id: uuid.UUID, user_id: uuid.UUID, status: str = "pending
     rp.route_id = route_id
     rp.user_id = user_id
     rp.dependent_id = dependent_id
+    rp.pickup_address_id = pickup_address_id or uuid.uuid4()
     rp.status = status
     rp.joined_at = None
     return rp
 
 
-def make_user_mock(name: str = "Usuário"):
+def make_user_mock(name: str = "Usuário", phone: str = "51999999999"):
     from src.domains.users.entity import UserModel
 
     user = Mock(spec=UserModel)
     user.id = uuid.uuid4()
     user.name = name
+    user.phone = phone
     return user
 
 
@@ -76,7 +85,20 @@ def build_service(**overrides):
     user_repo = overrides.pop("user_repo", Mock())
     dep_repo = overrides.pop("dep_repo", Mock())
     notif = overrides.pop("notif", Mock())
-    return RoutePassangerService(rp_repo, route_repo, user_repo, dep_repo, notif), rp_repo, route_repo, user_repo, dep_repo, notif
+    stop_repo = overrides.pop("stop_repo", Mock())
+    schedule_repo = overrides.pop("schedule_repo", Mock())
+    return (
+        RoutePassangerService(
+            rp_repo, route_repo, user_repo, dep_repo, notif, stop_repo, schedule_repo
+        ),
+        rp_repo,
+        route_repo,
+        user_repo,
+        dep_repo,
+        notif,
+        stop_repo,
+        schedule_repo,
+    )
 
 
 # ===========================================================================
@@ -91,8 +113,8 @@ def test_accept_request_success_returns_response() -> None:
     rp = make_rp_mock(route.id, uuid.uuid4(), status="pending")
     user = make_user_mock("João")
 
-    service, rp_repo, route_repo, user_repo, _, _ = build_service()
-    route_repo.get_by_id.return_value = route
+    service, rp_repo, route_repo, user_repo, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
     rp_repo.find_by_id.return_value = rp
     rp_repo.count_accepted_by_route.return_value = 0
     updated = make_rp_mock(route.id, rp.user_id, status="accepted")
@@ -110,8 +132,8 @@ def test_accept_request_calls_update_status_accepted() -> None:
     route = make_route_mock(driver_id, status="ativa")
     rp = make_rp_mock(route.id, uuid.uuid4(), status="pending")
 
-    service, rp_repo, route_repo, user_repo, _, _ = build_service()
-    route_repo.get_by_id.return_value = route
+    service, rp_repo, route_repo, user_repo, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
     rp_repo.find_by_id.return_value = rp
     rp_repo.count_accepted_by_route.return_value = 0
     rp_repo.update_status.return_value = make_rp_mock(route.id, rp.user_id, status="accepted")
@@ -129,8 +151,8 @@ def test_accept_request_notifies_accepted() -> None:
     rp = make_rp_mock(route.id, uuid.uuid4(), status="pending")
     updated = make_rp_mock(route.id, rp.user_id, status="accepted")
 
-    service, rp_repo, route_repo, user_repo, _, notif = build_service()
-    route_repo.get_by_id.return_value = route
+    service, rp_repo, route_repo, user_repo, _, notif, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
     rp_repo.find_by_id.return_value = rp
     rp_repo.count_accepted_by_route.return_value = 0
     rp_repo.update_status.return_value = updated
@@ -146,8 +168,8 @@ def test_accept_request_route_not_found_raises() -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
     driver_id = uuid.uuid4()
-    service, _, route_repo, _, _, _ = build_service()
-    route_repo.get_by_id.return_value = None
+    service, _, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = None
 
     with pytest.raises(RouteNotFoundError):
         service.accept_request(uuid.uuid4(), uuid.uuid4(), driver_id)
@@ -161,8 +183,8 @@ def test_accept_request_wrong_owner_raises() -> None:
     other_driver = uuid.uuid4()
     route = make_route_mock(other_driver, status="ativa")
 
-    service, rp_repo, route_repo, _, _, _ = build_service()
-    route_repo.get_by_id.return_value = route
+    service, rp_repo, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
     rp_repo.find_by_id.return_value = make_rp_mock(route.id, uuid.uuid4(), status="pending")
 
     with pytest.raises(RouteOwnershipError):
@@ -177,8 +199,8 @@ def test_accept_request_route_in_progress_raises() -> None:
     route = make_route_mock(driver_id, status="em_andamento")
     rp = make_rp_mock(route.id, uuid.uuid4(), status="pending")
 
-    service, rp_repo, route_repo, _, _, _ = build_service()
-    route_repo.get_by_id.return_value = route
+    service, rp_repo, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
     rp_repo.find_by_id.return_value = rp
 
     with pytest.raises(RouteInProgressError):
@@ -192,8 +214,8 @@ def test_accept_request_rp_not_found_raises() -> None:
     driver_id = uuid.uuid4()
     route = make_route_mock(driver_id, status="ativa")
 
-    service, rp_repo, route_repo, _, _, _ = build_service()
-    route_repo.get_by_id.return_value = route
+    service, rp_repo, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
     rp_repo.find_by_id.return_value = None
 
     with pytest.raises(RoutePassangerNotFoundError):
@@ -208,8 +230,8 @@ def test_accept_request_already_processed_raises() -> None:
     route = make_route_mock(driver_id, status="ativa")
     rp = make_rp_mock(route.id, uuid.uuid4(), status="accepted")
 
-    service, rp_repo, route_repo, _, _, _ = build_service()
-    route_repo.get_by_id.return_value = route
+    service, rp_repo, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
     rp_repo.find_by_id.return_value = rp
 
     with pytest.raises(RoutePassangerAlreadyProcessedError):
@@ -224,8 +246,8 @@ def test_accept_request_capacity_exceeded_raises() -> None:
     route = make_route_mock(driver_id, status="ativa", max_passengers=2)
     rp = make_rp_mock(route.id, uuid.uuid4(), status="pending")
 
-    service, rp_repo, route_repo, _, _, _ = build_service()
-    route_repo.get_by_id.return_value = route
+    service, rp_repo, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
     rp_repo.find_by_id.return_value = rp
     rp_repo.count_accepted_by_route.return_value = 2
 
@@ -242,13 +264,166 @@ def test_accept_request_capacity_at_limit_blocks() -> None:
     route = make_route_mock(driver_id, status="ativa", max_passengers=3)
     rp = make_rp_mock(route.id, uuid.uuid4(), status="pending")
 
-    service, rp_repo, route_repo, _, _, _ = build_service()
-    route_repo.get_by_id.return_value = route
+    service, rp_repo, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
     rp_repo.find_by_id.return_value = rp
     rp_repo.count_accepted_by_route.return_value = 3
 
     with pytest.raises(RouteCapacityExceededError):
         service.accept_request(route.id, rp.id, driver_id)
+
+
+# ---------------------------------------------------------------------------
+# TK08 — accept_request deve criar Stop vinculada ao passageiro
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.skip(reason="US06-TK08")
+def test_accept_request_creates_stop_via_stop_repository() -> None:
+    """accept_request deve chamar stop_repository.save com a Stop do passageiro."""
+    driver_id = uuid.uuid4()
+    route = make_route_mock(driver_id, status="ativa", route_type="outbound")
+    rp = make_rp_mock(route.id, uuid.uuid4(), status="pending")
+
+    service, rp_repo, route_repo, user_repo, _, _, stop_repo, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_by_id.return_value = rp
+    rp_repo.count_accepted_by_route.return_value = 0
+    rp_repo.update_status.return_value = make_rp_mock(route.id, rp.user_id, status="accepted")
+    user_repo.find_by_id.return_value = make_user_mock()
+    stop_repo.find_by_route_id.return_value = []
+
+    service.accept_request(route.id, rp.id, driver_id)
+
+    stop_repo.save.assert_called_once()
+
+
+@pytest.mark.skip(reason="US06-TK08")
+def test_accept_request_stop_uses_rp_pickup_address_id() -> None:
+    """A Stop criada deve usar o pickup_address_id do passageiro."""
+    driver_id = uuid.uuid4()
+    route = make_route_mock(driver_id, status="ativa", route_type="outbound")
+    pickup = uuid.uuid4()
+    rp = make_rp_mock(route.id, uuid.uuid4(), status="pending", pickup_address_id=pickup)
+
+    service, rp_repo, route_repo, user_repo, _, _, stop_repo, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_by_id.return_value = rp
+    rp_repo.count_accepted_by_route.return_value = 0
+    rp_repo.update_status.return_value = make_rp_mock(route.id, rp.user_id, status="accepted")
+    user_repo.find_by_id.return_value = make_user_mock()
+    stop_repo.find_by_route_id.return_value = []
+
+    service.accept_request(route.id, rp.id, driver_id)
+
+    saved_stop = stop_repo.save.call_args[0][0]
+    assert saved_stop.address_id == pickup
+
+
+@pytest.mark.skip(reason="US06-TK08")
+def test_accept_request_stop_type_embarque_for_outbound_route() -> None:
+    driver_id = uuid.uuid4()
+    route = make_route_mock(driver_id, status="ativa", route_type="outbound")
+    rp = make_rp_mock(route.id, uuid.uuid4(), status="pending")
+
+    service, rp_repo, route_repo, user_repo, _, _, stop_repo, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_by_id.return_value = rp
+    rp_repo.count_accepted_by_route.return_value = 0
+    rp_repo.update_status.return_value = make_rp_mock(route.id, rp.user_id, status="accepted")
+    user_repo.find_by_id.return_value = make_user_mock()
+    stop_repo.find_by_route_id.return_value = []
+
+    service.accept_request(route.id, rp.id, driver_id)
+
+    saved_stop = stop_repo.save.call_args[0][0]
+    assert saved_stop.type == "embarque"
+
+
+@pytest.mark.skip(reason="US06-TK08")
+def test_accept_request_stop_type_desembarque_for_inbound_route() -> None:
+    driver_id = uuid.uuid4()
+    route = make_route_mock(driver_id, status="ativa", route_type="inbound")
+    rp = make_rp_mock(route.id, uuid.uuid4(), status="pending")
+
+    service, rp_repo, route_repo, user_repo, _, _, stop_repo, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_by_id.return_value = rp
+    rp_repo.count_accepted_by_route.return_value = 0
+    rp_repo.update_status.return_value = make_rp_mock(route.id, rp.user_id, status="accepted")
+    user_repo.find_by_id.return_value = make_user_mock()
+    stop_repo.find_by_route_id.return_value = []
+
+    service.accept_request(route.id, rp.id, driver_id)
+
+    saved_stop = stop_repo.save.call_args[0][0]
+    assert saved_stop.type == "desembarque"
+
+
+@pytest.mark.skip(reason="US06-TK08")
+def test_accept_request_stop_order_index_is_zero_when_no_stops() -> None:
+    driver_id = uuid.uuid4()
+    route = make_route_mock(driver_id, status="ativa", route_type="outbound")
+    rp = make_rp_mock(route.id, uuid.uuid4(), status="pending")
+
+    service, rp_repo, route_repo, user_repo, _, _, stop_repo, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_by_id.return_value = rp
+    rp_repo.count_accepted_by_route.return_value = 0
+    rp_repo.update_status.return_value = make_rp_mock(route.id, rp.user_id, status="accepted")
+    user_repo.find_by_id.return_value = make_user_mock()
+    stop_repo.find_by_route_id.return_value = []
+
+    service.accept_request(route.id, rp.id, driver_id)
+
+    saved_stop = stop_repo.save.call_args[0][0]
+    assert saved_stop.order_index == 0
+
+
+@pytest.mark.skip(reason="US06-TK08")
+def test_accept_request_stop_order_index_is_max_plus_one() -> None:
+    driver_id = uuid.uuid4()
+    route = make_route_mock(driver_id, status="ativa", route_type="outbound")
+    rp = make_rp_mock(route.id, uuid.uuid4(), status="pending")
+
+    existing_a = Mock()
+    existing_a.order_index = 0
+    existing_b = Mock()
+    existing_b.order_index = 3
+
+    service, rp_repo, route_repo, user_repo, _, _, stop_repo, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_by_id.return_value = rp
+    rp_repo.count_accepted_by_route.return_value = 0
+    rp_repo.update_status.return_value = make_rp_mock(route.id, rp.user_id, status="accepted")
+    user_repo.find_by_id.return_value = make_user_mock()
+    stop_repo.find_by_route_id.return_value = [existing_a, existing_b]
+
+    service.accept_request(route.id, rp.id, driver_id)
+
+    saved_stop = stop_repo.save.call_args[0][0]
+    assert saved_stop.order_index == 4
+
+
+@pytest.mark.skip(reason="US06-TK08")
+def test_accept_request_stop_links_to_route_and_rp() -> None:
+    driver_id = uuid.uuid4()
+    route = make_route_mock(driver_id, status="ativa", route_type="outbound")
+    rp = make_rp_mock(route.id, uuid.uuid4(), status="pending")
+
+    service, rp_repo, route_repo, user_repo, _, _, stop_repo, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_by_id.return_value = rp
+    rp_repo.count_accepted_by_route.return_value = 0
+    rp_repo.update_status.return_value = make_rp_mock(route.id, rp.user_id, status="accepted")
+    user_repo.find_by_id.return_value = make_user_mock()
+    stop_repo.find_by_route_id.return_value = []
+
+    service.accept_request(route.id, rp.id, driver_id)
+
+    saved_stop = stop_repo.save.call_args[0][0]
+    assert saved_stop.route_id == route.id
+    assert saved_stop.route_passanger_id == rp.id
 
 
 # ===========================================================================
@@ -263,8 +438,8 @@ def test_reject_request_success_returns_response() -> None:
     rp = make_rp_mock(route.id, uuid.uuid4(), status="pending")
     updated = make_rp_mock(route.id, rp.user_id, status="rejected")
 
-    service, rp_repo, route_repo, user_repo, _, _ = build_service()
-    route_repo.get_by_id.return_value = route
+    service, rp_repo, route_repo, user_repo, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
     rp_repo.find_by_id.return_value = rp
     rp_repo.update_status.return_value = updated
     user_repo.find_by_id.return_value = make_user_mock()
@@ -280,8 +455,8 @@ def test_reject_request_calls_update_status_rejected() -> None:
     route = make_route_mock(driver_id, status="ativa")
     rp = make_rp_mock(route.id, uuid.uuid4(), status="pending")
 
-    service, rp_repo, route_repo, user_repo, _, _ = build_service()
-    route_repo.get_by_id.return_value = route
+    service, rp_repo, route_repo, user_repo, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
     rp_repo.find_by_id.return_value = rp
     rp_repo.update_status.return_value = make_rp_mock(route.id, rp.user_id, status="rejected")
     user_repo.find_by_id.return_value = make_user_mock()
@@ -297,8 +472,8 @@ def test_reject_request_notifies_rejected() -> None:
     route = make_route_mock(driver_id, status="ativa")
     rp = make_rp_mock(route.id, uuid.uuid4(), status="pending")
 
-    service, rp_repo, route_repo, user_repo, _, notif = build_service()
-    route_repo.get_by_id.return_value = route
+    service, rp_repo, route_repo, user_repo, _, notif, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
     rp_repo.find_by_id.return_value = rp
     rp_repo.update_status.return_value = make_rp_mock(route.id, rp.user_id, status="rejected")
     user_repo.find_by_id.return_value = make_user_mock()
@@ -316,8 +491,8 @@ def test_reject_request_in_progress_raises() -> None:
     route = make_route_mock(driver_id, status="em_andamento")
     rp = make_rp_mock(route.id, uuid.uuid4(), status="pending")
 
-    service, rp_repo, route_repo, _, _, _ = build_service()
-    route_repo.get_by_id.return_value = route
+    service, rp_repo, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
     rp_repo.find_by_id.return_value = rp
 
     with pytest.raises(RouteInProgressError):
@@ -332,8 +507,8 @@ def test_reject_request_already_processed_raises() -> None:
     route = make_route_mock(driver_id, status="ativa")
     rp = make_rp_mock(route.id, uuid.uuid4(), status="rejected")
 
-    service, rp_repo, route_repo, _, _, _ = build_service()
-    route_repo.get_by_id.return_value = route
+    service, rp_repo, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
     rp_repo.find_by_id.return_value = rp
 
     with pytest.raises(RoutePassangerAlreadyProcessedError):
@@ -348,11 +523,38 @@ def test_reject_request_wrong_owner_raises() -> None:
     other = uuid.uuid4()
     route = make_route_mock(other, status="ativa")
 
-    service, rp_repo, route_repo, _, _, _ = build_service()
-    route_repo.get_by_id.return_value = route
+    service, rp_repo, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
     rp_repo.find_by_id.return_value = make_rp_mock(route.id, uuid.uuid4(), status="pending")
 
     with pytest.raises(RouteOwnershipError):
+        service.reject_request(route.id, uuid.uuid4(), driver_id)
+
+
+@pytest.mark.skip(reason="US06-TK10")
+def test_reject_request_route_not_found_raises() -> None:
+    from src.domains.routes.errors import RouteNotFoundError
+
+    driver_id = uuid.uuid4()
+    service, _, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = None
+
+    with pytest.raises(RouteNotFoundError):
+        service.reject_request(uuid.uuid4(), uuid.uuid4(), driver_id)
+
+
+@pytest.mark.skip(reason="US06-TK10")
+def test_reject_request_rp_not_found_raises() -> None:
+    from src.domains.route_passangers.errors import RoutePassangerNotFoundError
+
+    driver_id = uuid.uuid4()
+    route = make_route_mock(driver_id, status="ativa")
+
+    service, rp_repo, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_by_id.return_value = None
+
+    with pytest.raises(RoutePassangerNotFoundError):
         service.reject_request(route.id, uuid.uuid4(), driver_id)
 
 
@@ -363,8 +565,8 @@ def test_reject_request_does_not_check_capacity() -> None:
     route = make_route_mock(driver_id, status="ativa", max_passengers=1)
     rp = make_rp_mock(route.id, uuid.uuid4(), status="pending")
 
-    service, rp_repo, route_repo, user_repo, _, _ = build_service()
-    route_repo.get_by_id.return_value = route
+    service, rp_repo, route_repo, user_repo, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
     rp_repo.find_by_id.return_value = rp
     rp_repo.update_status.return_value = make_rp_mock(route.id, rp.user_id, status="rejected")
     user_repo.find_by_id.return_value = make_user_mock()
@@ -385,8 +587,8 @@ def test_remove_passanger_success_returns_none() -> None:
     route = make_route_mock(driver_id, status="ativa")
     rp = make_rp_mock(route.id, uuid.uuid4(), status="accepted")
 
-    service, rp_repo, route_repo, _, _, _ = build_service()
-    route_repo.get_by_id.return_value = route
+    service, rp_repo, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
     rp_repo.find_by_id.return_value = rp
     rp_repo.delete.return_value = True
 
@@ -401,8 +603,8 @@ def test_remove_passanger_calls_delete() -> None:
     route = make_route_mock(driver_id, status="ativa")
     rp = make_rp_mock(route.id, uuid.uuid4(), status="accepted")
 
-    service, rp_repo, route_repo, _, _, _ = build_service()
-    route_repo.get_by_id.return_value = route
+    service, rp_repo, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
     rp_repo.find_by_id.return_value = rp
     rp_repo.delete.return_value = True
 
@@ -418,8 +620,8 @@ def test_remove_passanger_notifies_before_delete() -> None:
     route = make_route_mock(driver_id, status="ativa")
     rp = make_rp_mock(route.id, uuid.uuid4(), status="accepted")
 
-    service, rp_repo, route_repo, _, _, notif = build_service()
-    route_repo.get_by_id.return_value = route
+    service, rp_repo, route_repo, _, _, notif, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
     rp_repo.find_by_id.return_value = rp
     rp_repo.delete.return_value = True
 
@@ -433,8 +635,8 @@ def test_remove_passanger_route_not_found_raises() -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
     driver_id = uuid.uuid4()
-    service, _, route_repo, _, _, _ = build_service()
-    route_repo.get_by_id.return_value = None
+    service, _, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = None
 
     with pytest.raises(RouteNotFoundError):
         service.remove_passanger(uuid.uuid4(), uuid.uuid4(), driver_id)
@@ -447,8 +649,8 @@ def test_remove_passanger_wrong_owner_raises() -> None:
     driver_id = uuid.uuid4()
     route = make_route_mock(uuid.uuid4(), status="ativa")
 
-    service, rp_repo, route_repo, _, _, _ = build_service()
-    route_repo.get_by_id.return_value = route
+    service, rp_repo, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
     rp_repo.find_by_id.return_value = make_rp_mock(route.id, uuid.uuid4(), status="accepted")
 
     with pytest.raises(RouteOwnershipError):
@@ -462,8 +664,8 @@ def test_remove_passanger_rp_not_found_raises() -> None:
     driver_id = uuid.uuid4()
     route = make_route_mock(driver_id, status="ativa")
 
-    service, rp_repo, route_repo, _, _, _ = build_service()
-    route_repo.get_by_id.return_value = route
+    service, rp_repo, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
     rp_repo.find_by_id.return_value = None
 
     with pytest.raises(RoutePassangerNotFoundError):
@@ -478,12 +680,57 @@ def test_remove_passanger_in_progress_raises() -> None:
     route = make_route_mock(driver_id, status="em_andamento")
     rp = make_rp_mock(route.id, uuid.uuid4(), status="accepted")
 
-    service, rp_repo, route_repo, _, _, _ = build_service()
-    route_repo.get_by_id.return_value = route
+    service, rp_repo, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
     rp_repo.find_by_id.return_value = rp
 
     with pytest.raises(RouteInProgressError):
         service.remove_passanger(route.id, rp.id, driver_id)
+
+
+# ---------------------------------------------------------------------------
+# TK12 — remove_passanger deve remover Stop vinculada
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.skip(reason="US06-TK12")
+def test_remove_passanger_deletes_stop_by_rp_id() -> None:
+    driver_id = uuid.uuid4()
+    route = make_route_mock(driver_id, status="ativa")
+    rp = make_rp_mock(route.id, uuid.uuid4(), status="accepted")
+
+    service, rp_repo, route_repo, _, _, _, stop_repo, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_by_id.return_value = rp
+    rp_repo.delete.return_value = True
+
+    service.remove_passanger(route.id, rp.id, driver_id)
+
+    stop_repo.delete_by_route_passanger_id.assert_called_once_with(rp.id)
+
+
+@pytest.mark.skip(reason="US06-TK12")
+def test_remove_passanger_deletes_stop_before_rp_delete() -> None:
+    """Stop deve ser deletada ANTES de rp_repo.delete (FK rp -> stop)."""
+    from unittest.mock import MagicMock
+
+    driver_id = uuid.uuid4()
+    route = make_route_mock(driver_id, status="ativa")
+    rp = make_rp_mock(route.id, uuid.uuid4(), status="accepted")
+
+    manager = MagicMock()
+    service, rp_repo, route_repo, _, _, _, stop_repo, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_by_id.return_value = rp
+    rp_repo.delete.return_value = True
+
+    manager.attach_mock(stop_repo.delete_by_route_passanger_id, "stop_delete")
+    manager.attach_mock(rp_repo.delete, "rp_delete")
+
+    service.remove_passanger(route.id, rp.id, driver_id)
+
+    call_names = [c[0] for c in manager.mock_calls]
+    assert call_names.index("stop_delete") < call_names.index("rp_delete")
 
 
 # ===========================================================================
@@ -498,8 +745,8 @@ def test_list_by_status_returns_responses() -> None:
     rp1 = make_rp_mock(route.id, uuid.uuid4(), status="pending")
     rp2 = make_rp_mock(route.id, uuid.uuid4(), status="pending")
 
-    service, rp_repo, route_repo, user_repo, _, _ = build_service()
-    route_repo.get_by_id.return_value = route
+    service, rp_repo, route_repo, user_repo, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
     rp_repo.find_by_route_and_status.return_value = [rp1, rp2]
     user_repo.find_by_id.return_value = make_user_mock()
 
@@ -513,8 +760,8 @@ def test_list_by_status_filters_via_repository() -> None:
     driver_id = uuid.uuid4()
     route = make_route_mock(driver_id, status="ativa")
 
-    service, rp_repo, route_repo, _, _, _ = build_service()
-    route_repo.get_by_id.return_value = route
+    service, rp_repo, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
     rp_repo.find_by_route_and_status.return_value = []
 
     service.list_by_status(route.id, driver_id, status="pending")
@@ -527,8 +774,8 @@ def test_list_by_status_no_filter_passes_none() -> None:
     driver_id = uuid.uuid4()
     route = make_route_mock(driver_id, status="ativa")
 
-    service, rp_repo, route_repo, _, _, _ = build_service()
-    route_repo.get_by_id.return_value = route
+    service, rp_repo, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
     rp_repo.find_by_route_and_status.return_value = []
 
     service.list_by_status(route.id, driver_id, status=None)
@@ -541,8 +788,8 @@ def test_list_by_status_route_not_found_raises() -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
     driver_id = uuid.uuid4()
-    service, _, route_repo, _, _, _ = build_service()
-    route_repo.get_by_id.return_value = None
+    service, _, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = None
 
     with pytest.raises(RouteNotFoundError):
         service.list_by_status(uuid.uuid4(), driver_id, status="pending")
@@ -555,8 +802,8 @@ def test_list_by_status_wrong_owner_raises() -> None:
     driver_id = uuid.uuid4()
     route = make_route_mock(uuid.uuid4(), status="ativa")
 
-    service, _, route_repo, _, _, _ = build_service()
-    route_repo.get_by_id.return_value = route
+    service, _, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
 
     with pytest.raises(RouteOwnershipError):
         service.list_by_status(route.id, driver_id, status="pending")
@@ -567,8 +814,8 @@ def test_list_by_status_invalid_status_raises_value_error() -> None:
     driver_id = uuid.uuid4()
     route = make_route_mock(driver_id, status="ativa")
 
-    service, _, route_repo, _, _, _ = build_service()
-    route_repo.get_by_id.return_value = route
+    service, _, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
 
     with pytest.raises(ValueError):
         service.list_by_status(route.id, driver_id, status="invalid_status")
@@ -579,8 +826,8 @@ def test_list_by_status_empty_list_returned() -> None:
     driver_id = uuid.uuid4()
     route = make_route_mock(driver_id, status="ativa")
 
-    service, rp_repo, route_repo, _, _, _ = build_service()
-    route_repo.get_by_id.return_value = route
+    service, rp_repo, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
     rp_repo.find_by_route_and_status.return_value = []
 
     result = service.list_by_status(route.id, driver_id, status="pending")
@@ -592,17 +839,19 @@ def test_list_by_status_empty_list_returned() -> None:
 def test_list_by_status_resolves_user_name() -> None:
     driver_id = uuid.uuid4()
     route = make_route_mock(driver_id, status="ativa")
-    user = make_user_mock("Maria")
+    user = make_user_mock("Maria", phone="54988887777")
     rp = make_rp_mock(route.id, user.id, status="pending")
 
-    service, rp_repo, route_repo, user_repo, _, _ = build_service()
-    route_repo.get_by_id.return_value = route
+    service, rp_repo, route_repo, user_repo, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
     rp_repo.find_by_route_and_status.return_value = [rp]
     user_repo.find_by_id.return_value = user
 
     result = service.list_by_status(route.id, driver_id, status="pending")
 
     assert result[0].user_name == "Maria"
+    # US13 — phone precisa estar no response pro FE montar deeplink de contato
+    assert result[0].user_phone == "54988887777"
 
 
 @pytest.mark.skip(reason="US06-TK14")
@@ -613,8 +862,8 @@ def test_list_by_status_resolves_dependent_and_guardian_names() -> None:
     dependent = make_dependent_mock("Filha Ana", guardian_id=guardian.id)
     rp = make_rp_mock(route.id, guardian.id, status="pending", dependent_id=dependent.id)
 
-    service, rp_repo, route_repo, user_repo, dep_repo, _ = build_service()
-    route_repo.get_by_id.return_value = route
+    service, rp_repo, route_repo, user_repo, dep_repo, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
     rp_repo.find_by_route_and_status.return_value = [rp]
     user_repo.find_by_id.return_value = guardian
     dep_repo.get_by_id.return_value = dependent
@@ -623,3 +872,583 @@ def test_list_by_status_resolves_dependent_and_guardian_names() -> None:
 
     assert result[0].dependent_name == "Filha Ana"
     assert result[0].guardian_name == "Responsável João"
+
+
+
+# ===========================================================================
+# US08-TK07 — RoutePassangerService.join_route
+# ===========================================================================
+
+
+def make_join_request(dependent_id=None, days=("monday",), address_id=None):
+    from src.domains.route_passangers.dtos import (
+        JoinRouteRequest,
+        RoutePassangerScheduleRequest,
+    )
+
+    address_id = address_id or uuid.uuid4()
+    schedules = [
+        RoutePassangerScheduleRequest(day_of_week=day, address_id=address_id)
+        for day in days
+    ]
+    return JoinRouteRequest(dependent_id=dependent_id, schedules=schedules)
+
+
+@pytest.mark.skip(reason="US08-TK07")
+def test_join_route_success_creates_pending_rp() -> None:
+    route = make_route_mock(uuid.uuid4(), status="ativa", max_passengers=5)
+    user_id = uuid.uuid4()
+    address_id = uuid.uuid4()
+    req = make_join_request(days=("monday", "wednesday"), address_id=address_id)
+
+    service, rp_repo, route_repo, _, _, _, _, schedule_repo = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_by_user_and_route.return_value = None
+    rp_repo.count_accepted_by_route.return_value = 0
+    created = make_rp_mock(route.id, user_id, status="pending", pickup_address_id=address_id)
+    rp_repo.save.return_value = created
+
+    service.join_route(route.id, user_id, req)
+
+    rp_repo.save.assert_called_once()
+    schedule_repo.save_many.assert_called_once()
+
+
+@pytest.mark.skip(reason="US08-TK07")
+def test_join_route_pickup_address_equals_first_schedule() -> None:
+    route = make_route_mock(uuid.uuid4(), status="ativa")
+    user_id = uuid.uuid4()
+    address_id = uuid.uuid4()
+    req = make_join_request(days=("monday",), address_id=address_id)
+
+    service, rp_repo, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_by_user_and_route.return_value = None
+    rp_repo.count_accepted_by_route.return_value = 0
+
+    service.join_route(route.id, user_id, req)
+
+    saved_rp = rp_repo.save.call_args.args[0]
+    assert saved_rp.pickup_address_id == address_id
+
+
+@pytest.mark.skip(reason="US08-TK07")
+def test_join_route_notifies_driver() -> None:
+    route = make_route_mock(uuid.uuid4(), status="ativa")
+    service, rp_repo, route_repo, _, _, notif, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_by_user_and_route.return_value = None
+    rp_repo.count_accepted_by_route.return_value = 0
+
+    service.join_route(route.id, uuid.uuid4(), make_join_request())
+
+    notif.notify_driver_passanger_requested.assert_called_once()
+
+
+@pytest.mark.skip(reason="US08-TK07")
+def test_join_route_route_not_found_raises() -> None:
+    from src.domains.routes.errors import RouteNotFoundError
+
+    service, _, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = None
+
+    with pytest.raises(RouteNotFoundError):
+        service.join_route(uuid.uuid4(), uuid.uuid4(), make_join_request())
+
+
+@pytest.mark.skip(reason="US08-TK07")
+def test_join_route_em_andamento_raises() -> None:
+    from src.domains.routes.errors import RouteInProgressError
+
+    route = make_route_mock(uuid.uuid4(), status="em_andamento")
+    service, _, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
+
+    with pytest.raises(RouteInProgressError):
+        service.join_route(route.id, uuid.uuid4(), make_join_request())
+
+
+@pytest.mark.skip(reason="US08-TK07")
+def test_join_route_full_capacity_raises() -> None:
+    from src.domains.route_passangers.errors import RouteCapacityExceededError
+
+    route = make_route_mock(uuid.uuid4(), status="ativa", max_passengers=2)
+    service, rp_repo, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_by_user_and_route.return_value = None
+    rp_repo.count_accepted_by_route.return_value = 2
+
+    with pytest.raises(RouteCapacityExceededError):
+        service.join_route(route.id, uuid.uuid4(), make_join_request())
+
+
+@pytest.mark.skip(reason="US08-TK07")
+def test_join_route_duplicate_active_raises() -> None:
+    from src.domains.route_passangers.errors import DuplicateRoutePassangerError
+
+    route = make_route_mock(uuid.uuid4(), status="ativa")
+    user_id = uuid.uuid4()
+    existing = make_rp_mock(route.id, user_id, status="pending")
+
+    service, rp_repo, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_by_user_and_route.return_value = existing
+
+    with pytest.raises(DuplicateRoutePassangerError):
+        service.join_route(route.id, user_id, make_join_request())
+
+
+@pytest.mark.skip(reason="US08-TK07")
+def test_join_route_rejected_previous_allows_new_request() -> None:
+    """Ter um RP rejected anterior NÃO bloqueia — find_active retorna None."""
+    route = make_route_mock(uuid.uuid4(), status="ativa")
+    service, rp_repo, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_by_user_and_route.return_value = None  # não há ativo
+    rp_repo.count_accepted_by_route.return_value = 0
+
+    service.join_route(route.id, uuid.uuid4(), make_join_request())
+
+    rp_repo.save.assert_called_once()
+
+
+@pytest.mark.skip(reason="US08-TK07")
+def test_join_route_with_dependent_id_sets_dep_on_rp() -> None:
+    route = make_route_mock(uuid.uuid4(), status="ativa")
+    guardian_id = uuid.uuid4()
+    dep_id = uuid.uuid4()
+
+    service, rp_repo, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_by_user_and_route.return_value = None
+    rp_repo.count_accepted_by_route.return_value = 0
+
+    service.join_route(route.id, guardian_id, make_join_request(dependent_id=dep_id))
+
+    saved_rp = rp_repo.save.call_args.args[0]
+    assert saved_rp.dependent_id == dep_id
+
+
+# ===========================================================================
+# US08-TK09 — RoutePassangerService.leave_route
+# ===========================================================================
+
+
+@pytest.mark.skip(reason="US08-TK09")
+def test_leave_route_success_deletes_rp() -> None:
+    route = make_route_mock(uuid.uuid4(), status="ativa")
+    user_id = uuid.uuid4()
+    rp = make_rp_mock(route.id, user_id, status="accepted")
+
+    service, rp_repo, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_by_user_and_route.return_value = rp
+
+    service.leave_route(route.id, user_id)
+
+    rp_repo.delete.assert_called_once_with(rp.id)
+
+
+@pytest.mark.skip(reason="US08-TK09")
+def test_leave_route_notifies_driver_before_delete() -> None:
+    """Valida a ordem exata: notify vem antes de stop_repository.delete e de rp_repo.delete."""
+    route = make_route_mock(uuid.uuid4(), status="ativa")
+    user_id = uuid.uuid4()
+    rp = make_rp_mock(route.id, user_id, status="accepted")
+
+    service, rp_repo, route_repo, _, _, notif, stop_repo, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_by_user_and_route.return_value = rp
+
+    manager = MagicMock()
+    manager.attach_mock(notif.notify_driver_passanger_left, "notify")
+    manager.attach_mock(stop_repo.delete_by_route_passanger_id, "delete_stop")
+    manager.attach_mock(rp_repo.delete, "delete_rp")
+
+    service.leave_route(route.id, user_id)
+
+    call_names = [c[0] for c in manager.mock_calls]
+    assert call_names.index("notify") < call_names.index("delete_rp"), (
+        f"notify deve vir antes do delete_rp, mas ordem foi: {call_names}"
+    )
+    if "delete_stop" in call_names:
+        assert call_names.index("notify") < call_names.index("delete_stop"), (
+            f"notify deve vir antes do delete_stop, mas ordem foi: {call_names}"
+        )
+
+
+@pytest.mark.skip(reason="US08-TK09")
+def test_leave_route_deletes_stop_explicitly() -> None:
+    """Valida que stop_repository.delete_by_route_passanger_id é chamado explicitamente,
+    permitindo hooks (push notification, auditoria) que a cascade do ORM não dispararia."""
+    route = make_route_mock(uuid.uuid4(), status="ativa")
+    user_id = uuid.uuid4()
+    rp = make_rp_mock(route.id, user_id, status="accepted")
+
+    service, rp_repo, route_repo, _, _, _, stop_repo, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_by_user_and_route.return_value = rp
+
+    service.leave_route(route.id, user_id)
+
+    stop_repo.delete_by_route_passanger_id.assert_called_once_with(rp.id)
+
+
+@pytest.mark.skip(reason="US08-TK09")
+def test_leave_route_route_not_found_raises() -> None:
+    from src.domains.routes.errors import RouteNotFoundError
+
+    service, _, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = None
+
+    with pytest.raises(RouteNotFoundError):
+        service.leave_route(uuid.uuid4(), uuid.uuid4())
+
+
+@pytest.mark.skip(reason="US08-TK09")
+def test_leave_route_em_andamento_raises() -> None:
+    from src.domains.routes.errors import RouteInProgressError
+
+    route = make_route_mock(uuid.uuid4(), status="em_andamento")
+    service, _, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
+
+    with pytest.raises(RouteInProgressError):
+        service.leave_route(route.id, uuid.uuid4())
+
+
+@pytest.mark.skip(reason="US08-TK09")
+def test_leave_route_no_active_rp_raises() -> None:
+    from src.domains.route_passangers.errors import RoutePassangerNotFoundError
+
+    route = make_route_mock(uuid.uuid4(), status="ativa")
+    service, rp_repo, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_by_user_and_route.return_value = None
+
+    with pytest.raises(RoutePassangerNotFoundError):
+        service.leave_route(route.id, uuid.uuid4())
+
+
+@pytest.mark.skip(reason="US08-TK09")
+def test_leave_route_with_dependent_id_uses_dependent_scope() -> None:
+    route = make_route_mock(uuid.uuid4(), status="ativa")
+    guardian_id = uuid.uuid4()
+    dep_id = uuid.uuid4()
+    rp = make_rp_mock(route.id, guardian_id, status="accepted", dependent_id=dep_id)
+
+    service, rp_repo, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_by_user_and_route.return_value = rp
+
+    service.leave_route(route.id, guardian_id, dependent_id=dep_id)
+
+    # find_active_by_user_and_route deve ter sido chamado com o dependent_id
+    call_kwargs = rp_repo.find_active_by_user_and_route.call_args.kwargs
+    call_args = rp_repo.find_active_by_user_and_route.call_args.args
+    assert dep_id in call_args or call_kwargs.get("dependent_id") == dep_id
+
+
+# ===========================================================================
+# US08-TK11 — RoutePassangerService.update_schedules
+# ===========================================================================
+
+
+def make_update_request(days=("monday",), address_id=None):
+    from src.domains.route_passangers.dtos import (
+        RoutePassangerScheduleRequest,
+        UpdateSchedulesRequest,
+    )
+
+    address_id = address_id or uuid.uuid4()
+    schedules = [
+        RoutePassangerScheduleRequest(day_of_week=day, address_id=address_id)
+        for day in days
+    ]
+    return UpdateSchedulesRequest(schedules=schedules)
+
+
+@pytest.mark.skip(reason="US08-TK11")
+def test_update_schedules_success_replaces_schedules() -> None:
+    route = make_route_mock(uuid.uuid4(), status="ativa")
+    user_id = uuid.uuid4()
+    rp = make_rp_mock(route.id, user_id, status="accepted")
+
+    service, rp_repo, route_repo, _, _, _, _, schedule_repo = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_by_user_and_route.return_value = rp
+
+    service.update_schedules(
+        route.id,
+        user_id,
+        make_update_request(days=("monday", "wednesday", "friday")),
+    )
+
+    schedule_repo.replace.assert_called_once()
+
+
+@pytest.mark.skip(reason="US08-TK11")
+def test_update_schedules_notifies_driver() -> None:
+    route = make_route_mock(uuid.uuid4(), status="ativa")
+    user_id = uuid.uuid4()
+    rp = make_rp_mock(route.id, user_id, status="accepted")
+
+    service, rp_repo, route_repo, _, _, notif, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_by_user_and_route.return_value = rp
+
+    service.update_schedules(route.id, user_id, make_update_request())
+
+    notif.notify_driver_passanger_schedules_changed.assert_called_once()
+
+
+@pytest.mark.skip(reason="US08-TK11")
+def test_update_schedules_route_not_found_raises() -> None:
+    from src.domains.routes.errors import RouteNotFoundError
+
+    service, _, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = None
+
+    with pytest.raises(RouteNotFoundError):
+        service.update_schedules(uuid.uuid4(), uuid.uuid4(), make_update_request())
+
+
+@pytest.mark.skip(reason="US08-TK11")
+def test_update_schedules_em_andamento_raises() -> None:
+    from src.domains.routes.errors import RouteInProgressError
+
+    route = make_route_mock(uuid.uuid4(), status="em_andamento")
+    service, _, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
+
+    with pytest.raises(RouteInProgressError):
+        service.update_schedules(route.id, uuid.uuid4(), make_update_request())
+
+
+@pytest.mark.skip(reason="US08-TK11")
+def test_update_schedules_no_active_rp_raises() -> None:
+    from src.domains.route_passangers.errors import RoutePassangerNotFoundError
+
+    route = make_route_mock(uuid.uuid4(), status="ativa")
+    service, rp_repo, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_by_user_and_route.return_value = None
+
+    with pytest.raises(RoutePassangerNotFoundError):
+        service.update_schedules(route.id, uuid.uuid4(), make_update_request())
+
+
+@pytest.mark.skip(reason="US08-TK11")
+def test_update_schedules_with_dependent_id_uses_dependent_scope() -> None:
+    route = make_route_mock(uuid.uuid4(), status="ativa")
+    guardian_id = uuid.uuid4()
+    dep_id = uuid.uuid4()
+    rp = make_rp_mock(route.id, guardian_id, status="accepted", dependent_id=dep_id)
+
+    service, rp_repo, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_by_user_and_route.return_value = rp
+
+    service.update_schedules(
+        route.id, guardian_id, make_update_request(), dependent_id=dep_id
+    )
+
+    call_kwargs = rp_repo.find_active_by_user_and_route.call_args.kwargs
+    call_args = rp_repo.find_active_by_user_and_route.call_args.args
+    assert dep_id in call_args or call_kwargs.get("dependent_id") == dep_id
+
+
+@pytest.mark.skip(reason="US08-TK11")
+def test_update_schedules_returns_response_with_resolved_names() -> None:
+    route = make_route_mock(uuid.uuid4(), status="ativa")
+    user = make_user_mock("Passageiro X", phone="54988887777")
+    rp = make_rp_mock(route.id, user.id, status="accepted")
+
+    service, rp_repo, route_repo, user_repo, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_by_user_and_route.return_value = rp
+    user_repo.find_by_id.return_value = user
+
+    result = service.update_schedules(route.id, user.id, make_update_request())
+
+    assert result.user_name == "Passageiro X"
+    # US13 — phone precisa estar no response pro driver contatar via deeplink
+    assert result.user_phone == "54988887777"
+
+
+# ===========================================================================
+# US08-TK14 — list_my_routes
+# Arquivo: src/domains/route_passangers/service.py
+# ===========================================================================
+
+
+def make_rp_with_route_mock(
+    route_id: uuid.UUID,
+    user_id: uuid.UUID,
+    driver_id: uuid.UUID,
+    status: str = "accepted",
+    dependent_id=None,
+    route_name: str = "PUCRS",
+    route_status: str = "ativa",
+    origin_label: str = "Casa",
+    destination_label: str = "PUCRS",
+):
+    """RP mock com RouteModel (e endereços) já carregados, como vem do repo."""
+    from datetime import time as dtime
+    from src.domains.addresses.entity import AddressModel
+    from src.domains.route_passangers.entity import RoutePassangerModel
+    from src.domains.routes.entity import RouteModel
+
+    origin = Mock(spec=AddressModel)
+    origin.id = uuid.uuid4()
+    origin.label = origin_label
+    destination = Mock(spec=AddressModel)
+    destination.id = uuid.uuid4()
+    destination.label = destination_label
+
+    route = Mock(spec=RouteModel)
+    route.id = route_id
+    route.name = route_name
+    route.driver_id = driver_id
+    route.status = route_status
+    route.expected_time = dtime(8, 0)
+    route.recurrence = "seg,ter,qua,qui,sex"
+    route.origin = origin
+    route.destination = destination
+    route.origin_address_id = origin.id
+    route.destination_address_id = destination.id
+
+    rp = Mock(spec=RoutePassangerModel)
+    rp.id = uuid.uuid4()
+    rp.route_id = route_id
+    rp.user_id = user_id
+    rp.dependent_id = dependent_id
+    rp.status = status
+    rp.joined_at = None
+    rp.schedules = []
+    rp.route = route
+    return rp
+
+
+@pytest.mark.skip(reason="US08-TK14")
+def test_list_my_routes_empty_returns_empty_list() -> None:
+    service, rp_repo, *_ = build_service()
+    rp_repo.find_active_with_route_by_user.return_value = []
+
+    result = service.list_my_routes(uuid.uuid4())
+
+    assert result == []
+
+
+@pytest.mark.skip(reason="US08-TK14")
+def test_list_my_routes_calls_repo_with_user_id() -> None:
+    user_id = uuid.uuid4()
+    service, rp_repo, *_ = build_service()
+    rp_repo.find_active_with_route_by_user.return_value = []
+
+    service.list_my_routes(user_id)
+
+    rp_repo.find_active_with_route_by_user.assert_called_once_with(user_id)
+
+
+@pytest.mark.skip(reason="US08-TK14")
+def test_list_my_routes_returns_one_item_per_membership() -> None:
+    user_id = uuid.uuid4()
+    driver = make_user_mock("Motorista")
+
+    rp_a = make_rp_with_route_mock(uuid.uuid4(), user_id, driver.id, status="accepted")
+    rp_b = make_rp_with_route_mock(uuid.uuid4(), user_id, driver.id, status="pending")
+
+    service, rp_repo, _, user_repo, _, _, _, _ = build_service()
+    rp_repo.find_active_with_route_by_user.return_value = [rp_a, rp_b]
+    user_repo.find_by_id.return_value = driver
+
+    result = service.list_my_routes(user_id)
+
+    assert len(result) == 2
+
+
+@pytest.mark.skip(reason="US08-TK14")
+def test_list_my_routes_resolves_driver_name() -> None:
+    user_id = uuid.uuid4()
+    driver = make_user_mock("Carlos Motorista")
+    rp = make_rp_with_route_mock(uuid.uuid4(), user_id, driver.id, status="accepted")
+
+    service, rp_repo, _, user_repo, _, _, _, _ = build_service()
+    rp_repo.find_active_with_route_by_user.return_value = [rp]
+    user_repo.find_by_id.return_value = driver
+
+    result = service.list_my_routes(user_id)
+
+    assert result[0].driver_name == "Carlos Motorista"
+
+
+@pytest.mark.skip(reason="US08-TK14")
+def test_list_my_routes_resolves_driver_phone() -> None:
+    """US13 — service precisa carregar driver.phone pro deeplink do FE."""
+    user_id = uuid.uuid4()
+    driver = make_user_mock("Motorista", phone="54988887777")
+    rp = make_rp_with_route_mock(uuid.uuid4(), user_id, driver.id, status="accepted")
+
+    service, rp_repo, _, user_repo, _, _, _, _ = build_service()
+    rp_repo.find_active_with_route_by_user.return_value = [rp]
+    user_repo.find_by_id.return_value = driver
+
+    result = service.list_my_routes(user_id)
+
+    assert result[0].driver_phone == "54988887777"
+
+
+@pytest.mark.skip(reason="US08-TK14")
+def test_list_my_routes_exposes_membership_status() -> None:
+    """Distingue rp.status (membership) do route.status (rota)."""
+    user_id = uuid.uuid4()
+    driver = make_user_mock()
+    rp = make_rp_with_route_mock(
+        uuid.uuid4(), user_id, driver.id,
+        status="pending", route_status="ativa",
+    )
+
+    service, rp_repo, _, user_repo, _, _, _, _ = build_service()
+    rp_repo.find_active_with_route_by_user.return_value = [rp]
+    user_repo.find_by_id.return_value = driver
+
+    result = service.list_my_routes(user_id)
+
+    assert result[0].membership_status == "pending"
+    assert result[0].status == "ativa"
+
+
+@pytest.mark.skip(reason="US08-TK14")
+def test_list_my_routes_resolves_dependent_name_when_present() -> None:
+    guardian_id = uuid.uuid4()
+    dep = make_dependent_mock("Maria Dependente", guardian_id=guardian_id)
+    driver = make_user_mock("Motorista")
+    rp = make_rp_with_route_mock(
+        uuid.uuid4(), guardian_id, driver.id,
+        status="accepted", dependent_id=dep.id,
+    )
+
+    service, rp_repo, _, user_repo, dep_repo, _, _, _ = build_service()
+    rp_repo.find_active_with_route_by_user.return_value = [rp]
+    user_repo.find_by_id.return_value = driver
+    dep_repo.find_by_id.return_value = dep
+
+    result = service.list_my_routes(guardian_id)
+
+    assert result[0].dependent_name == "Maria Dependente"
+
+
+@pytest.mark.skip(reason="US08-TK14")
+def test_list_my_routes_dependent_name_none_for_self_membership() -> None:
+    user_id = uuid.uuid4()
+    driver = make_user_mock()
+    rp = make_rp_with_route_mock(uuid.uuid4(), user_id, driver.id, status="accepted")
+
+    service, rp_repo, _, user_repo, _, _, _, _ = build_service()
+    rp_repo.find_active_with_route_by_user.return_value = [rp]
+    user_repo.find_by_id.return_value = driver
+
+    result = service.list_my_routes(user_id)
+
+    assert result[0].dependent_name is None

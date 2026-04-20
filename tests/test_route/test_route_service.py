@@ -546,3 +546,280 @@ def test_update_route_excludes_none_fields_from_repo_call() -> None:
     call_args = route_repo.update.call_args
     update_dict = call_args.args[1] if len(call_args.args) > 1 else call_args.kwargs.get("data", {})
     assert all(v is not None for v in update_dict.values())
+
+
+# ===========================================================================
+# US08-TK05 — RouteService.get_by_invite_code
+# ===========================================================================
+
+
+@pytest.mark.skip(reason="US08-TK05")
+def test_get_by_invite_code_returns_route() -> None:
+    from src.domains.routes.service import RouteService
+
+    route = make_route_mock(uuid.uuid4())
+    route_repo = Mock()
+    route_repo.find_by_invite_code.return_value = route
+
+    service = RouteService(route_repo, Mock(), Mock())
+    result = service.get_by_invite_code("A1B2C")
+
+    assert result is route
+    route_repo.find_by_invite_code.assert_called_once_with("A1B2C")
+
+
+@pytest.mark.skip(reason="US08-TK05")
+def test_get_by_invite_code_not_found_raises() -> None:
+    from src.domains.routes.errors import RouteNotFoundError
+    from src.domains.routes.service import RouteService
+
+    route_repo = Mock()
+    route_repo.find_by_invite_code.return_value = None
+
+    service = RouteService(route_repo, Mock(), Mock())
+    with pytest.raises(RouteNotFoundError):
+        service.get_by_invite_code("ZZZZZ")
+
+
+# ===========================================================================
+# US08-TK05 — RouteService.get_invite_summary
+# ===========================================================================
+
+
+def make_route_for_summary_mock():
+    from datetime import time as dtime
+
+    from src.domains.routes.entity import RouteModel
+
+    route = Mock(spec=RouteModel)
+    route.id = uuid.uuid4()
+    route.name = "PUCRS"
+    route.route_type = "outbound"
+    route.recurrence = "seg,ter,qua,qui,sex"
+    route.expected_time = dtime(8, 0)
+    route.max_passengers = 5
+    route.origin_address = Mock()
+    route.destination_address = Mock()
+    return route
+
+
+@pytest.mark.skip(reason="US08-TK05")
+def test_get_invite_summary_returns_summary_with_accepted_count() -> None:
+    from src.domains.routes.service import RouteService
+
+    route = make_route_for_summary_mock()
+    route_repo = Mock()
+    route_repo.find_by_invite_code.return_value = route
+    rp_repo = Mock()
+    rp_repo.count_accepted_by_route.return_value = 2
+
+    service = RouteService(route_repo, Mock(), Mock(), rp_repo)
+    summary = service.get_invite_summary("A1B2C")
+
+    route_repo.find_by_invite_code.assert_called_once_with("A1B2C")
+    rp_repo.count_accepted_by_route.assert_called_once_with(route.id)
+    assert summary.accepted_count == 2
+    assert summary.name == "PUCRS"
+    assert summary.max_passengers == 5
+
+
+@pytest.mark.skip(reason="US08-TK05")
+def test_get_invite_summary_not_found_raises() -> None:
+    from src.domains.routes.errors import RouteNotFoundError
+    from src.domains.routes.service import RouteService
+
+    route_repo = Mock()
+    route_repo.find_by_invite_code.return_value = None
+    rp_repo = Mock()
+
+    service = RouteService(route_repo, Mock(), Mock(), rp_repo)
+    with pytest.raises(RouteNotFoundError):
+        service.get_invite_summary("ZZZZZ")
+    rp_repo.count_accepted_by_route.assert_not_called()
+
+
+@pytest.mark.skip(reason="US08-TK05")
+def test_get_invite_summary_zero_accepted_is_valid() -> None:
+    from src.domains.routes.service import RouteService
+
+    route = make_route_for_summary_mock()
+    route_repo = Mock()
+    route_repo.find_by_invite_code.return_value = route
+    rp_repo = Mock()
+    rp_repo.count_accepted_by_route.return_value = 0
+
+    service = RouteService(route_repo, Mock(), Mock(), rp_repo)
+    summary = service.get_invite_summary("A1B2C")
+
+    assert summary.accepted_count == 0
+
+
+# ===========================================================================
+# US06-TK18 — RouteService.delete_route
+# Arquivo:    src/domains/routes/service.py
+# ===========================================================================
+
+
+def make_rp_for_delete(status: str = "accepted"):
+    from src.domains.route_passangers.entity import RoutePassangerModel
+
+    rp = Mock(spec=RoutePassangerModel)
+    rp.id = uuid.uuid4()
+    rp.status = status
+    rp.user_id = uuid.uuid4()
+    rp.dependent_id = None
+    return rp
+
+
+@pytest.mark.skip(reason="US06-TK18")
+def test_delete_route_success_returns_none() -> None:
+    from src.domains.routes.service import RouteService
+
+    driver_id = uuid.uuid4()
+    route = make_route_mock(driver_id)
+    route.status = "inativa"
+
+    route_repo = Mock()
+    route_repo.find_by_id.return_value = route
+    route_repo.delete.return_value = True
+    rp_repo = Mock()
+    rp_repo.find_by_route_and_status.return_value = []
+    notif = Mock()
+
+    service = RouteService(route_repo, Mock(), Mock(), rp_repo, notif)
+    result = service.delete_route(route.id, driver_id)
+
+    assert result is None
+    route_repo.delete.assert_called_once_with(route.id)
+
+
+@pytest.mark.skip(reason="US06-TK18")
+def test_delete_route_not_found_raises() -> None:
+    from src.domains.routes.errors import RouteNotFoundError
+    from src.domains.routes.service import RouteService
+
+    route_repo = Mock()
+    route_repo.find_by_id.return_value = None
+
+    service = RouteService(route_repo, Mock(), Mock(), Mock(), Mock())
+    with pytest.raises(RouteNotFoundError):
+        service.delete_route(uuid.uuid4(), uuid.uuid4())
+    route_repo.delete.assert_not_called()
+
+
+@pytest.mark.skip(reason="US06-TK18")
+def test_delete_route_wrong_owner_raises() -> None:
+    from src.domains.routes.errors import RouteOwnershipError
+    from src.domains.routes.service import RouteService
+
+    owner_id = uuid.uuid4()
+    route = make_route_mock(owner_id)
+    route.status = "inativa"
+
+    route_repo = Mock()
+    route_repo.find_by_id.return_value = route
+
+    service = RouteService(route_repo, Mock(), Mock(), Mock(), Mock())
+    with pytest.raises(RouteOwnershipError):
+        service.delete_route(route.id, uuid.uuid4())
+    route_repo.delete.assert_not_called()
+
+
+@pytest.mark.skip(reason="US06-TK18")
+def test_delete_route_in_progress_raises() -> None:
+    from src.domains.routes.errors import RouteInProgressError
+    from src.domains.routes.service import RouteService
+
+    driver_id = uuid.uuid4()
+    route = make_route_mock(driver_id)
+    route.status = "em_andamento"
+
+    route_repo = Mock()
+    route_repo.find_by_id.return_value = route
+
+    service = RouteService(route_repo, Mock(), Mock(), Mock(), Mock())
+    with pytest.raises(RouteInProgressError):
+        service.delete_route(route.id, driver_id)
+    route_repo.delete.assert_not_called()
+
+
+@pytest.mark.skip(reason="US06-TK18")
+def test_delete_route_notifies_pending_and_accepted() -> None:
+    """Notifica todos os passageiros ativos (pending + accepted)."""
+    from src.domains.routes.service import RouteService
+
+    driver_id = uuid.uuid4()
+    route = make_route_mock(driver_id)
+    route.status = "inativa"
+    rp_pending = make_rp_for_delete(status="pending")
+    rp_accepted = make_rp_for_delete(status="accepted")
+
+    route_repo = Mock()
+    route_repo.find_by_id.return_value = route
+    route_repo.delete.return_value = True
+    rp_repo = Mock()
+    rp_repo.find_by_route_and_status.return_value = [rp_pending, rp_accepted]
+    notif = Mock()
+
+    service = RouteService(route_repo, Mock(), Mock(), rp_repo, notif)
+    service.delete_route(route.id, driver_id)
+
+    assert notif.notify_passanger_route_cancelled.call_count == 2
+    notified_rps = {call.args[0].id for call in notif.notify_passanger_route_cancelled.call_args_list}
+    assert notified_rps == {rp_pending.id, rp_accepted.id}
+
+
+@pytest.mark.skip(reason="US06-TK18")
+def test_delete_route_does_not_notify_rejected() -> None:
+    """Passageiros com status='rejected' não recebem notificação.
+
+    O service deve buscar apenas vínculos ativos (pending+accepted).
+    """
+    from src.domains.routes.service import RouteService
+
+    driver_id = uuid.uuid4()
+    route = make_route_mock(driver_id)
+    route.status = "inativa"
+
+    route_repo = Mock()
+    route_repo.find_by_id.return_value = route
+    route_repo.delete.return_value = True
+    rp_repo = Mock()
+    # simula a consulta do service — já filtra rejected fora
+    rp_repo.find_by_route_and_status.return_value = []
+    notif = Mock()
+
+    service = RouteService(route_repo, Mock(), Mock(), rp_repo, notif)
+    service.delete_route(route.id, driver_id)
+
+    notif.notify_passanger_route_cancelled.assert_not_called()
+
+
+@pytest.mark.skip(reason="US06-TK18")
+def test_delete_route_notifies_before_delete() -> None:
+    """Notificação acontece ANTES do delete (hook de push notification)."""
+    from unittest.mock import MagicMock
+
+    from src.domains.routes.service import RouteService
+
+    driver_id = uuid.uuid4()
+    route = make_route_mock(driver_id)
+    route.status = "inativa"
+    rp = make_rp_for_delete(status="accepted")
+
+    route_repo = Mock()
+    route_repo.find_by_id.return_value = route
+    route_repo.delete.return_value = True
+    rp_repo = Mock()
+    rp_repo.find_by_route_and_status.return_value = [rp]
+    notif = Mock()
+
+    manager = MagicMock()
+    manager.attach_mock(notif.notify_passanger_route_cancelled, "notify")
+    manager.attach_mock(route_repo.delete, "delete_route")
+
+    service = RouteService(route_repo, Mock(), Mock(), rp_repo, notif)
+    service.delete_route(route.id, driver_id)
+
+    call_names = [c[0] for c in manager.mock_calls]
+    assert call_names.index("notify") < call_names.index("delete_route")

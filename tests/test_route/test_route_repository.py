@@ -383,3 +383,187 @@ def test_route_repository_update_empty_dict_is_noop(db_session) -> None:
     updated = repo.update(route.id, {})
     assert updated is not None
     assert updated.name == "Inalterado"
+
+
+# ===========================================================================
+# US08-TK05 — find_by_invite_code
+# ===========================================================================
+
+
+@pytest.mark.skip(reason="US08-TK05")
+def test_route_repository_find_by_invite_code_returns_route(db_session) -> None:
+    from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
+
+    driver = make_driver(db_session)
+    origin = make_address(db_session, driver.id, "Casa")
+    destination = make_address(db_session, driver.id, "PUCRS")
+    route = make_route(db_session, driver.id, origin.id, destination.id, invite_code="A1B2C")
+    db_session.commit()
+
+    repo = RouteRepositoryImpl(db_session)
+    found = repo.find_by_invite_code("A1B2C")
+    assert found is not None
+    assert found.id == route.id
+
+
+@pytest.mark.skip(reason="US08-TK05")
+def test_route_repository_find_by_invite_code_not_found_returns_none(db_session) -> None:
+    from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
+
+    repo = RouteRepositoryImpl(db_session)
+    assert repo.find_by_invite_code("Z9Z9Z") is None
+
+
+@pytest.mark.skip(reason="US08-TK05")
+def test_route_repository_find_by_invite_code_is_exact_match(db_session) -> None:
+    """Não faz match parcial nem case-insensitive."""
+    from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
+
+    driver = make_driver(db_session)
+    origin = make_address(db_session, driver.id, "Casa")
+    destination = make_address(db_session, driver.id, "PUCRS")
+    make_route(db_session, driver.id, origin.id, destination.id, invite_code="A1B2C")
+    db_session.commit()
+
+    repo = RouteRepositoryImpl(db_session)
+    assert repo.find_by_invite_code("a1b2c") is None
+    assert repo.find_by_invite_code("A1B2") is None
+
+
+# ===========================================================================
+# US06-TK17 — RouteRepository.delete (hard delete com cascade)
+# ===========================================================================
+
+
+@pytest.mark.skip(reason="US06-TK17")
+def test_route_repository_delete_returns_true_when_existing(db_session) -> None:
+    from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
+
+    driver = make_driver(db_session)
+    origin = make_address(db_session, driver.id, "Casa")
+    destination = make_address(db_session, driver.id, "PUCRS")
+    route = make_route(db_session, driver.id, origin.id, destination.id)
+    db_session.commit()
+
+    repo = RouteRepositoryImpl(db_session)
+    result = repo.delete(route.id)
+    assert result is True
+
+
+@pytest.mark.skip(reason="US06-TK17")
+def test_route_repository_delete_removes_route_from_db(db_session) -> None:
+    from src.domains.routes.entity import RouteModel
+    from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
+
+    driver = make_driver(db_session)
+    origin = make_address(db_session, driver.id, "Casa")
+    destination = make_address(db_session, driver.id, "PUCRS")
+    route = make_route(db_session, driver.id, origin.id, destination.id)
+    db_session.commit()
+
+    repo = RouteRepositoryImpl(db_session)
+    repo.delete(route.id)
+
+    found = db_session.query(RouteModel).filter_by(id=route.id).first()
+    assert found is None
+
+
+@pytest.mark.skip(reason="US06-TK17")
+def test_route_repository_delete_not_found_returns_false(db_session) -> None:
+    from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
+
+    repo = RouteRepositoryImpl(db_session)
+    result = repo.delete(uuid.uuid4())
+    assert result is False
+
+
+@pytest.mark.skip(reason="US06-TK17")
+def test_route_repository_delete_cascades_passengers(db_session) -> None:
+    """Ao deletar a rota, route_passangers associados também devem sumir via cascade."""
+    from src.domains.route_passangers.entity import RoutePassangerModel
+    from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
+
+    driver = make_driver(db_session)
+    origin = make_address(db_session, driver.id, "Casa")
+    destination = make_address(db_session, driver.id, "PUCRS")
+    route = make_route(db_session, driver.id, origin.id, destination.id)
+
+    # cria um passageiro vinculado à rota
+    from src.domains.users.entity import UserModel
+
+    passanger = UserModel(
+        id=uuid.uuid4(),
+        name="Passageiro",
+        email=f"p_{uuid.uuid4().hex[:6]}@test.com",
+        phone="54999999999",
+        password_hash="hashed",
+        role="passanger",
+    )
+    db_session.add(passanger)
+    pickup = make_address(db_session, passanger.id, "Casa Passageiro")
+    rp = RoutePassangerModel(
+        id=uuid.uuid4(),
+        route_id=route.id,
+        user_id=passanger.id,
+        pickup_address_id=pickup.id,
+        status="accepted",
+    )
+    db_session.add(rp)
+    db_session.commit()
+
+    repo = RouteRepositoryImpl(db_session)
+    repo.delete(route.id)
+
+    remaining = db_session.query(RoutePassangerModel).filter_by(route_id=route.id).first()
+    assert remaining is None
+
+
+@pytest.mark.skip(reason="US06-TK17")
+def test_route_repository_delete_cascades_stops(db_session) -> None:
+    """Ao deletar a rota, stops associadas também devem sumir via cascade."""
+    from src.domains.route_passangers.entity import RoutePassangerModel
+    from src.domains.stops.entity import StopModel
+    from src.domains.users.entity import UserModel
+    from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
+
+    driver = make_driver(db_session)
+    origin = make_address(db_session, driver.id, "Casa")
+    destination = make_address(db_session, driver.id, "PUCRS")
+    route = make_route(db_session, driver.id, origin.id, destination.id)
+
+    passanger = UserModel(
+        id=uuid.uuid4(),
+        name="Passageiro",
+        email=f"p_{uuid.uuid4().hex[:6]}@test.com",
+        phone="54999999999",
+        password_hash="hashed",
+        role="passanger",
+    )
+    db_session.add(passanger)
+    pickup = make_address(db_session, passanger.id, "Casa Passageiro")
+    rp = RoutePassangerModel(
+        id=uuid.uuid4(),
+        route_id=route.id,
+        user_id=passanger.id,
+        pickup_address_id=pickup.id,
+        status="accepted",
+    )
+    db_session.add(rp)
+    db_session.flush()
+
+    stop = StopModel(
+        id=uuid.uuid4(),
+        route_id=route.id,
+        route_passanger_id=rp.id,
+        address_id=pickup.id,
+        type="embarque",
+        order_index=0,
+    )
+    db_session.add(stop)
+    db_session.commit()
+
+    repo = RouteRepositoryImpl(db_session)
+    repo.delete(route.id)
+
+    remaining = db_session.query(StopModel).filter_by(route_id=route.id).first()
+    assert remaining is None

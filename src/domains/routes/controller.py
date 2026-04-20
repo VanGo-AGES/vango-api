@@ -5,7 +5,12 @@ from fastapi import APIRouter, Depends, Header, HTTPException, status
 
 from src.infrastructure.dependencies.route_dependencies import get_route_service
 
-from .dtos import RouteCreate, RouteResponse, RouteUpdate
+from .dtos import (
+    RouteCreate,
+    RouteInviteSummaryResponse,
+    RouteResponse,
+    RouteUpdate,
+)
 from .errors import (
     NoVehicleError,
     RouteNotFoundError,
@@ -98,6 +103,26 @@ def update_route(
     pass
 
 
+# US08-TK06
+@router.get(
+    "/invite/{invite_code}",
+    response_model=RouteInviteSummaryResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Resumo de rota por código de convite",
+    description=(
+        "Retorna o resumo público da rota identificada pelo invite_code, para que "
+        "o passageiro decida se solicita entrada. Inclui accepted_count (quantidade "
+        "de passageiros já aceitos) mas não expõe invite_code, status nem stops."
+    ),
+)
+def get_route_by_invite_code(
+    invite_code: str,
+    service: Annotated[RouteService, Depends(get_route_service)],
+    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+) -> RouteInviteSummaryResponse:
+    pass
+
+
 @router.get(
     "/{route_id}",
     response_model=RouteResponse,
@@ -118,3 +143,24 @@ def get_route(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except RouteOwnershipError as exc:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+
+
+# US06-TK19
+@router.delete(
+    "/{route_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Excluir rota",
+    description=(
+        "Exclui uma rota do motorista. Apenas o motorista dono pode excluir. "
+        "Rotas com status='em_andamento' não podem ser excluídas. "
+        "Passageiros ativos (pending/accepted) são notificados antes da exclusão. "
+        "A remoção é em cascata: route_passangers, schedules e stops associadas "
+        "também são apagados."
+    ),
+)
+def delete_route(
+    route_id: UUID,
+    service: Annotated[RouteService, Depends(get_route_service)],
+    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+) -> None:
+    pass

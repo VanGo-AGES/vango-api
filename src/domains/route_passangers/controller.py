@@ -6,6 +6,7 @@ Endpoints:
 - POST   /routes/{route_id}/passangers/{rp_id}/reject   (TK11)
 - DELETE /routes/{route_id}/passangers/{rp_id}          (TK13)
 - GET    /routes/{route_id}/passangers?status=pending   (TK15)
+- GET    /routes/me                                     (US08-TK15)
 """
 
 from typing import Annotated
@@ -17,10 +18,37 @@ from src.infrastructure.dependencies.route_passanger_dependencies import (
     get_route_passanger_service,
 )
 
-from .dtos import RoutePassangerResponse
+from .dtos import (
+    JoinRouteRequest,
+    PassangerRouteResponse,
+    RoutePassangerResponse,
+    UpdateSchedulesRequest,
+)
 from .service import RoutePassangerService
 
 router = APIRouter(prefix="/routes", tags=["RoutePassangers"])
+
+
+# US08-TK15
+# IMPORTANTE: este endpoint precisa ser resolvido ANTES de
+# GET /routes/{route_id} (que vive em routes.controller). Por isso
+# route_passanger_controller é registrado antes de route_controller em main.py.
+@router.get(
+    "/me",
+    response_model=list[PassangerRouteResponse],
+    status_code=status.HTTP_200_OK,
+    summary="Listar minhas rotas (home do passageiro)",
+    description=(
+        "Retorna todos os vínculos ativos (pending + accepted) do usuário "
+        "autenticado, incluindo vínculos em que ele é guardian de um dependente. "
+        "Ordenado por joined_at desc. Usado pela home do passageiro."
+    ),
+)
+def list_my_routes(
+    service: Annotated[RoutePassangerService, Depends(get_route_passanger_service)],
+    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+) -> list[PassangerRouteResponse]:
+    pass
 
 
 # US06-TK09
@@ -90,4 +118,64 @@ def list_passangers(
     x_user_id: Annotated[str, Header(alias="X-User-Id")],
     status_filter: Annotated[str | None, Query(alias="status")] = None,
 ) -> list[RoutePassangerResponse]:
+    pass
+
+
+# US08-TK08
+@router.post(
+    "/{route_id}/passangers",
+    response_model=RoutePassangerResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Solicitar entrada em rota",
+    description=(
+        "Passageiro (ou guardian em nome de dependente) solicita entrada na rota "
+        "informando schedules (dias + endereço de embarque). Cria vínculo pending."
+    ),
+)
+def join_route(
+    route_id: UUID,
+    body: JoinRouteRequest,
+    service: Annotated[RoutePassangerService, Depends(get_route_passanger_service)],
+    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+) -> RoutePassangerResponse:
+    pass
+
+
+# US08-TK10
+@router.delete(
+    "/{route_id}/passangers/me",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Sair de uma rota",
+    description=(
+        "Passageiro sai da rota. Aceita dependent_id opcional quando guardian "
+        "está saindo em nome do dependente. Bloqueado se rota está em andamento."
+    ),
+)
+def leave_route(
+    route_id: UUID,
+    service: Annotated[RoutePassangerService, Depends(get_route_passanger_service)],
+    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    dependent_id: Annotated[UUID | None, Query()] = None,
+) -> None:
+    pass
+
+
+# US08-TK12
+@router.patch(
+    "/{route_id}/passangers/me",
+    response_model=RoutePassangerResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Atualizar schedules de participação",
+    description=(
+        "Substitui completamente os schedules atuais do passageiro pelos "
+        "fornecidos. Aceita dependent_id opcional para guardian em nome de dep."
+    ),
+)
+def update_schedules(
+    route_id: UUID,
+    body: UpdateSchedulesRequest,
+    service: Annotated[RoutePassangerService, Depends(get_route_passanger_service)],
+    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    dependent_id: Annotated[UUID | None, Query()] = None,
+) -> RoutePassangerResponse:
     pass

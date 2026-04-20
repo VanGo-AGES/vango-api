@@ -26,3 +26,32 @@ class RoutePassangerRepositoryImpl(IRoutePassangerRepository):
 
     def delete(self, rp_id: UUID) -> bool:
         pass
+
+    # -------------------------------------------------------------------
+    # US08-TK03
+    # -------------------------------------------------------------------
+
+    def find_active_by_user_and_route(
+        self,
+        user_id: UUID,
+        dependent_id: UUID | None,
+        route_id: UUID,
+    ) -> RoutePassangerModel | None:
+        pass
+
+    def find_by_user_and_route_id(
+        self,
+        user_id: UUID,
+        route_id: UUID,
+    ) -> list[RoutePassangerModel]:
+        pass
+
+    # -------------------------------------------------------------------
+    # US08-TK13
+    # -------------------------------------------------------------------
+
+    def find_active_with_route_by_user(
+        self,
+        user_id: UUID,
+    ) -> list[RoutePassangerModel]:
+        pass

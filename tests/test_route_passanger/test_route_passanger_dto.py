@@ -6,7 +6,8 @@ import pytest
 #              src/domains/route_passangers/errors.py
 # Critérios:
 #   DTO RoutePassangerResponse expõe:
-#     obrigatórios: id, route_id, status, requested_at, user_id, user_name
+#     obrigatórios: id, route_id, status, requested_at, user_id, user_name,
+#                   user_phone, pickup_address_id
 #     opcionais (default None): joined_at, dependent_id, dependent_name,
 #                                guardian_name
 #     model_config deve permitir construção a partir de objetos ORM
@@ -14,6 +15,12 @@ import pytest
 #   Erros: RoutePassangerNotFoundError, RouteCapacityExceededError,
 #          RoutePassangerAlreadyProcessedError — todos herdam de Exception
 #          e possuem mensagem default em pt-BR.
+#
+#   Observação: user_phone corresponde a user.phone no UserModel (não-null).
+#   Quando rp.dependent_id != None, user_id é o guardian e user_phone é o
+#   phone do guardian — que é o contato correto pro driver (dependente não
+#   possui phone próprio). Por isso não há dependent_phone nem guardian_phone
+#   no DTO (redundantes). (US13)
 # ===========================================================================
 
 
@@ -30,6 +37,8 @@ def make_response_payload(**kwargs) -> dict:
         "joined_at": None,
         "user_id": uuid4(),
         "user_name": "João Silva",
+        "user_phone": "51999999999",
+        "pickup_address_id": uuid4(),
         "dependent_id": None,
         "dependent_name": None,
         "guardian_name": None,
@@ -113,6 +122,40 @@ def test_route_passanger_response_requires_user_name() -> None:
     del payload["user_name"]
     with pytest.raises(ValidationError):
         RoutePassangerResponse(**payload)
+
+
+@pytest.mark.skip(reason="US06-TK05")
+def test_route_passanger_response_requires_pickup_address_id() -> None:
+    from pydantic import ValidationError
+
+    from src.domains.route_passangers.dtos import RoutePassangerResponse
+
+    payload = make_response_payload()
+    del payload["pickup_address_id"]
+    with pytest.raises(ValidationError):
+        RoutePassangerResponse(**payload)
+
+
+@pytest.mark.skip(reason="US06-TK05")
+def test_route_passanger_response_requires_user_phone() -> None:
+    """US13 — driver precisa do phone do passageiro pro deeplink de contato."""
+    from pydantic import ValidationError
+
+    from src.domains.route_passangers.dtos import RoutePassangerResponse
+
+    payload = make_response_payload()
+    del payload["user_phone"]
+    with pytest.raises(ValidationError):
+        RoutePassangerResponse(**payload)
+
+
+@pytest.mark.skip(reason="US06-TK05")
+def test_route_passanger_response_exposes_user_phone() -> None:
+    from src.domains.route_passangers.dtos import RoutePassangerResponse
+
+    payload = make_response_payload(user_phone="54988887777")
+    response = RoutePassangerResponse(**payload)
+    assert response.user_phone == "54988887777"
 
 
 # ---------------------------------------------------------------------------
@@ -298,6 +341,8 @@ def test_route_passanger_response_builds_from_orm_like_object() -> None:
     obj.joined_at = datetime(2026, 4, 18, 11, 0, 0)
     obj.user_id = uuid4()
     obj.user_name = "João Silva"
+    obj.user_phone = "51999999999"
+    obj.pickup_address_id = uuid4()
     obj.dependent_id = None
     obj.dependent_name = None
     obj.guardian_name = None
@@ -306,6 +351,8 @@ def test_route_passanger_response_builds_from_orm_like_object() -> None:
     assert response.id == obj.id
     assert response.status == "accepted"
     assert response.user_name == "João Silva"
+    assert response.user_phone == "51999999999"
+    assert response.pickup_address_id == obj.pickup_address_id
 
 
 # ===========================================================================
@@ -380,3 +427,168 @@ def test_route_passanger_already_processed_error_accepts_custom_message() -> Non
 
     err = RoutePassangerAlreadyProcessedError("já processada")
     assert str(err) == "já processada"
+
+
+# ===========================================================================
+# US08 - TK13: PassangerRouteResponse — item da home do passageiro
+# Arquivo: src/domains/route_passangers/dtos.py
+# Critérios:
+#   Campos obrigatórios: route_id, route_name, driver_name, driver_phone,
+#     origin_label, destination_label, expected_time, recurrence (list[str]),
+#     status, membership_status, schedules (list), joined_at
+#   Opcional: dependent_name (default None)
+#   model_config deve permitir construção via from_attributes=True.
+#
+#   Observação: driver_phone corresponde a user.phone do motorista, resolvido
+#   pelo service. Usado pelo FE pra montar deeplink tel:/wa.me (US13).
+# ===========================================================================
+
+
+from datetime import time as dtime
+
+
+def make_passanger_route_payload(**kwargs) -> dict:
+    defaults = {
+        "route_id": uuid4(),
+        "route_name": "PUCRS",
+        "driver_name": "Carlos Motorista",
+        "driver_phone": "51999999999",
+        "origin_label": "Casa",
+        "destination_label": "PUCRS",
+        "expected_time": dtime(8, 0),
+        "recurrence": ["seg", "ter", "qua", "qui", "sex"],
+        "status": "ativa",
+        "membership_status": "accepted",
+        "schedules": [],
+        "joined_at": datetime(2026, 4, 18, 10, 0, 0),
+        "dependent_name": None,
+    }
+    defaults.update(kwargs)
+    return defaults
+
+
+@pytest.mark.skip(reason="US08-TK13")
+def test_passanger_route_response_requires_route_id() -> None:
+    from pydantic import ValidationError
+
+    from src.domains.route_passangers.dtos import PassangerRouteResponse
+
+    payload = make_passanger_route_payload()
+    del payload["route_id"]
+    with pytest.raises(ValidationError):
+        PassangerRouteResponse(**payload)
+
+
+@pytest.mark.skip(reason="US08-TK13")
+def test_passanger_route_response_requires_membership_status() -> None:
+    from pydantic import ValidationError
+
+    from src.domains.route_passangers.dtos import PassangerRouteResponse
+
+    payload = make_passanger_route_payload()
+    del payload["membership_status"]
+    with pytest.raises(ValidationError):
+        PassangerRouteResponse(**payload)
+
+
+@pytest.mark.skip(reason="US08-TK13")
+def test_passanger_route_response_requires_joined_at() -> None:
+    from pydantic import ValidationError
+
+    from src.domains.route_passangers.dtos import PassangerRouteResponse
+
+    payload = make_passanger_route_payload()
+    del payload["joined_at"]
+    with pytest.raises(ValidationError):
+        PassangerRouteResponse(**payload)
+
+
+@pytest.mark.skip(reason="US08-TK13")
+def test_passanger_route_response_requires_driver_phone() -> None:
+    """US13 — passageiro precisa do phone do motorista pro deeplink."""
+    from pydantic import ValidationError
+
+    from src.domains.route_passangers.dtos import PassangerRouteResponse
+
+    payload = make_passanger_route_payload()
+    del payload["driver_phone"]
+    with pytest.raises(ValidationError):
+        PassangerRouteResponse(**payload)
+
+
+@pytest.mark.skip(reason="US08-TK13")
+def test_passanger_route_response_exposes_driver_phone() -> None:
+    from src.domains.route_passangers.dtos import PassangerRouteResponse
+
+    payload = make_passanger_route_payload(driver_phone="54988887777")
+    response = PassangerRouteResponse(**payload)
+    assert response.driver_phone == "54988887777"
+
+
+@pytest.mark.skip(reason="US08-TK13")
+def test_passanger_route_response_dependent_name_defaults_to_none() -> None:
+    from src.domains.route_passangers.dtos import PassangerRouteResponse
+
+    payload = make_passanger_route_payload()
+    del payload["dependent_name"]
+    response = PassangerRouteResponse(**payload)
+    assert response.dependent_name is None
+
+
+@pytest.mark.skip(reason="US08-TK13")
+def test_passanger_route_response_accepts_valid_self_payload() -> None:
+    from src.domains.route_passangers.dtos import PassangerRouteResponse
+
+    payload = make_passanger_route_payload()
+    response = PassangerRouteResponse(**payload)
+    assert response.route_name == "PUCRS"
+    assert response.driver_name == "Carlos Motorista"
+    assert response.membership_status == "accepted"
+    assert response.dependent_name is None
+
+
+@pytest.mark.skip(reason="US08-TK13")
+def test_passanger_route_response_accepts_dependent_payload() -> None:
+    from src.domains.route_passangers.dtos import PassangerRouteResponse
+
+    payload = make_passanger_route_payload(dependent_name="Maria Silva")
+    response = PassangerRouteResponse(**payload)
+    assert response.dependent_name == "Maria Silva"
+
+
+@pytest.mark.skip(reason="US08-TK13")
+def test_passanger_route_response_membership_status_preserves_values() -> None:
+    from src.domains.route_passangers.dtos import PassangerRouteResponse
+
+    for status_value in ("pending", "accepted"):
+        payload = make_passanger_route_payload(membership_status=status_value)
+        response = PassangerRouteResponse(**payload)
+        assert response.membership_status == status_value
+
+
+@pytest.mark.skip(reason="US08-TK13")
+def test_passanger_route_response_builds_from_orm_like_object() -> None:
+    from src.domains.route_passangers.dtos import PassangerRouteResponse
+
+    class FakeObj:
+        pass
+
+    obj = FakeObj()
+    obj.route_id = uuid4()
+    obj.route_name = "PUCRS"
+    obj.driver_name = "Carlos Motorista"
+    obj.driver_phone = "51999999999"
+    obj.origin_label = "Casa"
+    obj.destination_label = "PUCRS"
+    obj.expected_time = dtime(8, 0)
+    obj.recurrence = ["seg", "qua", "sex"]
+    obj.status = "ativa"
+    obj.membership_status = "pending"
+    obj.schedules = []
+    obj.joined_at = datetime(2026, 4, 18, 10, 0, 0)
+    obj.dependent_name = None
+
+    response = PassangerRouteResponse.model_validate(obj)
+    assert response.route_id == obj.route_id
+    assert response.membership_status == "pending"
+    assert response.driver_phone == "51999999999"
