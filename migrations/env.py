@@ -12,9 +12,24 @@ from src.domains.addresses.entity import AddressModel
 from src.domains.dependents.entity import DependentModel
 from src.domains.routes.entity import RouteModel
 from src.domains.route_passangers.entity import RoutePassangerModel
+from src.domains.route_passangers.schedule_entity import RoutePassangerScheduleModel
 from src.domains.vehicles.entity import VehicleModel
+from src.domains.stops.entity import StopModel
+from src.domains.trips.entity import TripModel, TripPassangerModel, AbsenceModel
 
-_ = UserModel, AddressModel, DependentModel, RouteModel, RoutePassangerModel, VehicleModel
+_ = (
+    UserModel,
+    AddressModel,
+    DependentModel,
+    RouteModel,
+    RoutePassangerModel,
+    RoutePassangerScheduleModel,
+    VehicleModel,
+    StopModel,
+    TripModel,
+    TripPassangerModel,
+    AbsenceModel,
+)
 
 # Objeto de configuração do Alembic (lê o alembic.ini)
 config = context.config
