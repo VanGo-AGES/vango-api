@@ -3,19 +3,9 @@ import string
 from uuid import UUID
 
 from src.domains.addresses.entity import AddressModel
-from src.domains.notifications.service import INotificationService
-from src.domains.route_passangers.repository import IRoutePassangerRepository
-from src.domains.routes.dtos import (
-    RouteCreate,
-    RouteInviteSummaryResponse,
-    RouteUpdate,
-)
+from src.domains.routes.dtos import RouteCreate
 from src.domains.routes.entity import RouteModel
-from src.domains.routes.errors import (
-    NoVehicleError,
-    RouteNotFoundError,
-    RouteOwnershipError,
-)
+from src.domains.routes.errors import NoVehicleError, RouteNotFoundError, RouteOwnershipError
 from src.domains.routes.repository import IAddressRepository, IRouteRepository
 from src.domains.vehicles.repository import IVehicleRepository
 
@@ -26,17 +16,10 @@ class RouteService:
         route_repository: IRouteRepository,
         address_repository: IAddressRepository,
         vehicle_repository: IVehicleRepository,
-        route_passanger_repository: IRoutePassangerRepository | None = None,
-        notification_service: INotificationService | None = None,
     ):
         self.route_repository = route_repository
         self.address_repository = address_repository
         self.vehicle_repository = vehicle_repository
-        # Usado pela US08-TK05 (get_invite_summary). Opcional para não
-        # quebrar testes/instanciações pré-US08 que não dependem dele.
-        self.route_passanger_repository = route_passanger_repository
-        # Usado pela US06-TK18 (delete_route). Opcional pelo mesmo motivo.
-        self.notification_service = notification_service
 
     # US05 - TK03
     def create_route(self, driver_id: UUID, data: RouteCreate) -> RouteModel:
@@ -103,38 +86,6 @@ class RouteService:
         """Retorna todas as rotas do motorista independente de status."""
         return self.route_repository.find_all_by_driver_id(driver_id)
 
-    # US06-TK03
-    def update_route(self, route_id: UUID, driver_id: UUID, data: RouteUpdate) -> RouteModel:
-        """
-        Atualiza uma rota existente.
-
-        Regras:
-        - 404 se não existir
-        - 403 se driver não for dono
-        - 409 (RouteInProgressError) se status == 'em_andamento'
-        - Se origin/destination presentes, cria novos AddressModel via address_repository.save
-        - Envia para route_repository.update apenas campos != None
-        """
-        pass
-
-    # US08-TK05
-    def get_by_invite_code(self, invite_code: str) -> RouteModel:
-        """Retorna a rota por invite_code.
-
-        - 404 RouteNotFoundError se não existir rota com esse invite_code.
-        """
-        pass
-
-    # US08-TK05
-    def get_invite_summary(self, invite_code: str) -> RouteInviteSummaryResponse:
-        """Retorna o resumo público da rota identificada pelo invite_code,
-        já com accepted_count computado.
-
-        - 404 RouteNotFoundError se não existir.
-        - accepted_count vem de route_passanger_repository.count_accepted_by_route.
-        """
-        pass
-
     def get_route(self, route_id: UUID, driver_id: UUID) -> RouteModel:
         """
         Retorna a rota pelo ID.
@@ -148,22 +99,3 @@ class RouteService:
         if route.driver_id != driver_id:
             raise RouteOwnershipError()
         return route
-
-    # US06-TK18
-    def delete_route(self, route_id: UUID, driver_id: UUID) -> None:
-        """
-        Exclui permanentemente uma rota do motorista.
-
-        Regras:
-        - 404 RouteNotFoundError se não existir
-        - 403 RouteOwnershipError se driver não for dono
-        - 409 RouteInProgressError se status == 'em_andamento'
-        - Notifica todos os passageiros ativos (pending + accepted) via
-          notification_service.notify_passanger_route_cancelled(rp) ANTES
-          do delete — rejected ficam de fora.
-        - Chama route_repository.delete(route_id). A cascade do ORM
-          (cascade="all, delete-orphan") remove route_passangers,
-          schedules e stops associadas.
-        - Retorna None.
-        """
-        pass

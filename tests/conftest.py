@@ -10,13 +10,6 @@ from src.domains.dependents.entity import DependentModel
 from src.domains.addresses.entity import AddressModel
 from src.domains.routes.entity import RouteModel
 from src.domains.route_passangers.entity import RoutePassangerModel
-from src.domains.route_passangers.schedule_entity import RoutePassangerScheduleModel  # noqa: F401 — US08-TK02
-from src.domains.stops.entity import StopModel  # noqa: F401 — US07-TK05
-from src.domains.trips.entity import (  # noqa: F401 — US09
-    AbsenceModel,
-    TripModel,
-    TripPassangerModel,
-)
 
 
 # Engine de teste (SQLite em memória)

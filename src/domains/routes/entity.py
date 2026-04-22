@@ -28,16 +28,3 @@ class RouteModel(Base):
     origin_address = relationship("AddressModel", foreign_keys=[origin_address_id])
     destination_address = relationship("AddressModel", foreign_keys=[destination_address_id])
     passengers = relationship("RoutePassangerModel", back_populates="route", cascade="all, delete-orphan")
-    # US07 — stops da rota (ordenadas por order_index)
-    stops = relationship(
-        "StopModel",
-        back_populates="route",
-        cascade="all, delete-orphan",
-        order_by="StopModel.order_index",
-    )
-    # US09 — execuções (trips) da rota
-    trips = relationship(
-        "TripModel",
-        back_populates="route",
-        cascade="all, delete-orphan",
-    )

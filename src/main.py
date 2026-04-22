@@ -10,17 +10,12 @@ from firebase_admin import credentials
 from sqlalchemy import text
 
 from src.config import settings
-from src.domains.absences.controller import router as absence_controller
 from src.domains.addresses.entity import AddressModel
 from src.domains.dependents.controller import router as dependent_controller
 from src.domains.dependents.entity import DependentModel
-from src.domains.route_passangers.controller import router as route_passanger_controller
 from src.domains.route_passangers.entity import RoutePassangerModel
-from src.domains.route_passangers.schedule_entity import RoutePassangerScheduleModel
 from src.domains.routes.controller import router as route_controller
 from src.domains.routes.entity import RouteModel
-from src.domains.trips.controller import router as trip_controller
-from src.domains.trips.entity import AbsenceModel, TripModel, TripPassangerModel
 from src.domains.uploads.controller import router as upload_controller
 from src.domains.users.controller import router as user_controller
 from src.domains.users.entity import UserModel
@@ -29,18 +24,7 @@ from src.domains.vehicles.entity import VehicleModel
 from src.infrastructure.database import Base, engine
 
 # Force SQLAlchemy to register all mappers so relationship() string refs resolve
-_ = (
-    UserModel,
-    AddressModel,
-    DependentModel,
-    VehicleModel,
-    RouteModel,
-    RoutePassangerModel,
-    RoutePassangerScheduleModel,
-    TripModel,
-    TripPassangerModel,
-    AbsenceModel,
-)
+_ = (UserModel, AddressModel, DependentModel, VehicleModel, RouteModel, RoutePassangerModel)
 
 
 @asynccontextmanager
@@ -107,13 +91,8 @@ app.add_middleware(
 app.include_router(user_controller)
 app.include_router(vehicle_controller)
 app.include_router(dependent_controller)
-app.include_router(route_passanger_controller)
 app.include_router(route_controller)
-# US09 — endpoints de execução de viagem (/routes/{id}/trips e /trips/...)
-app.include_router(trip_controller)
 app.include_router(upload_controller)
-# US06-TK20 — aviso de ausência (passageiro/guardian)
-app.include_router(absence_controller)
 
 
 @app.get("/health", tags=["Infrastructure"])
