@@ -16,3 +16,9 @@ class NoVehicleError(Exception):
 class DuplicateInviteCodeError(Exception):
     def __init__(self, message: str = "Erro ao gerar código de convite único. Tente novamente."):
         super().__init__(message)
+
+
+# US06
+class RouteInProgressError(Exception):
+    def __init__(self, message: str = "Não é possível modificar uma rota em andamento."):
+        super().__init__(message)
