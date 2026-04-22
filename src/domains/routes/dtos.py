@@ -3,6 +3,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from src.domains.stops.dtos import StopResponse
+
 VALID_RECURRENCE_DAYS = {"seg", "ter", "qua", "qui", "sex", "sab", "dom"}
 
 
@@ -89,3 +91,48 @@ class RouteResponse(BaseModel):
     max_passengers: int
     origin_address: AddressResponse
     destination_address: AddressResponse
+    # US07-TK-S05 — paradas da rota (geradas a partir de passageiros aceitos)
+    stops: list[StopResponse] = Field(default_factory=list)
+
+
+# US08-TK01
+class RouteInviteSummaryResponse(BaseModel):
+    """Resumo da rota retornado ao passageiro durante a busca por invite_code.
+
+    Expõe apenas o que o passageiro precisa para decidir se quer solicitar
+    entrada: dados básicos da rota + capacidade e quantos já foram aceitos.
+    Não expõe lista de passageiros nem stops.
+    """
+
+    pass
+
+
+# ---------------------------------------------------------------------------
+# RouteUpdate
+# ---------------------------------------------------------------------------
+
+
+class RouteUpdate(BaseModel):
+    """DTO de atualização parcial de rota. Todos os campos são opcionais.
+
+    Regras:
+    - route_type: "outbound" ou "inbound"
+    - recurrence: mesma validação de RouteCreate (dias válidos, sem duplicatas, >=1 dia)
+    - origin != destination quando AMBOS estão presentes
+    """
+
+    name: str | None = Field(default=None, min_length=1, max_length=255)
+    route_type: str | None = Field(default=None, pattern="^(outbound|inbound)$")
+    origin: AddressCreate | None = None
+    destination: AddressCreate | None = None
+    expected_time: time | None = None
+    recurrence: str | None = None
+
+    @field_validator("recurrence")
+    @classmethod
+    def validate_recurrence(cls, v: str | None) -> str | None:
+        pass
+
+    @model_validator(mode="after")
+    def validate_origin_differs_from_destination(self) -> "RouteUpdate":
+        pass

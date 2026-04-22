@@ -199,3 +199,202 @@ def test_route_create_different_origin_and_destination_is_valid() -> None:
 
     route = RouteCreate(**make_route_payload())
     assert route.origin.street != route.destination.street
+
+
+# ===========================================================================
+# US06 - TK01: RouteUpdate — atualização parcial de rota
+# Arquivo:     src/domains/routes/dtos.py
+# Critérios:   Todos os campos opcionais; valida route_type, recurrence,
+#              e origin != destination quando ambos presentes.
+# ===========================================================================
+
+
+@pytest.mark.skip(reason="US06-TK01")
+def test_route_update_all_fields_optional() -> None:
+    from src.domains.routes.dtos import RouteUpdate
+
+    update = RouteUpdate()
+    assert update.name is None
+    assert update.recurrence is None
+    assert update.origin is None
+    assert update.destination is None
+
+
+@pytest.mark.skip(reason="US06-TK01")
+def test_route_update_partial_only_name() -> None:
+    from src.domains.routes.dtos import RouteUpdate
+
+    update = RouteUpdate(name="Nova Rota")
+    assert update.name == "Nova Rota"
+    assert update.route_type is None
+
+
+@pytest.mark.skip(reason="US06-TK01")
+def test_route_update_partial_only_recurrence() -> None:
+    from src.domains.routes.dtos import RouteUpdate
+
+    update = RouteUpdate(recurrence="seg,ter")
+    assert update.recurrence == "seg,ter"
+
+
+@pytest.mark.skip(reason="US06-TK01")
+def test_route_update_invalid_route_type() -> None:
+    from pydantic import ValidationError
+
+    from src.domains.routes.dtos import RouteUpdate
+
+    with pytest.raises(ValidationError):
+        RouteUpdate(route_type="ambos")
+
+
+@pytest.mark.skip(reason="US06-TK01")
+def test_route_update_invalid_recurrence_day() -> None:
+    from pydantic import ValidationError
+
+    from src.domains.routes.dtos import RouteUpdate
+
+    with pytest.raises(ValidationError):
+        RouteUpdate(recurrence="mon,tue")
+
+
+@pytest.mark.skip(reason="US06-TK01")
+def test_route_update_recurrence_duplicate_days() -> None:
+    from pydantic import ValidationError
+
+    from src.domains.routes.dtos import RouteUpdate
+
+    with pytest.raises(ValidationError):
+        RouteUpdate(recurrence="seg,seg,ter")
+
+
+@pytest.mark.skip(reason="US06-TK01")
+def test_route_update_origin_and_destination_cannot_be_equal() -> None:
+    from pydantic import ValidationError
+
+    from src.domains.routes.dtos import RouteUpdate
+
+    same = make_address_payload()
+    with pytest.raises(ValidationError):
+        RouteUpdate(origin=same, destination=same)
+
+
+@pytest.mark.skip(reason="US06-TK01")
+def test_route_update_accepts_only_origin_without_destination() -> None:
+    from src.domains.routes.dtos import RouteUpdate
+
+    update = RouteUpdate(origin=make_address_payload())
+    assert update.origin is not None
+    assert update.destination is None
+
+
+@pytest.mark.skip(reason="US06-TK01")
+def test_route_update_expected_time_valid() -> None:
+    from datetime import time
+
+    from src.domains.routes.dtos import RouteUpdate
+
+    update = RouteUpdate(expected_time="09:30:00")
+    assert update.expected_time == time(9, 30)
+
+
+# ===========================================================================
+# US08 - TK01: RouteInviteSummaryResponse — resumo da rota para o passageiro
+# Arquivo: src/domains/routes/dtos.py
+# Critérios:
+#   Fields: id (UUID), name (str), route_type (str), recurrence (str),
+#           expected_time (time), max_passengers (int), accepted_count (int),
+#           origin_address (AddressResponse), destination_address (AddressResponse)
+#   Não expõe: invite_code, passageiros, stops, status
+# ===========================================================================
+
+
+@pytest.mark.skip(reason="US08-TK01")
+def test_route_invite_summary_response_accepts_valid_payload() -> None:
+    from datetime import time
+    from uuid import uuid4
+
+    from src.domains.routes.dtos import RouteInviteSummaryResponse
+
+    payload = {
+        "id": uuid4(),
+        "name": "PUCRS",
+        "route_type": "outbound",
+        "recurrence": "seg,ter,qua",
+        "expected_time": time(8, 0),
+        "max_passengers": 5,
+        "accepted_count": 2,
+        "origin_address": {
+            "id": uuid4(),
+            "label": "Casa",
+            "street": "Av. Coronel Marcos",
+            "number": "861",
+            "neighborhood": "Três Figueiras",
+            "zip": "91760-000",
+            "city": "Porto Alegre",
+            "state": "RS",
+        },
+        "destination_address": {
+            "id": uuid4(),
+            "label": "PUCRS",
+            "street": "Av. Ipiranga",
+            "number": "6681",
+            "neighborhood": "Partenon",
+            "zip": "90619-900",
+            "city": "Porto Alegre",
+            "state": "RS",
+        },
+    }
+    response = RouteInviteSummaryResponse(**payload)
+    assert response.name == "PUCRS"
+    assert response.max_passengers == 5
+    assert response.accepted_count == 2
+
+
+@pytest.mark.skip(reason="US08-TK01")
+def test_route_invite_summary_response_does_not_expose_invite_code() -> None:
+    from src.domains.routes.dtos import RouteInviteSummaryResponse
+
+    assert "invite_code" not in RouteInviteSummaryResponse.model_fields
+
+
+@pytest.mark.skip(reason="US08-TK01")
+def test_route_invite_summary_response_does_not_expose_status() -> None:
+    from src.domains.routes.dtos import RouteInviteSummaryResponse
+
+    assert "status" not in RouteInviteSummaryResponse.model_fields
+
+
+@pytest.mark.skip(reason="US08-TK01")
+def test_route_invite_summary_response_does_not_expose_stops() -> None:
+    from src.domains.routes.dtos import RouteInviteSummaryResponse
+
+    assert "stops" not in RouteInviteSummaryResponse.model_fields
+
+
+@pytest.mark.skip(reason="US08-TK01")
+def test_route_invite_summary_response_requires_accepted_count() -> None:
+    from datetime import time
+    from uuid import uuid4
+
+    from pydantic import ValidationError
+
+    from src.domains.routes.dtos import RouteInviteSummaryResponse
+
+    payload = {
+        "id": uuid4(),
+        "name": "PUCRS",
+        "route_type": "outbound",
+        "recurrence": "seg",
+        "expected_time": time(8, 0),
+        "max_passengers": 5,
+        "origin_address": {
+            "id": uuid4(), "label": "o", "street": "o", "number": "1",
+            "neighborhood": "o", "zip": "12345-000", "city": "o", "state": "RS",
+        },
+        "destination_address": {
+            "id": uuid4(), "label": "d", "street": "d", "number": "1",
+            "neighborhood": "d", "zip": "12345-000", "city": "d", "state": "RS",
+        },
+    }
+    with pytest.raises(ValidationError):
+        RouteInviteSummaryResponse(**payload)

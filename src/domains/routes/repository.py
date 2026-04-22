@@ -27,3 +27,25 @@ class IRouteRepository(ABC):
     @abstractmethod
     def update_invite_code(self, route_id: UUID, new_code: str) -> RouteModel | None:
         pass
+
+    # US06-TK02
+    @abstractmethod
+    def update(self, route_id: UUID, data: dict) -> RouteModel | None:
+        pass
+
+    # US08-TK05
+    @abstractmethod
+    def find_by_invite_code(self, invite_code: str) -> RouteModel | None:
+        """Localiza rota pelo invite_code. Retorna None se não existir."""
+        pass
+
+    # US06-TK17
+    @abstractmethod
+    def delete(self, route_id: UUID) -> bool:
+        """Remove fisicamente a rota pelo id.
+
+        Retorna True se removeu, False se não existia.
+        A cascata do ORM (cascade="all, delete-orphan") cuida de
+        route_passangers, schedules e stops associadas.
+        """
+        pass
