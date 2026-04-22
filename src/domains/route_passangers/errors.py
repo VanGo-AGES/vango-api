@@ -1,8 +1,4 @@
-"""US06-TK05 — Erros do domínio route_passangers.
-
-Stubs das exceções de negócio. O desenvolvedor deve implementar as mensagens
-default (em pt-BR) e garantir que herdem de Exception.
-"""
+"""Erros do domínio route_passangers."""
 
 
 class RoutePassangerNotFoundError(Exception):
@@ -18,6 +14,14 @@ class RoutePassangerAlreadyProcessedError(Exception):
 
 
 class DuplicateRoutePassangerError(Exception):
-    """US08 — passageiro já possui vínculo ativo (pending/accepted) com a rota."""
+    """Passageiro já possui vínculo ativo (pending/accepted) com a rota."""
 
     pass
+
+
+class NotRoutePassangerError(Exception):
+    """Usuário não possui vínculo ativo (pending/accepted) com a rota,
+    nem como passageiro, nem como guardian de um dependente."""
+
+    def __init__(self, message: str = "Usuário não é passageiro desta rota") -> None:
+        super().__init__(message)

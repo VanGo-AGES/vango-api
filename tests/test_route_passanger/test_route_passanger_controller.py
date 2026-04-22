@@ -1670,3 +1670,245 @@ def test_integration_list_my_routes_does_not_collide_with_route_by_id(integratio
     # Não pode ser 422 (UUID parse fail do path /routes/{route_id})
     assert response.status_code != 422
     assert response.status_code == 200
+
+
+# ===========================================================================
+# US14 — GET /routes/{route_id}/me (UNIDADE)
+# ===========================================================================
+
+
+PASSENGER_HEADERS = {"X-User-Id": str(uuid.uuid4()), "X-User-Role": "guardian"}
+
+
+def make_detail_response(
+    *, status: str = "ativa", membership_status: str = "accepted",
+    dependent_id=None, dependent_name=None, current_trip_id=None,
+):
+    from datetime import time as dtime
+
+    from src.domains.route_passangers.dtos import PassangerRouteDetailResponse
+    from src.domains.routes.dtos import AddressResponse
+
+    def _addr(label: str) -> AddressResponse:
+        return AddressResponse(
+            id=uuid.uuid4(),
+            label=label,
+            street="Rua Z",
+            number="100",
+            neighborhood="Centro",
+            zip="90000-000",
+            city="Porto Alegre",
+            state="RS",
+        )
+
+    return PassangerRouteDetailResponse(
+        route_id=uuid.uuid4(),
+        name="PUCRS",
+        route_type="outbound",
+        status=status,
+        recurrence=["seg", "qua", "sex"],
+        expected_time=dtime(7, 30),
+        origin_address=_addr("Casa"),
+        destination_address=_addr("PUCRS"),
+        stops=[],
+        driver_name="Carlos Motorista",
+        driver_phone="51988887777",
+        membership_status=membership_status,
+        dependent_id=dependent_id,
+        dependent_name=dependent_name,
+        my_pickup_address=_addr("Embarque"),
+        my_schedules=[],
+        current_trip_id=current_trip_id,
+    )
+
+
+def test_get_my_route_detail_success_returns_200() -> None:
+    mock_service = Mock(spec=RoutePassangerService)
+    mock_service.get_my_route_detail.return_value = make_detail_response()
+    app.dependency_overrides[get_route_passanger_service] = lambda: mock_service
+
+    response = client.get(f"/routes/{uuid.uuid4()}/me", headers=PASSENGER_HEADERS)
+
+    app.dependency_overrides.clear()
+    assert response.status_code == 200
+    body = response.json()
+    assert body["name"] == "PUCRS"
+    assert body["membership_status"] == "accepted"
+    assert body["driver_phone"] == "51988887777"
+
+
+def test_get_my_route_detail_does_not_expose_driver_id_or_invite_code() -> None:
+    mock_service = Mock(spec=RoutePassangerService)
+    mock_service.get_my_route_detail.return_value = make_detail_response()
+    app.dependency_overrides[get_route_passanger_service] = lambda: mock_service
+
+    response = client.get(f"/routes/{uuid.uuid4()}/me", headers=PASSENGER_HEADERS)
+
+    app.dependency_overrides.clear()
+    body = response.json()
+    assert "invite_code" not in body
+    assert "max_passengers" not in body
+    assert "driver_id" not in body
+
+
+def test_get_my_route_detail_route_not_found_returns_404() -> None:
+    from src.domains.routes.errors import RouteNotFoundError
+
+    mock_service = Mock(spec=RoutePassangerService)
+    mock_service.get_my_route_detail.side_effect = RouteNotFoundError()
+    app.dependency_overrides[get_route_passanger_service] = lambda: mock_service
+
+    response = client.get(f"/routes/{uuid.uuid4()}/me", headers=PASSENGER_HEADERS)
+
+    app.dependency_overrides.clear()
+    assert response.status_code == 404
+
+
+def test_get_my_route_detail_not_passanger_returns_403() -> None:
+    from src.domains.route_passangers.errors import NotRoutePassangerError
+
+    mock_service = Mock(spec=RoutePassangerService)
+    mock_service.get_my_route_detail.side_effect = NotRoutePassangerError()
+    app.dependency_overrides[get_route_passanger_service] = lambda: mock_service
+
+    response = client.get(f"/routes/{uuid.uuid4()}/me", headers=PASSENGER_HEADERS)
+
+    app.dependency_overrides.clear()
+    assert response.status_code == 403
+
+
+def test_get_my_route_detail_forwards_dependent_id_query_param() -> None:
+    mock_service = Mock(spec=RoutePassangerService)
+    mock_service.get_my_route_detail.return_value = make_detail_response(
+        dependent_id=uuid.uuid4(), dependent_name="Valentina"
+    )
+    app.dependency_overrides[get_route_passanger_service] = lambda: mock_service
+
+    route_id = uuid.uuid4()
+    dep_id = uuid.uuid4()
+    response = client.get(
+        f"/routes/{route_id}/me?dependent_id={dep_id}", headers=PASSENGER_HEADERS
+    )
+
+    app.dependency_overrides.clear()
+    assert response.status_code == 200
+    call_args = mock_service.get_my_route_detail.call_args
+    assert call_args.kwargs.get("dependent_id") == dep_id or dep_id in call_args.args
+
+
+def test_get_my_route_detail_current_trip_id_when_in_progress() -> None:
+    trip_id = uuid.uuid4()
+    mock_service = Mock(spec=RoutePassangerService)
+    mock_service.get_my_route_detail.return_value = make_detail_response(
+        status="em_andamento", current_trip_id=trip_id
+    )
+    app.dependency_overrides[get_route_passanger_service] = lambda: mock_service
+
+    response = client.get(f"/routes/{uuid.uuid4()}/me", headers=PASSENGER_HEADERS)
+
+    app.dependency_overrides.clear()
+    assert response.status_code == 200
+    assert response.json()["current_trip_id"] == str(trip_id)
+
+
+# ===========================================================================
+# US14 — GET /routes/{route_id}/me (INTEGRAÇÃO)
+# ===========================================================================
+
+
+@pytest.mark.skip(reason="US06-TK06, US08-TK03)")
+def test_integration_get_my_route_detail_success(integration_client, db_session) -> None:
+    driver, _ = make_integration_driver(db_session)
+    passenger = make_integration_passenger(db_session, "Integ Mateus")
+    route = make_integration_route(db_session, driver.id)
+    make_integration_rp(db_session, route.id, passenger.id, status="accepted")
+
+    headers = {"X-User-Id": str(passenger.id), "X-User-Role": "guardian"}
+    response = integration_client.get(f"/routes/{route.id}/me", headers=headers)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["name"] == "PUCRS"
+    assert body["membership_status"] == "accepted"
+    assert body["driver_name"] == "Motorista Int"
+    # Não expõe campos do motorista
+    assert "invite_code" not in body
+    assert "driver_id" not in body
+
+
+@pytest.mark.skip(reason="US06-TK06, US08-TK03")
+def test_integration_get_my_route_detail_route_not_found_returns_404(
+    integration_client, db_session
+) -> None:
+    passenger = make_integration_passenger(db_session)
+    headers = {"X-User-Id": str(passenger.id), "X-User-Role": "guardian"}
+
+    response = integration_client.get(f"/routes/{uuid.uuid4()}/me", headers=headers)
+
+    assert response.status_code == 404
+
+
+@pytest.mark.skip(reason="US06-TK06, US08-TK03")
+def test_integration_get_my_route_detail_not_passanger_returns_403(
+    integration_client, db_session
+) -> None:
+    driver, _ = make_integration_driver(db_session)
+    outsider = make_integration_passenger(db_session, "Outsider")
+    route = make_integration_route(db_session, driver.id)
+
+    headers = {"X-User-Id": str(outsider.id), "X-User-Role": "guardian"}
+    response = integration_client.get(f"/routes/{route.id}/me", headers=headers)
+
+    assert response.status_code == 403
+
+
+@pytest.mark.skip(reason="US06-TK06, US08-TK03")
+def test_integration_get_my_route_detail_pending_membership_allowed(
+    integration_client, db_session
+) -> None:
+    """Passageiro ainda com status pending deve conseguir ver os detalhes."""
+    driver, _ = make_integration_driver(db_session)
+    passenger = make_integration_passenger(db_session)
+    route = make_integration_route(db_session, driver.id)
+    make_integration_rp(db_session, route.id, passenger.id, status="pending")
+
+    headers = {"X-User-Id": str(passenger.id), "X-User-Role": "guardian"}
+    response = integration_client.get(f"/routes/{route.id}/me", headers=headers)
+
+    assert response.status_code == 200
+    assert response.json()["membership_status"] == "pending"
+
+
+@pytest.mark.skip(reason="US06-TK06, US08-TK03")
+def test_integration_get_my_route_detail_does_not_collide_with_route_by_id(
+    integration_client, db_session
+) -> None:
+    """GET /routes/{uuid}/me deve ser resolvido pelo route_passanger controller
+    (que é registrado antes) e não pela rota genérica GET /routes/{route_id}."""
+    driver, _ = make_integration_driver(db_session)
+    passenger = make_integration_passenger(db_session)
+    route = make_integration_route(db_session, driver.id)
+    make_integration_rp(db_session, route.id, passenger.id, status="accepted")
+
+    headers = {"X-User-Id": str(passenger.id), "X-User-Role": "guardian"}
+    response = integration_client.get(f"/routes/{route.id}/me", headers=headers)
+
+    # Se caísse em GET /routes/{route_id} o passageiro levaria 403
+    # (RouteOwnershipError — driver-only) em vez de 200.
+    assert response.status_code == 200
+
+
+@pytest.mark.skip(reason="US06-TK06, US08-TK03")
+def test_integration_get_my_route_detail_rejected_membership_returns_403(
+    integration_client, db_session
+) -> None:
+    """Vínculo com status='rejected' não é ativo — deve retornar 403."""
+    driver, _ = make_integration_driver(db_session)
+    passenger = make_integration_passenger(db_session)
+    route = make_integration_route(db_session, driver.id)
+    make_integration_rp(db_session, route.id, passenger.id, status="rejected")
+
+    headers = {"X-User-Id": str(passenger.id), "X-User-Role": "guardian"}
+    response = integration_client.get(f"/routes/{route.id}/me", headers=headers)
+
+    assert response.status_code == 403

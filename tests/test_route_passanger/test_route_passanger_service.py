@@ -1452,3 +1452,295 @@ def test_list_my_routes_dependent_name_none_for_self_membership() -> None:
     result = service.list_my_routes(user_id)
 
     assert result[0].dependent_name is None
+
+
+# ===========================================================================
+# US14 — RoutePassangerService.get_my_route_detail
+# Arquivo: src/domains/route_passangers/service.py
+#
+# Regras:
+#   - 404 RouteNotFoundError se a rota não existir.
+#   - 403 NotRoutePassangerError se o par (user_id, dependent_id) não tiver
+#     vínculo ativo (pending ou accepted) na rota.
+#   - Resolve driver_name/driver_phone via user_repository.
+#   - Resolve dependent_name via dependent_repository quando dependent_id != None.
+#   - stops ordenados por order_index (via relacionamento da rota).
+#   - current_trip_id: None quando route.status != 'em_andamento';
+#     caso contrário, o trip.id com status='iniciada' na rota.
+#   - Nunca expõe invite_code, max_passengers nem driver_id.
+# ===========================================================================
+
+
+def make_full_route_mock(
+    driver_id: uuid.UUID,
+    route_name: str = "PUCRS",
+    status: str = "ativa",
+    recurrence: str = "seg,qua,sex",
+    include_trip: bool = False,
+):
+    """RouteModel com relacionamentos (origin/destination/stops/trips) preenchidos."""
+    from datetime import time as dtime
+
+    from src.domains.addresses.entity import AddressModel
+    from src.domains.routes.entity import RouteModel
+    from src.domains.stops.entity import StopModel
+    from src.domains.trips.entity import TripModel
+
+    origin = Mock(spec=AddressModel)
+    origin.id = uuid.uuid4()
+    origin.label = "Casa"
+    origin.street = "Rua X"
+    origin.number = "100"
+    origin.neighborhood = "Centro"
+    origin.zip = "90000-000"
+    origin.city = "Porto Alegre"
+    origin.state = "RS"
+    origin.latitude = None
+    origin.longitude = None
+
+    destination = Mock(spec=AddressModel)
+    destination.id = uuid.uuid4()
+    destination.label = "PUCRS"
+    destination.street = "Av. Ipiranga"
+    destination.number = "6681"
+    destination.neighborhood = "Partenon"
+    destination.zip = "90619-900"
+    destination.city = "Porto Alegre"
+    destination.state = "RS"
+    destination.latitude = None
+    destination.longitude = None
+
+    stop_a = Mock(spec=StopModel)
+    stop_a.id = uuid.uuid4()
+    stop_a.order_index = 1
+    stop_b = Mock(spec=StopModel)
+    stop_b.id = uuid.uuid4()
+    stop_b.order_index = 2
+
+    route = Mock(spec=RouteModel)
+    route.id = uuid.uuid4()
+    route.name = route_name
+    route.route_type = "outbound"
+    route.status = status
+    route.recurrence = recurrence
+    route.expected_time = dtime(7, 30)
+    route.driver_id = driver_id
+    route.origin_address = origin
+    route.destination_address = destination
+    route.origin_address_id = origin.id
+    route.destination_address_id = destination.id
+    route.stops = [stop_a, stop_b]
+
+    if include_trip:
+        trip = Mock(spec=TripModel)
+        trip.id = uuid.uuid4()
+        trip.status = "iniciada"
+        route.trips = [trip]
+    else:
+        route.trips = []
+
+    return route
+
+
+def make_rp_with_pickup_mock(
+    route_id: uuid.UUID,
+    user_id: uuid.UUID,
+    status: str = "accepted",
+    dependent_id=None,
+):
+    """RP com pickup_address e schedules resolvidos via ORM."""
+    from src.domains.addresses.entity import AddressModel
+    from src.domains.route_passangers.entity import RoutePassangerModel
+
+    pickup = Mock(spec=AddressModel)
+    pickup.id = uuid.uuid4()
+    pickup.label = "Embarque"
+    pickup.street = "Rua Z"
+    pickup.number = "200"
+    pickup.neighborhood = "Centro"
+    pickup.zip = "90000-001"
+    pickup.city = "Porto Alegre"
+    pickup.state = "RS"
+    pickup.latitude = None
+    pickup.longitude = None
+
+    rp = Mock(spec=RoutePassangerModel)
+    rp.id = uuid.uuid4()
+    rp.route_id = route_id
+    rp.user_id = user_id
+    rp.dependent_id = dependent_id
+    rp.status = status
+    rp.pickup_address_id = pickup.id
+    rp.pickup_address = pickup
+    rp.schedules = []
+    return rp
+
+
+def test_get_my_route_detail_success_self_membership_returns_response() -> None:
+    user_id = uuid.uuid4()
+    driver = make_user_mock("Carlos Motorista", phone="51988887777")
+    route = make_full_route_mock(driver.id)
+    rp = make_rp_with_pickup_mock(route.id, user_id, status="accepted")
+
+    service, rp_repo, route_repo, user_repo, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_by_user_and_route.return_value = rp
+    user_repo.find_by_id.return_value = driver
+
+    result = service.get_my_route_detail(route.id, user_id)
+
+    assert result.route_id == route.id
+    assert result.name == "PUCRS"
+    assert result.driver_name == "Carlos Motorista"
+    assert result.driver_phone == "51988887777"
+    assert result.membership_status == "accepted"
+    assert result.dependent_id is None
+    assert result.dependent_name is None
+    assert result.current_trip_id is None
+
+
+def test_get_my_route_detail_route_not_found_raises() -> None:
+    from src.domains.routes.errors import RouteNotFoundError
+
+    service, _, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = None
+
+    with pytest.raises(RouteNotFoundError):
+        service.get_my_route_detail(uuid.uuid4(), uuid.uuid4())
+
+
+def test_get_my_route_detail_no_active_membership_raises() -> None:
+    from src.domains.route_passangers.errors import NotRoutePassangerError
+
+    driver = make_user_mock()
+    route = make_full_route_mock(driver.id)
+
+    service, rp_repo, route_repo, _, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_by_user_and_route.return_value = None
+
+    with pytest.raises(NotRoutePassangerError):
+        service.get_my_route_detail(route.id, uuid.uuid4())
+
+
+def test_get_my_route_detail_looks_up_membership_with_correct_args() -> None:
+    user_id = uuid.uuid4()
+    dependent_id = uuid.uuid4()
+    driver = make_user_mock()
+    route = make_full_route_mock(driver.id)
+    rp = make_rp_with_pickup_mock(route.id, user_id, dependent_id=dependent_id)
+
+    service, rp_repo, route_repo, user_repo, dep_repo, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_by_user_and_route.return_value = rp
+    user_repo.find_by_id.return_value = driver
+    dep_repo.find_by_id.return_value = make_dependent_mock("Filha", guardian_id=user_id)
+
+    service.get_my_route_detail(route.id, user_id, dependent_id=dependent_id)
+
+    rp_repo.find_active_by_user_and_route.assert_called_once_with(
+        user_id, dependent_id, route.id
+    )
+
+
+def test_get_my_route_detail_resolves_dependent_name_when_dependent_id_present() -> None:
+    user_id = uuid.uuid4()
+    dependent_id = uuid.uuid4()
+    driver = make_user_mock()
+    dep = make_dependent_mock("Valentina Fonseca", guardian_id=user_id)
+    dep.id = dependent_id
+    route = make_full_route_mock(driver.id)
+    rp = make_rp_with_pickup_mock(route.id, user_id, dependent_id=dependent_id)
+
+    service, rp_repo, route_repo, user_repo, dep_repo, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_by_user_and_route.return_value = rp
+    user_repo.find_by_id.return_value = driver
+    dep_repo.find_by_id.return_value = dep
+
+    result = service.get_my_route_detail(route.id, user_id, dependent_id=dependent_id)
+
+    assert result.dependent_id == dependent_id
+    assert result.dependent_name == "Valentina Fonseca"
+
+
+def test_get_my_route_detail_dependent_name_none_for_self_membership() -> None:
+    user_id = uuid.uuid4()
+    driver = make_user_mock()
+    route = make_full_route_mock(driver.id)
+    rp = make_rp_with_pickup_mock(route.id, user_id, dependent_id=None)
+
+    service, rp_repo, route_repo, user_repo, dep_repo, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_by_user_and_route.return_value = rp
+    user_repo.find_by_id.return_value = driver
+
+    result = service.get_my_route_detail(route.id, user_id)
+
+    assert result.dependent_name is None
+    dep_repo.find_by_id.assert_not_called()
+
+
+def test_get_my_route_detail_current_trip_id_set_when_in_progress() -> None:
+    user_id = uuid.uuid4()
+    driver = make_user_mock()
+    route = make_full_route_mock(driver.id, status="em_andamento", include_trip=True)
+    rp = make_rp_with_pickup_mock(route.id, user_id, status="accepted")
+
+    service, rp_repo, route_repo, user_repo, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_by_user_and_route.return_value = rp
+    user_repo.find_by_id.return_value = driver
+
+    result = service.get_my_route_detail(route.id, user_id)
+
+    assert result.status == "em_andamento"
+    assert result.current_trip_id == route.trips[0].id
+
+
+def test_get_my_route_detail_current_trip_id_none_when_route_not_in_progress() -> None:
+    user_id = uuid.uuid4()
+    driver = make_user_mock()
+    route = make_full_route_mock(driver.id, status="ativa")
+    rp = make_rp_with_pickup_mock(route.id, user_id, status="accepted")
+
+    service, rp_repo, route_repo, user_repo, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_by_user_and_route.return_value = rp
+    user_repo.find_by_id.return_value = driver
+
+    result = service.get_my_route_detail(route.id, user_id)
+
+    assert result.current_trip_id is None
+
+
+def test_get_my_route_detail_resolves_driver_from_route_driver_id() -> None:
+    user_id = uuid.uuid4()
+    driver = make_user_mock("Paula Driver")
+    route = make_full_route_mock(driver.id)
+    rp = make_rp_with_pickup_mock(route.id, user_id)
+
+    service, rp_repo, route_repo, user_repo, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_by_user_and_route.return_value = rp
+    user_repo.find_by_id.return_value = driver
+
+    service.get_my_route_detail(route.id, user_id)
+
+    user_repo.find_by_id.assert_called_with(driver.id)
+
+
+def test_get_my_route_detail_my_pickup_address_comes_from_rp() -> None:
+    user_id = uuid.uuid4()
+    driver = make_user_mock()
+    route = make_full_route_mock(driver.id)
+    rp = make_rp_with_pickup_mock(route.id, user_id)
+
+    service, rp_repo, route_repo, user_repo, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_by_user_and_route.return_value = rp
+    user_repo.find_by_id.return_value = driver
+
+    result = service.get_my_route_detail(route.id, user_id)
+
+    assert result.my_pickup_address.id == rp.pickup_address.id

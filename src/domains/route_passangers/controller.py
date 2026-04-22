@@ -12,18 +12,21 @@ Endpoints:
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, Query, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 
+from src.domains.routes.errors import RouteNotFoundError
 from src.infrastructure.dependencies.route_passanger_dependencies import (
     get_route_passanger_service,
 )
 
 from .dtos import (
     JoinRouteRequest,
+    PassangerRouteDetailResponse,
     PassangerRouteResponse,
     RoutePassangerResponse,
     UpdateSchedulesRequest,
 )
+from .errors import NotRoutePassangerError
 from .service import RoutePassangerService
 
 router = APIRouter(prefix="/routes", tags=["RoutePassangers"])
@@ -179,3 +182,33 @@ def update_schedules(
     dependent_id: Annotated[UUID | None, Query()] = None,
 ) -> RoutePassangerResponse:
     pass
+
+
+# IMPORTANTE: este endpoint precisa ser resolvido ANTES de
+# GET /routes/{route_id} (que vive em routes.controller). Por isso
+# route_passanger_controller é registrado antes de route_controller em main.py.
+@router.get(
+    "/{route_id}/me",
+    response_model=PassangerRouteDetailResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Detalhe da rota para o passageiro",
+    description=(
+        "Retorna o detalhe completo da rota do ponto de vista do passageiro "
+        "autenticado. Aceita dependent_id opcional quando guardian "
+        "está vendo em nome do dependente. Não expõe invite_code/max_passengers/"
+        "driver_id. Erros: 404 se a rota não existir, 403 se o usuário não tiver "
+        "vínculo ativo com a rota."
+    ),
+)
+def get_my_route_detail(
+    route_id: UUID,
+    service: Annotated[RoutePassangerService, Depends(get_route_passanger_service)],
+    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    dependent_id: Annotated[UUID | None, Query()] = None,
+) -> PassangerRouteDetailResponse:
+    try:
+        return service.get_my_route_detail(route_id, UUID(x_user_id), dependent_id)
+    except RouteNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
+    except NotRoutePassangerError as error:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error)) from error

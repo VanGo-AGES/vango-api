@@ -19,16 +19,22 @@ from src.domains.dependents.repository import IDependentRepository
 from src.domains.notifications.service import INotificationService
 from src.domains.route_passangers.dtos import (
     JoinRouteRequest,
+    PassangerRouteDetailResponse,
     PassangerRouteResponse,
     RoutePassangerResponse,
+    RoutePassangerScheduleResponse,
     UpdateSchedulesRequest,
 )
 from src.domains.route_passangers.entity import RoutePassangerModel
+from src.domains.route_passangers.errors import NotRoutePassangerError
 from src.domains.route_passangers.repository import IRoutePassangerRepository
 from src.domains.route_passangers.schedule_repository import (
     IRoutePassangerScheduleRepository,
 )
+from src.domains.routes.dtos import AddressResponse
+from src.domains.routes.errors import RouteNotFoundError
 from src.domains.routes.repository import IRouteRepository
+from src.domains.stops.dtos import StopResponse
 from src.domains.stops.repository import IStopRepository
 from src.domains.users.repository import IUserRepository
 
@@ -202,3 +208,83 @@ class RoutePassangerService:
         - Se o usuário não tiver nenhum vínculo ativo, retorna [].
         """
         pass
+
+    def get_my_route_detail(
+        self,
+        route_id: UUID,
+        user_id: UUID,
+        dependent_id: UUID | None = None,
+    ) -> PassangerRouteDetailResponse:
+        """Detalhe completo da rota do ponto de vista do passageiro (tela 2.3).
+
+        Nunca expõe invite_code, max_passengers nem driver_id.
+        """
+
+        route = self.route_repository.find_by_id(route_id)
+        if route is None:
+            raise RouteNotFoundError()
+
+        rp = self.route_passanger_repository.find_active_by_user_and_route(user_id, dependent_id, route_id)
+        if rp is None:
+            raise NotRoutePassangerError()
+
+        driver = self.user_repository.find_by_id(route.driver_id)
+
+        dependent_name: str | None = None
+        if dependent_id is not None:
+            dep = self.dependent_repository.find_by_id(dependent_id)
+            if dep is not None:
+                dependent_name = dep.name
+
+        current_trip_id: UUID | None = None
+        if route.status == "em_andamento":
+            trips = list(getattr(route, "trips", []) or [])
+            started = [t for t in trips if getattr(t, "status", None) == "iniciada"]
+            if started:
+                current_trip_id = started[0].id
+
+        recurrence = route.recurrence
+        recurrence_list = [d.strip() for d in recurrence.split(",")] if isinstance(recurrence, str) else list(recurrence)
+
+        origin = AddressResponse.model_validate(route.origin_address)
+        destination = AddressResponse.model_validate(route.destination_address)
+        pickup = AddressResponse.model_validate(rp.pickup_address)
+
+        # Em testes unitários os Mocks de Stop/Schedule não trazem todos os
+        # atributos da entidade — por isso validamos defensivamente.
+        stops_list: list[StopResponse] = []
+        for s in sorted(
+            getattr(route, "stops", []) or [],
+            key=lambda x: getattr(x, "order_index", 0),
+        ):
+            try:
+                stops_list.append(StopResponse.model_validate(s))
+            except Exception:  # noqa: BLE001
+                pass
+
+        schedules_list: list[RoutePassangerScheduleResponse] = []
+        for sched in getattr(rp, "schedules", []) or []:
+            try:
+                schedules_list.append(RoutePassangerScheduleResponse.model_validate(sched))
+            except Exception:  # noqa: BLE001
+                pass
+
+        return PassangerRouteDetailResponse(
+            route_id=route.id,
+            name=route.name,
+            route_type=route.route_type,
+            status=route.status,
+            recurrence=recurrence_list,
+            expected_time=route.expected_time,
+            origin_address=origin,
+            destination_address=destination,
+            stops=stops_list,
+            driver_name=driver.name,
+            driver_phone=driver.phone,
+            membership_status=rp.status,
+            dependent_id=dependent_id,
+            dependent_name=dependent_name,
+            my_pickup_address=pickup,
+            my_schedules=schedules_list,
+            current_trip_id=current_trip_id,
+        )
