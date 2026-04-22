@@ -34,3 +34,15 @@ class RoutePassangerModel(Base):
         back_populates="route_passanger",
         cascade="all, delete-orphan",
     )
+    # US09 — registros de execução (presença em viagens)
+    trip_passangers = relationship(
+        "TripPassangerModel",
+        back_populates="route_passanger",
+        cascade="all, delete-orphan",
+    )
+    # US09 — avisos de falta emitidos por este passageiro/guardian
+    absences = relationship(
+        "AbsenceModel",
+        back_populates="route_passanger",
+        cascade="all, delete-orphan",
+    )

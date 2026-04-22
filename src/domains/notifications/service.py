@@ -7,6 +7,7 @@ real (push via Firebase, e-mail, etc.) ficará para sprints futuras.
 from abc import ABC, abstractmethod
 
 from src.domains.route_passangers.entity import RoutePassangerModel
+from src.domains.trips.entity import TripModel, TripPassangerModel
 
 
 class INotificationService(ABC):
@@ -50,6 +51,25 @@ class INotificationService(ABC):
         """Notifica passageiro (pending/accepted) que a rota foi excluída pelo motorista."""
         pass
 
+    # -----------------------------------------------------------------
+    # US09-TK05 — eventos de execução de viagem
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def notify_trip_started(self, trip: TripModel) -> None:
+        """Notifica todos os passageiros da trip que a viagem começou."""
+        pass
+
+    @abstractmethod
+    def notify_trip_arriving_at_stop(self, trip_passanger: TripPassangerModel) -> None:
+        """Notifica o passageiro da próxima parada que a van está chegando."""
+        pass
+
+    @abstractmethod
+    def notify_trip_finished(self, trip: TripModel) -> None:
+        """Notifica passageiros/guardians que a viagem foi finalizada."""
+        pass
+
 
 class LoggingNotificationService(INotificationService):
     """Implementação stub que apenas registra as notificações em log."""
@@ -75,4 +95,14 @@ class LoggingNotificationService(INotificationService):
 
     # US06-TK16
     def notify_passanger_route_cancelled(self, rp: RoutePassangerModel) -> None:
+        pass
+
+    # US09-TK05
+    def notify_trip_started(self, trip: TripModel) -> None:
+        pass
+
+    def notify_trip_arriving_at_stop(self, trip_passanger: TripPassangerModel) -> None:
+        pass
+
+    def notify_trip_finished(self, trip: TripModel) -> None:
         pass

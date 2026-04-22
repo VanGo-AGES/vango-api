@@ -148,3 +148,66 @@ def test_logging_notify_passanger_route_cancelled_pending_does_not_raise() -> No
     service = LoggingNotificationService()
     rp = make_rp_stub(status="pending")
     assert service.notify_passanger_route_cancelled(rp) is None
+
+
+# ===========================================================================
+# US09-TK05 — eventos de execução de viagem
+# ===========================================================================
+
+
+def make_trip_stub(status: str = "iniciada"):
+    from src.domains.trips.entity import TripModel
+
+    trip = Mock(spec=TripModel)
+    trip.id = uuid.uuid4()
+    trip.route_id = uuid.uuid4()
+    trip.vehicle_id = uuid.uuid4()
+    trip.status = status
+    return trip
+
+
+def make_trip_passanger_stub(status: str = "pendente"):
+    from src.domains.trips.entity import TripPassangerModel
+
+    tp = Mock(spec=TripPassangerModel)
+    tp.id = uuid.uuid4()
+    tp.trip_id = uuid.uuid4()
+    tp.route_passanger_id = uuid.uuid4()
+    tp.status = status
+    return tp
+
+
+@pytest.mark.skip(reason="US09-TK05")
+def test_notification_service_trip_events_in_interface() -> None:
+    from src.domains.notifications.service import INotificationService
+
+    assert hasattr(INotificationService, "notify_trip_started")
+    assert hasattr(INotificationService, "notify_trip_arriving_at_stop")
+    assert hasattr(INotificationService, "notify_trip_finished")
+
+
+@pytest.mark.skip(reason="US09-TK05")
+def test_logging_notify_trip_started_does_not_raise() -> None:
+    from src.domains.notifications.service import LoggingNotificationService
+
+    service = LoggingNotificationService()
+    trip = make_trip_stub(status="iniciada")
+    assert service.notify_trip_started(trip) is None
+
+
+@pytest.mark.skip(reason="US09-TK05")
+def test_logging_notify_trip_arriving_at_stop_does_not_raise() -> None:
+    from src.domains.notifications.service import LoggingNotificationService
+
+    service = LoggingNotificationService()
+    tp = make_trip_passanger_stub(status="pendente")
+    assert service.notify_trip_arriving_at_stop(tp) is None
+
+
+@pytest.mark.skip(reason="US09-TK05")
+def test_logging_notify_trip_finished_does_not_raise() -> None:
+    from src.domains.notifications.service import LoggingNotificationService
+
+    service = LoggingNotificationService()
+    trip = make_trip_stub(status="finalizada")
+    assert service.notify_trip_finished(trip) is None

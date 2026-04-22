@@ -18,6 +18,8 @@ from src.domains.route_passangers.entity import RoutePassangerModel
 from src.domains.route_passangers.schedule_entity import RoutePassangerScheduleModel
 from src.domains.routes.controller import router as route_controller
 from src.domains.routes.entity import RouteModel
+from src.domains.trips.controller import router as trip_controller
+from src.domains.trips.entity import AbsenceModel, TripModel, TripPassangerModel
 from src.domains.uploads.controller import router as upload_controller
 from src.domains.users.controller import router as user_controller
 from src.domains.users.entity import UserModel
@@ -26,7 +28,18 @@ from src.domains.vehicles.entity import VehicleModel
 from src.infrastructure.database import Base, engine
 
 # Force SQLAlchemy to register all mappers so relationship() string refs resolve
-_ = (UserModel, AddressModel, DependentModel, VehicleModel, RouteModel, RoutePassangerModel, RoutePassangerScheduleModel)
+_ = (
+    UserModel,
+    AddressModel,
+    DependentModel,
+    VehicleModel,
+    RouteModel,
+    RoutePassangerModel,
+    RoutePassangerScheduleModel,
+    TripModel,
+    TripPassangerModel,
+    AbsenceModel,
+)
 
 
 @asynccontextmanager
@@ -95,6 +108,8 @@ app.include_router(vehicle_controller)
 app.include_router(dependent_controller)
 app.include_router(route_passanger_controller)
 app.include_router(route_controller)
+# US09 — endpoints de execução de viagem (/routes/{id}/trips e /trips/...)
+app.include_router(trip_controller)
 app.include_router(upload_controller)
 
 

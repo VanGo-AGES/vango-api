@@ -35,3 +35,9 @@ class RouteModel(Base):
         cascade="all, delete-orphan",
         order_by="StopModel.order_index",
     )
+    # US09 — execuções (trips) da rota
+    trips = relationship(
+        "TripModel",
+        back_populates="route",
+        cascade="all, delete-orphan",
+    )
