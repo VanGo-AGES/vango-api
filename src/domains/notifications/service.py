@@ -52,6 +52,15 @@ class INotificationService(ABC):
         pass
 
     # -----------------------------------------------------------------
+    # US06-TK19 — aviso de ausência originado pelo passageiro/guardian
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def notify_driver_passanger_absence_reported(self, rp: RoutePassangerModel) -> None:
+        """Notifica o motorista que o passageiro avisou ausência numa data."""
+        pass
+
+    # -----------------------------------------------------------------
     # US09-TK05 — eventos de execução de viagem
     # -----------------------------------------------------------------
 
@@ -95,6 +104,10 @@ class LoggingNotificationService(INotificationService):
 
     # US06-TK16
     def notify_passanger_route_cancelled(self, rp: RoutePassangerModel) -> None:
+        pass
+
+    # US06-TK19
+    def notify_driver_passanger_absence_reported(self, rp: RoutePassangerModel) -> None:
         pass
 
     # US09-TK05

@@ -1,7 +1,8 @@
-"""US09-TK04 — Tests de AbsenceRepositoryImpl.
+"""Tests de AbsenceRepositoryImpl.
 
-Apenas find_by_route_and_date. Criação/listagem full de absences é tratada
-em outra US.
+US09-TK04 cobre find_by_route_and_date (usado pelo start_trip).
+US06-TK18 cobre save + find_for_route_passanger_on_date (aviso de falta
+originado pelo passageiro/guardian na tela 2.3).
 """
 
 import uuid
@@ -9,6 +10,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
+from src.domains.trips.entity import AbsenceModel
 from src.infrastructure.repositories.absence_repository import AbsenceRepositoryImpl
 from tests.test_trip._helpers import (
     make_absence,
@@ -77,3 +79,104 @@ def test_find_by_route_and_date_filters_by_route(db_session) -> None:
 def test_find_by_route_and_date_handles_missing_route(db_session) -> None:
     repo = AbsenceRepositoryImpl(db_session)
     assert repo.find_by_route_and_date(uuid.uuid4(), datetime.now(timezone.utc)) == []
+
+
+# ===========================================================================
+# US06-TK18 — save + find_for_route_passanger_on_date
+# ===========================================================================
+
+
+@pytest.mark.skip(reason="US06-TK18")
+def test_save_persists_new_absence(db_session) -> None:
+    driver = make_driver(db_session)
+    route = make_route(db_session, driver.id)
+    passenger = make_passenger(db_session)
+    rp = make_rp(db_session, route.id, passenger.id, status="accepted")
+
+    repo = AbsenceRepositoryImpl(db_session)
+    absence = AbsenceModel(
+        route_passanger_id=rp.id,
+        absence_date=datetime(2026, 4, 23, 0, 0, tzinfo=timezone.utc),
+        reason="Consulta",
+    )
+    saved = repo.save(absence)
+
+    assert saved.id is not None
+    assert saved.route_passanger_id == rp.id
+    assert saved.reason == "Consulta"
+
+
+@pytest.mark.skip(reason="US06-TK18")
+def test_save_sets_created_at_automatically(db_session) -> None:
+    driver = make_driver(db_session)
+    route = make_route(db_session, driver.id)
+    passenger = make_passenger(db_session)
+    rp = make_rp(db_session, route.id, passenger.id, status="accepted")
+
+    repo = AbsenceRepositoryImpl(db_session)
+    saved = repo.save(
+        AbsenceModel(
+            route_passanger_id=rp.id,
+            absence_date=datetime(2026, 4, 23, 0, 0, tzinfo=timezone.utc),
+        )
+    )
+
+    assert saved.created_at is not None
+
+
+@pytest.mark.skip(reason="US06-TK18")
+def test_find_for_route_passanger_on_date_returns_existing(db_session) -> None:
+    driver = make_driver(db_session)
+    route = make_route(db_session, driver.id)
+    passenger = make_passenger(db_session)
+    rp = make_rp(db_session, route.id, passenger.id, status="accepted")
+
+    day = datetime(2026, 4, 23, 0, 0, tzinfo=timezone.utc)
+    make_absence(db_session, rp.id, day)
+
+    repo = AbsenceRepositoryImpl(db_session)
+    result = repo.find_for_route_passanger_on_date(rp.id, day)
+
+    assert result is not None
+    assert result.route_passanger_id == rp.id
+
+
+@pytest.mark.skip(reason="US06-TK18")
+def test_find_for_route_passanger_on_date_ignores_other_days(db_session) -> None:
+    driver = make_driver(db_session)
+    route = make_route(db_session, driver.id)
+    passenger = make_passenger(db_session)
+    rp = make_rp(db_session, route.id, passenger.id, status="accepted")
+
+    day = datetime(2026, 4, 23, 0, 0, tzinfo=timezone.utc)
+    make_absence(db_session, rp.id, day + timedelta(days=1))
+
+    repo = AbsenceRepositoryImpl(db_session)
+    assert repo.find_for_route_passanger_on_date(rp.id, day) is None
+
+
+@pytest.mark.skip(reason="US06-TK18")
+def test_find_for_route_passanger_on_date_matches_by_day_interval(db_session) -> None:
+    """Deve achar absence gravada em qualquer hora do mesmo dia."""
+    driver = make_driver(db_session)
+    route = make_route(db_session, driver.id)
+    passenger = make_passenger(db_session)
+    rp = make_rp(db_session, route.id, passenger.id, status="accepted")
+
+    stored_at = datetime(2026, 4, 23, 14, 30, tzinfo=timezone.utc)
+    make_absence(db_session, rp.id, stored_at)
+
+    repo = AbsenceRepositoryImpl(db_session)
+    queried_at = datetime(2026, 4, 23, 0, 0, tzinfo=timezone.utc)
+    assert repo.find_for_route_passanger_on_date(rp.id, queried_at) is not None
+
+
+@pytest.mark.skip(reason="US06-TK18")
+def test_find_for_route_passanger_on_date_missing_returns_none(db_session) -> None:
+    repo = AbsenceRepositoryImpl(db_session)
+    assert (
+        repo.find_for_route_passanger_on_date(
+            uuid.uuid4(), datetime.now(timezone.utc)
+        )
+        is None
+    )

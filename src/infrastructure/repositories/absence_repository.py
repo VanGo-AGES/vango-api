@@ -1,10 +1,8 @@
-"""US09 — Implementação SQLAlchemy do IAbsenceRepository.
+"""Implementação SQLAlchemy do IAbsenceRepository.
 
-TK04 cobre: find_by_route_and_date.
-
-Apenas o suficiente pra o start_trip conseguir consultar as faltas avisadas
-para o dia. Criação de Absence (fluxo do passageiro/guardian) fica para outra
-US (US11/US12).
+US09-TK04 cobre find_by_route_and_date (usado pelo start_trip).
+US06-TK18 estende com save/find_for_route_passanger_on_date (criação de
+Absence pelo passageiro/guardian a partir da tela 2.3).
 """
 
 from datetime import datetime
@@ -22,4 +20,16 @@ class AbsenceRepositoryImpl(IAbsenceRepository):
 
     # US09-TK04
     def find_by_route_and_date(self, route_id: UUID, absence_date: datetime) -> list[AbsenceModel]:
+        pass
+
+    # US06-TK18
+    def save(self, absence: AbsenceModel) -> AbsenceModel:
+        pass
+
+    # US06-TK18
+    def find_for_route_passanger_on_date(
+        self,
+        route_passanger_id: UUID,
+        absence_date: datetime,
+    ) -> AbsenceModel | None:
         pass

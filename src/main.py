@@ -10,6 +10,7 @@ from firebase_admin import credentials
 from sqlalchemy import text
 
 from src.config import settings
+from src.domains.absences.controller import router as absence_controller
 from src.domains.addresses.entity import AddressModel
 from src.domains.dependents.controller import router as dependent_controller
 from src.domains.dependents.entity import DependentModel
@@ -111,6 +112,8 @@ app.include_router(route_controller)
 # US09 — endpoints de execução de viagem (/routes/{id}/trips e /trips/...)
 app.include_router(trip_controller)
 app.include_router(upload_controller)
+# US06-TK20 — aviso de ausência (passageiro/guardian)
+app.include_router(absence_controller)
 
 
 @app.get("/health", tags=["Infrastructure"])

@@ -94,3 +94,25 @@ class IAbsenceRepository(ABC):
         Considera-se data o intervalo [00:00, 23:59] do dia fornecido.
         """
         pass
+
+    # -------------------------------------------------------------------
+    # US06-TK18 — criação de Absence pelo passageiro/guardian
+    # -------------------------------------------------------------------
+
+    @abstractmethod
+    def save(self, absence: AbsenceModel) -> AbsenceModel:
+        """Persiste uma nova ausência avisada pelo passageiro/guardian."""
+        pass
+
+    @abstractmethod
+    def find_for_route_passanger_on_date(
+        self,
+        route_passanger_id: UUID,
+        absence_date: datetime,
+    ) -> AbsenceModel | None:
+        """Retorna a ausência do RP naquele dia, se existir.
+
+        Usado para bloquear criação duplicada (mesma dupla RP + dia).
+        Considera-se data o intervalo [00:00, 23:59] do dia fornecido.
+        """
+        pass
