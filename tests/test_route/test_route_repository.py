@@ -289,7 +289,6 @@ def test_route_repository_find_all_by_driver_id_only_own(db_session) -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US06-TK02")
 def test_route_repository_update_returns_updated_route(db_session) -> None:
     from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
 
@@ -305,7 +304,6 @@ def test_route_repository_update_returns_updated_route(db_session) -> None:
     assert updated.name == "Nova Rota"
 
 
-@pytest.mark.skip(reason="US06-TK02")
 def test_route_repository_update_changes_name(db_session) -> None:
     from src.domains.routes.entity import RouteModel
     from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
@@ -323,7 +321,6 @@ def test_route_repository_update_changes_name(db_session) -> None:
     assert found.name == "Escola Manhã"
 
 
-@pytest.mark.skip(reason="US06-TK02")
 def test_route_repository_update_changes_origin_address_id(db_session) -> None:
     from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
 
@@ -339,7 +336,6 @@ def test_route_repository_update_changes_origin_address_id(db_session) -> None:
     assert updated.origin_address_id == new_origin.id
 
 
-@pytest.mark.skip(reason="US06-TK02")
 def test_route_repository_update_not_found_returns_none(db_session) -> None:
     import uuid as _uuid
 
@@ -350,7 +346,6 @@ def test_route_repository_update_not_found_returns_none(db_session) -> None:
     assert result is None
 
 
-@pytest.mark.skip(reason="US06-TK02")
 def test_route_repository_update_preserves_unchanged_fields(db_session) -> None:
     from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
 
@@ -369,7 +364,6 @@ def test_route_repository_update_preserves_unchanged_fields(db_session) -> None:
     assert updated.invite_code == "A1B2C"
 
 
-@pytest.mark.skip(reason="US06-TK02")
 def test_route_repository_update_empty_dict_is_noop(db_session) -> None:
     from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
 
