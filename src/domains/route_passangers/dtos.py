@@ -1,4 +1,4 @@
-from datetime import time
+from datetime import datetime, time
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
@@ -8,7 +8,21 @@ from src.domains.stops.dtos import StopResponse
 
 
 class RoutePassangerResponse(BaseModel):
-    pass
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    route_id: UUID
+    status: str
+    requested_at: datetime
+    user_id: UUID
+    user_name: str
+    user_phone: str
+    pickup_address_id: UUID
+
+    joined_at: datetime | None = None
+    dependent_id: UUID | None = None
+    dependent_name: str | None = None
+    guardian_name: str | None = None
 
 
 class RoutePassangerScheduleRequest(BaseModel):
