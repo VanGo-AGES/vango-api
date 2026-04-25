@@ -36,7 +36,21 @@ class RouteRepositoryImpl(IRouteRepository):
 
     # US06-TK02
     def update(self, route_id: UUID, data: dict) -> RouteModel | None:
-        pass
+        route = self.session.query(RouteModel).filter(RouteModel.id == route_id).first()
+
+        if route is None:
+            return None
+
+        if not data:
+            return route
+
+        for key, value in data.items():
+            if hasattr(route, key):
+                setattr(route, key, value)
+
+        self.session.commit()
+        self.session.refresh(route)
+        return route
 
     # US08-TK05
     def find_by_invite_code(self, invite_code: str) -> RouteModel | None:
