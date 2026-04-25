@@ -13,6 +13,7 @@ from src.domains.routes.dtos import (
 from src.domains.routes.entity import RouteModel
 from src.domains.routes.errors import (
     NoVehicleError,
+    RouteInProgressError,
     RouteNotFoundError,
     RouteOwnershipError,
 )
@@ -105,17 +106,56 @@ class RouteService:
 
     # US06-TK03
     def update_route(self, route_id: UUID, driver_id: UUID, data: RouteUpdate) -> RouteModel:
-        """
-        Atualiza uma rota existente.
+        route = self.route_repository.find_by_id(route_id)
+        if route is None:
+            raise RouteNotFoundError()
 
-        Regras:
-        - 404 se não existir
-        - 403 se driver não for dono
-        - 409 (RouteInProgressError) se status == 'em_andamento'
-        - Se origin/destination presentes, cria novos AddressModel via address_repository.save
-        - Envia para route_repository.update apenas campos != None
-        """
-        pass
+        if route.driver_id != driver_id:
+            raise RouteOwnershipError()
+
+        if route.status == "em_andamento":
+            raise RouteInProgressError()
+
+        update_data = data.model_dump(exclude_none=True)
+
+        if not update_data:
+            return route
+
+        if "origin" in update_data:
+            _origin_data = update_data.pop("origin")
+            origin = AddressModel(
+                user_id=driver_id,
+                label=_origin_data["label"],
+                street=_origin_data["street"],
+                number=_origin_data["number"],
+                neighborhood=_origin_data["neighborhood"],
+                zip=_origin_data["zip"],
+                city=_origin_data["city"],
+                state=_origin_data["state"],
+            )
+            saved_origin = self.address_repository.save(origin)
+            update_data["origin_address_id"] = saved_origin.id
+
+        if "destination" in update_data:
+            _destination_data = update_data.pop("destination")
+            destination = AddressModel(
+                user_id=driver_id,
+                label=_destination_data["label"],
+                street=_destination_data["street"],
+                number=_destination_data["number"],
+                neighborhood=_destination_data["neighborhood"],
+                zip=_destination_data["zip"],
+                city=_destination_data["city"],
+                state=_destination_data["state"],
+            )
+            saved_destination = self.address_repository.save(destination)
+            update_data["destination_address_id"] = saved_destination.id
+
+        updated_route = self.route_repository.update(route_id, update_data)
+        if updated_route is None:
+            raise RouteNotFoundError()
+
+        return updated_route
 
     # US08-TK05
     def get_by_invite_code(self, invite_code: str) -> RouteModel:
