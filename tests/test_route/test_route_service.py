@@ -355,7 +355,6 @@ def make_address_create_helper(**kwargs):
     return AddressCreate(**defaults)
 
 
-@pytest.mark.skip(reason="US06-TK03")
 def test_update_route_success_partial_only_name() -> None:
     from src.domains.routes.service import RouteService
 
@@ -376,7 +375,6 @@ def test_update_route_success_partial_only_name() -> None:
     route_repo.update.assert_called_once()
 
 
-@pytest.mark.skip(reason="US06-TK03")
 def test_update_route_success_full_replaces_all_fields() -> None:
     from src.domains.routes.service import RouteService
 
@@ -408,7 +406,6 @@ def test_update_route_success_full_replaces_all_fields() -> None:
     route_repo.update.assert_called_once()
 
 
-@pytest.mark.skip(reason="US06-TK03")
 def test_update_route_not_found_raises_error() -> None:
     from src.domains.routes.errors import RouteNotFoundError
     from src.domains.routes.service import RouteService
@@ -421,7 +418,6 @@ def test_update_route_not_found_raises_error() -> None:
         service.update_route(uuid.uuid4(), uuid.uuid4(), make_route_update(name="X"))
 
 
-@pytest.mark.skip(reason="US06-TK03")
 def test_update_route_wrong_owner_raises_error() -> None:
     from src.domains.routes.errors import RouteOwnershipError
     from src.domains.routes.service import RouteService
@@ -438,7 +434,6 @@ def test_update_route_wrong_owner_raises_error() -> None:
         service.update_route(route.id, uuid.uuid4(), make_route_update(name="X"))
 
 
-@pytest.mark.skip(reason="US06-TK03")
 def test_update_route_in_progress_raises_error() -> None:
     from src.domains.routes.errors import RouteInProgressError
     from src.domains.routes.service import RouteService
@@ -455,7 +450,6 @@ def test_update_route_in_progress_raises_error() -> None:
         service.update_route(route.id, driver_id, make_route_update(name="X"))
 
 
-@pytest.mark.skip(reason="US06-TK03")
 def test_update_route_replaces_origin_creates_new_address() -> None:
     from src.domains.routes.service import RouteService
 
@@ -481,7 +475,6 @@ def test_update_route_replaces_origin_creates_new_address() -> None:
     assert "origin_address_id" in update_dict
 
 
-@pytest.mark.skip(reason="US06-TK03")
 def test_update_route_replaces_destination_creates_new_address() -> None:
     from src.domains.routes.service import RouteService
 
@@ -509,7 +502,6 @@ def test_update_route_replaces_destination_creates_new_address() -> None:
     address_repo.save.assert_called_once()
 
 
-@pytest.mark.skip(reason="US06-TK03")
 def test_update_route_empty_payload_returns_route_unchanged() -> None:
     from src.domains.routes.service import RouteService
 
@@ -527,7 +519,6 @@ def test_update_route_empty_payload_returns_route_unchanged() -> None:
     assert result == route
 
 
-@pytest.mark.skip(reason="US06-TK03")
 def test_update_route_excludes_none_fields_from_repo_call() -> None:
     """O dict passado ao repo.update NÃO deve conter chaves cujo valor seja None."""
     from src.domains.routes.service import RouteService
