@@ -141,30 +141,8 @@ class RouteUpdate(BaseModel):
     @field_validator("recurrence")
     @classmethod
     def validate_recurrence(cls, v: str | None) -> str | None:
-        if v is None:
-            return None
-
-        days = [d.strip() for d in v.split(",")]
-        if not days or days == [""]:
-            raise ValueError("Recorrência deve ter pelo menos um dia.")
-
-        invalid = set(days) - VALID_RECURRENCE_DAYS
-        if invalid:
-            raise ValueError(f"Dias inválidos: {invalid}. Use: seg, ter, qua, qui, sex, sab, dom.")
-
-        if len(days) != len(set(days)):
-            raise ValueError("Recorrência não pode ter dias duplicados.")
-
-        return ",".join(days)
+        pass
 
     @model_validator(mode="after")
     def validate_origin_differs_from_destination(self) -> "RouteUpdate":
-        if self.origin is not None and self.destination is not None:
-            if (
-                self.origin.street == self.destination.street
-                and self.origin.number == self.destination.number
-                and self.origin.zip == self.destination.zip
-            ):
-                raise ValueError("Origem e destino não podem ser o mesmo endereço.")
-
-        return self
+        pass
