@@ -37,7 +37,6 @@ def make_schedule_item(**kwargs) -> dict:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US08-TK01")
 def test_schedule_request_requires_day_of_week() -> None:
     from pydantic import ValidationError
 
@@ -47,7 +46,6 @@ def test_schedule_request_requires_day_of_week() -> None:
         RoutePassangerScheduleRequest(address_id=uuid4())
 
 
-@pytest.mark.skip(reason="US08-TK01")
 def test_schedule_request_requires_address_id() -> None:
     from pydantic import ValidationError
 
@@ -57,7 +55,6 @@ def test_schedule_request_requires_address_id() -> None:
         RoutePassangerScheduleRequest(day_of_week="monday")
 
 
-@pytest.mark.skip(reason="US08-TK01")
 def test_schedule_request_accepts_valid_days() -> None:
     from src.domains.route_passangers.dtos import RoutePassangerScheduleRequest
 
@@ -66,7 +63,6 @@ def test_schedule_request_accepts_valid_days() -> None:
         assert req.day_of_week == day
 
 
-@pytest.mark.skip(reason="US08-TK01")
 def test_schedule_request_rejects_invalid_day() -> None:
     from pydantic import ValidationError
 
@@ -76,7 +72,6 @@ def test_schedule_request_rejects_invalid_day() -> None:
         RoutePassangerScheduleRequest(day_of_week="segunda", address_id=uuid4())
 
 
-@pytest.mark.skip(reason="US08-TK01")
 def test_schedule_request_rejects_invalid_address_uuid() -> None:
     from pydantic import ValidationError
 
@@ -91,7 +86,6 @@ def test_schedule_request_rejects_invalid_address_uuid() -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US08-TK01")
 def test_schedule_response_builds_from_orm_like_object() -> None:
     from src.domains.route_passangers.dtos import RoutePassangerScheduleResponse
 
@@ -109,7 +103,6 @@ def test_schedule_response_builds_from_orm_like_object() -> None:
     assert response.address_id == obj.address_id
 
 
-@pytest.mark.skip(reason="US08-TK01")
 def test_schedule_response_requires_all_fields() -> None:
     from pydantic import ValidationError
 
@@ -124,7 +117,6 @@ def test_schedule_response_requires_all_fields() -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US08-TK01")
 def test_join_route_request_requires_schedules() -> None:
     from pydantic import ValidationError
 
@@ -134,7 +126,6 @@ def test_join_route_request_requires_schedules() -> None:
         JoinRouteRequest()
 
 
-@pytest.mark.skip(reason="US08-TK01")
 def test_join_route_request_rejects_empty_schedules() -> None:
     """schedules precisa ter ao menos 1 item."""
     from pydantic import ValidationError
@@ -145,7 +136,6 @@ def test_join_route_request_rejects_empty_schedules() -> None:
         JoinRouteRequest(schedules=[])
 
 
-@pytest.mark.skip(reason="US08-TK01")
 def test_join_route_request_dependent_id_defaults_to_none() -> None:
     from src.domains.route_passangers.dtos import JoinRouteRequest
 
@@ -153,7 +143,6 @@ def test_join_route_request_dependent_id_defaults_to_none() -> None:
     assert req.dependent_id is None
 
 
-@pytest.mark.skip(reason="US08-TK01")
 def test_join_route_request_accepts_dependent_id() -> None:
     from src.domains.route_passangers.dtos import JoinRouteRequest
 
@@ -162,7 +151,6 @@ def test_join_route_request_accepts_dependent_id() -> None:
     assert req.dependent_id == dep_id
 
 
-@pytest.mark.skip(reason="US08-TK01")
 def test_join_route_request_accepts_multiple_schedules() -> None:
     from src.domains.route_passangers.dtos import JoinRouteRequest
 
@@ -176,7 +164,6 @@ def test_join_route_request_accepts_multiple_schedules() -> None:
     assert len(req.schedules) == 3
 
 
-@pytest.mark.skip(reason="US08-TK01")
 def test_join_route_request_rejects_duplicate_day() -> None:
     """Não pode ter o mesmo day_of_week repetido."""
     from pydantic import ValidationError
@@ -197,7 +184,6 @@ def test_join_route_request_rejects_duplicate_day() -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US08-TK01")
 def test_update_schedules_request_requires_schedules() -> None:
     from pydantic import ValidationError
 
@@ -207,7 +193,6 @@ def test_update_schedules_request_requires_schedules() -> None:
         UpdateSchedulesRequest()
 
 
-@pytest.mark.skip(reason="US08-TK01")
 def test_update_schedules_request_rejects_empty_schedules() -> None:
     from pydantic import ValidationError
 
@@ -217,7 +202,6 @@ def test_update_schedules_request_rejects_empty_schedules() -> None:
         UpdateSchedulesRequest(schedules=[])
 
 
-@pytest.mark.skip(reason="US08-TK01")
 def test_update_schedules_request_accepts_valid_payload() -> None:
     from src.domains.route_passangers.dtos import UpdateSchedulesRequest
 
@@ -230,7 +214,6 @@ def test_update_schedules_request_accepts_valid_payload() -> None:
     assert len(req.schedules) == 2
 
 
-@pytest.mark.skip(reason="US08-TK01")
 def test_update_schedules_request_rejects_duplicate_day() -> None:
     from pydantic import ValidationError
 

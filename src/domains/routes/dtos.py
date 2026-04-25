@@ -104,7 +104,17 @@ class RouteInviteSummaryResponse(BaseModel):
     Não expõe lista de passageiros nem stops.
     """
 
-    pass
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    name: str
+    route_type: str
+    recurrence: str
+    expected_time: time
+    max_passengers: int
+    accepted_count: int = Field(..., description="Contagem de passageiros aceitos (injetado pelo service)")
+    origin_address: AddressResponse
+    destination_address: AddressResponse
 
 
 # ---------------------------------------------------------------------------

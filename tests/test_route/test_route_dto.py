@@ -209,7 +209,6 @@ def test_route_create_different_origin_and_destination_is_valid() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US06-TK01")
 def test_route_update_all_fields_optional() -> None:
     from src.domains.routes.dtos import RouteUpdate
 
@@ -220,7 +219,6 @@ def test_route_update_all_fields_optional() -> None:
     assert update.destination is None
 
 
-@pytest.mark.skip(reason="US06-TK01")
 def test_route_update_partial_only_name() -> None:
     from src.domains.routes.dtos import RouteUpdate
 
@@ -229,7 +227,6 @@ def test_route_update_partial_only_name() -> None:
     assert update.route_type is None
 
 
-@pytest.mark.skip(reason="US06-TK01")
 def test_route_update_partial_only_recurrence() -> None:
     from src.domains.routes.dtos import RouteUpdate
 
@@ -237,7 +234,6 @@ def test_route_update_partial_only_recurrence() -> None:
     assert update.recurrence == "seg,ter"
 
 
-@pytest.mark.skip(reason="US06-TK01")
 def test_route_update_invalid_route_type() -> None:
     from pydantic import ValidationError
 
@@ -247,7 +243,6 @@ def test_route_update_invalid_route_type() -> None:
         RouteUpdate(route_type="ambos")
 
 
-@pytest.mark.skip(reason="US06-TK01")
 def test_route_update_invalid_recurrence_day() -> None:
     from pydantic import ValidationError
 
@@ -257,7 +252,6 @@ def test_route_update_invalid_recurrence_day() -> None:
         RouteUpdate(recurrence="mon,tue")
 
 
-@pytest.mark.skip(reason="US06-TK01")
 def test_route_update_recurrence_duplicate_days() -> None:
     from pydantic import ValidationError
 
@@ -267,7 +261,6 @@ def test_route_update_recurrence_duplicate_days() -> None:
         RouteUpdate(recurrence="seg,seg,ter")
 
 
-@pytest.mark.skip(reason="US06-TK01")
 def test_route_update_origin_and_destination_cannot_be_equal() -> None:
     from pydantic import ValidationError
 
@@ -278,7 +271,6 @@ def test_route_update_origin_and_destination_cannot_be_equal() -> None:
         RouteUpdate(origin=same, destination=same)
 
 
-@pytest.mark.skip(reason="US06-TK01")
 def test_route_update_accepts_only_origin_without_destination() -> None:
     from src.domains.routes.dtos import RouteUpdate
 
@@ -287,7 +279,6 @@ def test_route_update_accepts_only_origin_without_destination() -> None:
     assert update.destination is None
 
 
-@pytest.mark.skip(reason="US06-TK01")
 def test_route_update_expected_time_valid() -> None:
     from datetime import time
 
@@ -308,7 +299,6 @@ def test_route_update_expected_time_valid() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US08-TK01")
 def test_route_invite_summary_response_accepts_valid_payload() -> None:
     from datetime import time
     from uuid import uuid4
@@ -350,28 +340,24 @@ def test_route_invite_summary_response_accepts_valid_payload() -> None:
     assert response.accepted_count == 2
 
 
-@pytest.mark.skip(reason="US08-TK01")
 def test_route_invite_summary_response_does_not_expose_invite_code() -> None:
     from src.domains.routes.dtos import RouteInviteSummaryResponse
 
     assert "invite_code" not in RouteInviteSummaryResponse.model_fields
 
 
-@pytest.mark.skip(reason="US08-TK01")
 def test_route_invite_summary_response_does_not_expose_status() -> None:
     from src.domains.routes.dtos import RouteInviteSummaryResponse
 
     assert "status" not in RouteInviteSummaryResponse.model_fields
 
 
-@pytest.mark.skip(reason="US08-TK01")
 def test_route_invite_summary_response_does_not_expose_stops() -> None:
     from src.domains.routes.dtos import RouteInviteSummaryResponse
 
     assert "stops" not in RouteInviteSummaryResponse.model_fields
 
 
-@pytest.mark.skip(reason="US08-TK01")
 def test_route_invite_summary_response_requires_accepted_count() -> None:
     from datetime import time
     from uuid import uuid4
