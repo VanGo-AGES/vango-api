@@ -308,7 +308,6 @@ def test_route_update_expected_time_valid() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US08-TK01")
 def test_route_invite_summary_response_accepts_valid_payload() -> None:
     from datetime import time
     from uuid import uuid4
@@ -350,28 +349,24 @@ def test_route_invite_summary_response_accepts_valid_payload() -> None:
     assert response.accepted_count == 2
 
 
-@pytest.mark.skip(reason="US08-TK01")
 def test_route_invite_summary_response_does_not_expose_invite_code() -> None:
     from src.domains.routes.dtos import RouteInviteSummaryResponse
 
     assert "invite_code" not in RouteInviteSummaryResponse.model_fields
 
 
-@pytest.mark.skip(reason="US08-TK01")
 def test_route_invite_summary_response_does_not_expose_status() -> None:
     from src.domains.routes.dtos import RouteInviteSummaryResponse
 
     assert "status" not in RouteInviteSummaryResponse.model_fields
 
 
-@pytest.mark.skip(reason="US08-TK01")
 def test_route_invite_summary_response_does_not_expose_stops() -> None:
     from src.domains.routes.dtos import RouteInviteSummaryResponse
 
     assert "stops" not in RouteInviteSummaryResponse.model_fields
 
 
-@pytest.mark.skip(reason="US08-TK01")
 def test_route_invite_summary_response_requires_accepted_count() -> None:
     from datetime import time
     from uuid import uuid4
