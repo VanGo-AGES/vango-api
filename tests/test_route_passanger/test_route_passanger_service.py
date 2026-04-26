@@ -581,7 +581,6 @@ def test_reject_request_does_not_check_capacity() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US06-TK12")
 def test_remove_passanger_success_returns_none() -> None:
     driver_id = uuid.uuid4()
     route = make_route_mock(driver_id, status="ativa")
@@ -597,7 +596,6 @@ def test_remove_passanger_success_returns_none() -> None:
     assert result is None
 
 
-@pytest.mark.skip(reason="US06-TK12")
 def test_remove_passanger_calls_delete() -> None:
     driver_id = uuid.uuid4()
     route = make_route_mock(driver_id, status="ativa")
@@ -613,7 +611,6 @@ def test_remove_passanger_calls_delete() -> None:
     rp_repo.delete.assert_called_once_with(rp.id)
 
 
-@pytest.mark.skip(reason="US06-TK12")
 def test_remove_passanger_notifies_before_delete() -> None:
     """Notify deve ser chamado antes de delete (objeto rp ainda existe)."""
     driver_id = uuid.uuid4()
@@ -630,7 +627,6 @@ def test_remove_passanger_notifies_before_delete() -> None:
     notif.notify_passanger_removed.assert_called_once_with(rp)
 
 
-@pytest.mark.skip(reason="US06-TK12")
 def test_remove_passanger_route_not_found_raises() -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
@@ -642,7 +638,6 @@ def test_remove_passanger_route_not_found_raises() -> None:
         service.remove_passanger(uuid.uuid4(), uuid.uuid4(), driver_id)
 
 
-@pytest.mark.skip(reason="US06-TK12")
 def test_remove_passanger_wrong_owner_raises() -> None:
     from src.domains.routes.errors import RouteOwnershipError
 
@@ -657,7 +652,6 @@ def test_remove_passanger_wrong_owner_raises() -> None:
         service.remove_passanger(route.id, uuid.uuid4(), driver_id)
 
 
-@pytest.mark.skip(reason="US06-TK12")
 def test_remove_passanger_rp_not_found_raises() -> None:
     from src.domains.route_passangers.errors import RoutePassangerNotFoundError
 
@@ -672,7 +666,6 @@ def test_remove_passanger_rp_not_found_raises() -> None:
         service.remove_passanger(route.id, uuid.uuid4(), driver_id)
 
 
-@pytest.mark.skip(reason="US06-TK12")
 def test_remove_passanger_in_progress_raises() -> None:
     from src.domains.routes.errors import RouteInProgressError
 
@@ -693,7 +686,6 @@ def test_remove_passanger_in_progress_raises() -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US06-TK12")
 def test_remove_passanger_deletes_stop_by_rp_id() -> None:
     driver_id = uuid.uuid4()
     route = make_route_mock(driver_id, status="ativa")
@@ -709,7 +701,6 @@ def test_remove_passanger_deletes_stop_by_rp_id() -> None:
     stop_repo.delete_by_route_passanger_id.assert_called_once_with(rp.id)
 
 
-@pytest.mark.skip(reason="US06-TK12")
 def test_remove_passanger_deletes_stop_before_rp_delete() -> None:
     """Stop deve ser deletada ANTES de rp_repo.delete (FK rp -> stop)."""
     from unittest.mock import MagicMock
