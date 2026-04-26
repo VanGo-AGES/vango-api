@@ -26,13 +26,16 @@ from src.domains.route_passangers.dtos import (
     UpdateSchedulesRequest,
 )
 from src.domains.route_passangers.entity import RoutePassangerModel
-from src.domains.route_passangers.errors import NotRoutePassangerError
+from src.domains.route_passangers.errors import (
+    NotRoutePassangerError,
+    RoutePassangerNotFoundError,
+)
 from src.domains.route_passangers.repository import IRoutePassangerRepository
 from src.domains.route_passangers.schedule_repository import (
     IRoutePassangerScheduleRepository,
 )
 from src.domains.routes.dtos import AddressResponse
-from src.domains.routes.errors import RouteNotFoundError
+from src.domains.routes.errors import RouteInProgressError, RouteNotFoundError, RouteOwnershipError
 from src.domains.routes.repository import IRouteRepository
 from src.domains.stops.dtos import StopResponse
 from src.domains.stops.repository import IStopRepository
@@ -92,7 +95,6 @@ class RoutePassangerService:
         """
         pass
 
-    # US06-TK12
     def remove_passanger(self, route_id: UUID, rp_id: UUID, driver_id: UUID) -> None:
         """
         Remove um passageiro da rota.
@@ -105,7 +107,23 @@ class RoutePassangerService:
         - Chama repository.delete(rp_id)
         - Retorna None
         """
-        pass
+        route = self.route_repository.find_by_id(route_id)
+        if route is None:
+            raise RouteNotFoundError()
+
+        if route.driver_id != driver_id:
+            raise RouteOwnershipError()
+
+        if route.status == "em_andamento":
+            raise RouteInProgressError()
+
+        rp = self.route_passanger_repository.find_by_id(rp_id)
+        if rp is None:
+            raise RoutePassangerNotFoundError()
+
+        self.notification_service.notify_passanger_removed(rp)
+        self.stop_repository.delete_by_route_passanger_id(rp.id)
+        self.route_passanger_repository.delete(rp.id)
 
     # US06-TK14
     def list_by_status(self, route_id: UUID, driver_id: UUID, status: str | None = None) -> list[RoutePassangerResponse]:

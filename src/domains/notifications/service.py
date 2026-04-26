@@ -4,10 +4,13 @@ LoggingNotificationService (apenas loga, não persiste). A implementação
 real (push via Firebase, e-mail, etc.) ficará para sprints futuras.
 """
 
+import logging
 from abc import ABC, abstractmethod
 
 from src.domains.route_passangers.entity import RoutePassangerModel
 from src.domains.trips.entity import TripModel, TripPassangerModel
+
+logger = logging.getLogger(__name__)
 
 
 class INotificationService(ABC):
@@ -104,7 +107,12 @@ class LoggingNotificationService(INotificationService):
 
     # US06-TK16
     def notify_passanger_route_cancelled(self, rp: RoutePassangerModel) -> None:
-        pass
+        logger.info(
+            "notify_passanger_route_cancelled: rota cancelada, passageiro notificado " "[rp_id=%s, user_id=%s, status=%s]",
+            rp.id,
+            rp.user_id,
+            rp.status,
+        )
 
     # US06-TK19
     def notify_driver_passanger_absence_reported(self, rp: RoutePassangerModel) -> None:
