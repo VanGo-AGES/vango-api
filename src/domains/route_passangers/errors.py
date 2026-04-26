@@ -2,15 +2,18 @@
 
 
 class RoutePassangerNotFoundError(Exception):
-    pass
+    def __init__(self, message: str = "Solicitação ou vínculo de passageiro não encontrado") -> None:
+        super().__init__(message)
 
 
 class RouteCapacityExceededError(Exception):
-    pass
+    def __init__(self, message: str = "A rota atingiu o limite máximo de passageiros") -> None:
+        super().__init__(message)
 
 
 class RoutePassangerAlreadyProcessedError(Exception):
-    pass
+    def __init__(self, message: str = "A solicitação já foi aceita ou rejeitada anteriormente") -> None:
+        super().__init__(message)
 
 
 class DuplicateRoutePassangerError(Exception):
