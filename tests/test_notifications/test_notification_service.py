@@ -174,7 +174,6 @@ def make_trip_passanger_stub(status: str = "pendente"):
     return tp
 
 
-@pytest.mark.skip(reason="US09-TK05")
 def test_notification_service_trip_events_in_interface() -> None:
     from src.domains.notifications.service import INotificationService
 
@@ -183,7 +182,6 @@ def test_notification_service_trip_events_in_interface() -> None:
     assert hasattr(INotificationService, "notify_trip_finished")
 
 
-@pytest.mark.skip(reason="US09-TK05")
 def test_logging_notify_trip_started_does_not_raise() -> None:
     from src.domains.notifications.service import LoggingNotificationService
 
@@ -192,7 +190,6 @@ def test_logging_notify_trip_started_does_not_raise() -> None:
     assert service.notify_trip_started(trip) is None
 
 
-@pytest.mark.skip(reason="US09-TK05")
 def test_logging_notify_trip_arriving_at_stop_does_not_raise() -> None:
     from src.domains.notifications.service import LoggingNotificationService
 
@@ -201,7 +198,6 @@ def test_logging_notify_trip_arriving_at_stop_does_not_raise() -> None:
     assert service.notify_trip_arriving_at_stop(tp) is None
 
 
-@pytest.mark.skip(reason="US09-TK05")
 def test_logging_notify_trip_finished_does_not_raise() -> None:
     from src.domains.notifications.service import LoggingNotificationService
 

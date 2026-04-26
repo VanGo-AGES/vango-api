@@ -120,10 +120,22 @@ class LoggingNotificationService(INotificationService):
 
     # US09-TK05
     def notify_trip_started(self, trip: TripModel) -> None:
-        pass
+        logger.info(
+            "notify_trip_started: viagem iniciada [trip_id=%s, route_id=%s]",
+            trip.id,
+            trip.route_id,
+        )
 
     def notify_trip_arriving_at_stop(self, trip_passanger: TripPassangerModel) -> None:
-        pass
+        logger.info(
+            "notify_trip_arriving_at_stop: van chegando à parada [trip_passanger_id=%s, trip_id=%s]",
+            trip_passanger.id,
+            trip_passanger.trip_id,
+        )
 
     def notify_trip_finished(self, trip: TripModel) -> None:
-        pass
+        logger.info(
+            "notify_trip_finished: viagem finalizada [trip_id=%s, route_id=%s]",
+            trip.id,
+            trip.route_id,
+        )
