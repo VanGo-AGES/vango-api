@@ -464,7 +464,6 @@ def make_dependent(session, guardian_id: uuid.UUID, name: str = "Dep"):
         id=uuid.uuid4(),
         guardian_id=guardian_id,
         name=name,
-        birth_date=None,
     )
     session.add(dep)
     session.flush()
@@ -476,7 +475,6 @@ def make_dependent(session, guardian_id: uuid.UUID, name: str = "Dep"):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US08-TK03")
 def test_rp_repository_find_active_returns_pending(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 
@@ -494,7 +492,6 @@ def test_rp_repository_find_active_returns_pending(db_session) -> None:
     assert result.id == rp.id
 
 
-@pytest.mark.skip(reason="US08-TK03")
 def test_rp_repository_find_active_returns_accepted(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 
@@ -512,7 +509,6 @@ def test_rp_repository_find_active_returns_accepted(db_session) -> None:
     assert result.id == rp.id
 
 
-@pytest.mark.skip(reason="US08-TK03")
 def test_rp_repository_find_active_ignores_rejected(db_session) -> None:
     """rejected é considerado inativo — pode voltar a solicitar."""
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
@@ -528,7 +524,6 @@ def test_rp_repository_find_active_ignores_rejected(db_session) -> None:
     assert repo.find_active_by_user_and_route(passenger.id, None, route.id) is None
 
 
-@pytest.mark.skip(reason="US08-TK03")
 def test_rp_repository_find_active_ignores_removed(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 
@@ -543,7 +538,6 @@ def test_rp_repository_find_active_ignores_removed(db_session) -> None:
     assert repo.find_active_by_user_and_route(passenger.id, None, route.id) is None
 
 
-@pytest.mark.skip(reason="US08-TK03")
 def test_rp_repository_find_active_not_found_returns_none(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 
@@ -551,7 +545,6 @@ def test_rp_repository_find_active_not_found_returns_none(db_session) -> None:
     assert repo.find_active_by_user_and_route(uuid.uuid4(), None, uuid.uuid4()) is None
 
 
-@pytest.mark.skip(reason="US08-TK03")
 def test_rp_repository_find_active_filters_by_dependent_id(db_session) -> None:
     """Dois RPs no mesmo par (user_id, route_id): um self, um para dependente.
     Buscar com dependent_id=None retorna o self; com dependent_id=X retorna o do dep."""
@@ -571,7 +564,6 @@ def test_rp_repository_find_active_filters_by_dependent_id(db_session) -> None:
     assert repo.find_active_by_user_and_route(guardian.id, dep.id, route.id).id == rp_dep.id
 
 
-@pytest.mark.skip(reason="US08-TK03")
 def test_rp_repository_find_active_filters_by_route(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 
@@ -593,7 +585,6 @@ def test_rp_repository_find_active_filters_by_route(db_session) -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US08-TK03")
 def test_rp_repository_find_by_user_and_route_returns_all_statuses(db_session) -> None:
     """Retorna todos os RPs daquele user na rota (inclui rejected/removed)."""
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
@@ -613,7 +604,6 @@ def test_rp_repository_find_by_user_and_route_returns_all_statuses(db_session) -
     assert {rp.status for rp in results} == {"rejected", "pending"}
 
 
-@pytest.mark.skip(reason="US08-TK03")
 def test_rp_repository_find_by_user_and_route_includes_dependents(db_session) -> None:
     """Guardian com RP self + RP de dependente na mesma rota: ambos retornam."""
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
@@ -632,7 +622,6 @@ def test_rp_repository_find_by_user_and_route_includes_dependents(db_session) ->
     assert len(results) == 2
 
 
-@pytest.mark.skip(reason="US08-TK03")
 def test_rp_repository_find_by_user_and_route_empty_returns_empty_list(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 
@@ -640,7 +629,6 @@ def test_rp_repository_find_by_user_and_route_empty_returns_empty_list(db_sessio
     assert repo.find_by_user_and_route_id(uuid.uuid4(), uuid.uuid4()) == []
 
 
-@pytest.mark.skip(reason="US08-TK03")
 def test_rp_repository_find_by_user_and_route_filters_by_route(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 

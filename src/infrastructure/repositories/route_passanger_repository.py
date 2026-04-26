@@ -37,14 +37,33 @@ class RoutePassangerRepositoryImpl(IRoutePassangerRepository):
         dependent_id: UUID | None,
         route_id: UUID,
     ) -> RoutePassangerModel | None:
-        pass
+        dependent_filter = (
+            RoutePassangerModel.dependent_id == dependent_id if dependent_id is not None else RoutePassangerModel.dependent_id.is_(None)
+        )
+        return (
+            self.session.query(RoutePassangerModel)
+            .filter(
+                RoutePassangerModel.user_id == user_id,
+                dependent_filter,
+                RoutePassangerModel.route_id == route_id,
+                RoutePassangerModel.status.in_(["pending", "accepted"]),
+            )
+            .first()
+        )
 
     def find_by_user_and_route_id(
         self,
         user_id: UUID,
         route_id: UUID,
     ) -> list[RoutePassangerModel]:
-        pass
+        return (
+            self.session.query(RoutePassangerModel)
+            .filter(
+                RoutePassangerModel.user_id == user_id,
+                RoutePassangerModel.route_id == route_id,
+            )
+            .all()
+        )
 
     # -------------------------------------------------------------------
     # US08-TK13
