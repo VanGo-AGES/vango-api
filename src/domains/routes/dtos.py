@@ -133,8 +133,9 @@ class RouteUpdate(BaseModel):
     def validate_recurrence(cls, v: str | None) -> str | None:
         if v is None:
             return None
-
         days = [d.strip() for d in v.split(",")]
+        if not days or days == [""]:
+            raise ValueError("Recorrência deve ter pelo menos um dia.")
         seen = set()
         duplicate = []
         for day in days:
@@ -145,6 +146,7 @@ class RouteUpdate(BaseModel):
             seen.add(day)
         if duplicate:
             raise ValueError(f"Dias duplicados: {duplicate}. Recorrência não pode ter dias repetidos.")
+        return ",".join(days)
 
     @model_validator(mode="after")
     def validate_origin_differs_from_destination(self) -> "RouteUpdate":
