@@ -58,4 +58,11 @@ class RouteRepositoryImpl(IRouteRepository):
 
     # US06-TK17
     def delete(self, route_id: UUID) -> bool:
-        pass
+        route = self.find_by_id(route_id)
+
+        if route is None:
+            return False
+
+        self.session.delete(route)
+        self.session.commit()
+        return True
