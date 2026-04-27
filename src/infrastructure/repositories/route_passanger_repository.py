@@ -12,6 +12,12 @@ class RoutePassangerRepositoryImpl(IRoutePassangerRepository):
     def __init__(self, session: Session):
         self.session = session
 
+    def save(self, rp: RoutePassangerModel) -> RoutePassangerModel:
+        self.session.add(rp)
+        self.session.flush()
+        self.session.refresh(rp)
+        return rp
+
     def find_by_id(self, rp_id: UUID) -> RoutePassangerModel | None:
         pass
 
