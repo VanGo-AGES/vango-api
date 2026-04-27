@@ -867,7 +867,6 @@ def make_join_request(dependent_id=None, days=("monday",), address_id=None):
     return JoinRouteRequest(dependent_id=dependent_id, schedules=schedules)
 
 
-@pytest.mark.skip(reason="US08-TK07")
 def test_join_route_success_creates_pending_rp() -> None:
     route = make_route_mock(uuid.uuid4(), status="ativa", max_passengers=5)
     user_id = uuid.uuid4()
@@ -887,7 +886,6 @@ def test_join_route_success_creates_pending_rp() -> None:
     schedule_repo.save_many.assert_called_once()
 
 
-@pytest.mark.skip(reason="US08-TK07")
 def test_join_route_pickup_address_equals_first_schedule() -> None:
     route = make_route_mock(uuid.uuid4(), status="ativa")
     user_id = uuid.uuid4()
@@ -905,7 +903,6 @@ def test_join_route_pickup_address_equals_first_schedule() -> None:
     assert saved_rp.pickup_address_id == address_id
 
 
-@pytest.mark.skip(reason="US08-TK07")
 def test_join_route_notifies_driver() -> None:
     route = make_route_mock(uuid.uuid4(), status="ativa")
     service, rp_repo, route_repo, _, _, notif, _, _ = build_service()
@@ -918,7 +915,6 @@ def test_join_route_notifies_driver() -> None:
     notif.notify_driver_passanger_requested.assert_called_once()
 
 
-@pytest.mark.skip(reason="US08-TK07")
 def test_join_route_route_not_found_raises() -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
@@ -929,7 +925,6 @@ def test_join_route_route_not_found_raises() -> None:
         service.join_route(uuid.uuid4(), uuid.uuid4(), make_join_request())
 
 
-@pytest.mark.skip(reason="US08-TK07")
 def test_join_route_em_andamento_raises() -> None:
     from src.domains.routes.errors import RouteInProgressError
 
@@ -941,7 +936,6 @@ def test_join_route_em_andamento_raises() -> None:
         service.join_route(route.id, uuid.uuid4(), make_join_request())
 
 
-@pytest.mark.skip(reason="US08-TK07")
 def test_join_route_full_capacity_raises() -> None:
     from src.domains.route_passangers.errors import RouteCapacityExceededError
 
@@ -955,7 +949,6 @@ def test_join_route_full_capacity_raises() -> None:
         service.join_route(route.id, uuid.uuid4(), make_join_request())
 
 
-@pytest.mark.skip(reason="US08-TK07")
 def test_join_route_duplicate_active_raises() -> None:
     from src.domains.route_passangers.errors import DuplicateRoutePassangerError
 
@@ -971,7 +964,6 @@ def test_join_route_duplicate_active_raises() -> None:
         service.join_route(route.id, user_id, make_join_request())
 
 
-@pytest.mark.skip(reason="US08-TK07")
 def test_join_route_rejected_previous_allows_new_request() -> None:
     """Ter um RP rejected anterior NÃO bloqueia — find_active retorna None."""
     route = make_route_mock(uuid.uuid4(), status="ativa")
@@ -985,7 +977,6 @@ def test_join_route_rejected_previous_allows_new_request() -> None:
     rp_repo.save.assert_called_once()
 
 
-@pytest.mark.skip(reason="US08-TK07")
 def test_join_route_with_dependent_id_sets_dep_on_rp() -> None:
     route = make_route_mock(uuid.uuid4(), status="ativa")
     guardian_id = uuid.uuid4()
