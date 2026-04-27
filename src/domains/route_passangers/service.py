@@ -27,11 +27,14 @@ from src.domains.route_passangers.dtos import (
 )
 from src.domains.route_passangers.entity import RoutePassangerModel
 from src.domains.route_passangers.errors import (
+    DuplicateRoutePassangerError,
     NotRoutePassangerError,
+    RouteCapacityExceededError,
     RoutePassangerAlreadyProcessedError,
     RoutePassangerNotFoundError,
 )
 from src.domains.route_passangers.repository import IRoutePassangerRepository
+from src.domains.route_passangers.schedule_entity import RoutePassangerScheduleModel
 from src.domains.route_passangers.schedule_repository import (
     IRoutePassangerScheduleRepository,
 )
@@ -225,7 +228,43 @@ class RoutePassangerService:
         - Persiste schedules via schedule_repository.save_many
         - Notifica motorista via notify_driver_passanger_requested
         """
-        pass
+        route = self.route_repository.find_by_id(route_id)
+        if route is None:
+            raise RouteNotFoundError()
+
+        if route.status == "em_andamento":
+            raise RouteInProgressError()
+
+        existing = self.route_passanger_repository.find_active_by_user_and_route(user_id, data.dependent_id, route_id)
+        if existing is not None:
+            raise DuplicateRoutePassangerError()
+
+        accepted_count = self.route_passanger_repository.count_accepted_by_route(route_id)
+        if accepted_count >= route.max_passengers:
+            raise RouteCapacityExceededError()
+
+        rp = RoutePassangerModel(
+            route_id=route_id,
+            user_id=user_id,
+            dependent_id=data.dependent_id,
+            status="pending",
+            joined_at=None,
+            pickup_address_id=data.schedules[0].address_id,
+        )
+        saved_rp = self.route_passanger_repository.save(rp)
+
+        schedules = [
+            RoutePassangerScheduleModel(
+                route_passanger_id=saved_rp.id,
+                day_of_week=s.day_of_week,
+                address_id=s.address_id,
+            )
+            for s in data.schedules
+        ]
+        self.schedule_repository.save_many(schedules)
+
+        self.notification_service.notify_driver_passanger_requested(saved_rp)
+        return self._to_response(saved_rp)
 
     # US08-TK09
     def leave_route(

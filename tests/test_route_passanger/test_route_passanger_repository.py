@@ -122,6 +122,123 @@ def make_route_passanger(
 
 
 # ---------------------------------------------------------------------------
+# save
+# ---------------------------------------------------------------------------
+
+
+def test_route_passanger_repository_save_returns_persisted_instance(db_session) -> None:
+    """save deve retornar o RoutePassangerModel com id preenchido pelo banco."""
+    from src.domains.route_passangers.entity import RoutePassangerModel
+    from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
+
+    driver = make_user(db_session, role="driver")
+    passenger = make_user(db_session)
+    origin = make_address(db_session, driver.id, "Casa")
+    destination = make_address(db_session, driver.id, "PUCRS")
+    route = make_route(db_session, driver.id, origin.id, destination.id)
+    pickup = make_address(db_session, passenger.id, "Pickup")
+
+    rp = RoutePassangerModel(
+        route_id=route.id,
+        user_id=passenger.id,
+        status="pending",
+        pickup_address_id=pickup.id,
+    )
+
+    repo = RoutePassangerRepositoryImpl(db_session)
+    saved = repo.save(rp)
+
+    assert saved is not None
+    assert saved.id is not None
+
+
+def test_route_passanger_repository_save_persists_correct_fields(db_session) -> None:
+    """Os campos obrigatórios do vínculo devem ser persistidos corretamente."""
+    from src.domains.route_passangers.entity import RoutePassangerModel
+    from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
+
+    driver = make_user(db_session, role="driver")
+    passenger = make_user(db_session)
+    origin = make_address(db_session, driver.id, "Casa")
+    destination = make_address(db_session, driver.id, "PUCRS")
+    route = make_route(db_session, driver.id, origin.id, destination.id)
+    pickup = make_address(db_session, passenger.id, "Pickup")
+
+    rp = RoutePassangerModel(
+        route_id=route.id,
+        user_id=passenger.id,
+        status="pending",
+        pickup_address_id=pickup.id,
+    )
+
+    repo = RoutePassangerRepositoryImpl(db_session)
+    saved = repo.save(rp)
+
+    assert saved.route_id == route.id
+    assert saved.user_id == passenger.id
+    assert saved.status == "pending"
+    assert saved.pickup_address_id == pickup.id
+
+
+def test_route_passanger_repository_save_is_queryable_after_save(db_session) -> None:
+    """Após save, o vínculo deve ser encontrável via find_by_id."""
+    from src.domains.route_passangers.entity import RoutePassangerModel
+    from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
+
+    driver = make_user(db_session, role="driver")
+    passenger = make_user(db_session)
+    origin = make_address(db_session, driver.id, "Casa")
+    destination = make_address(db_session, driver.id, "PUCRS")
+    route = make_route(db_session, driver.id, origin.id, destination.id)
+    pickup = make_address(db_session, passenger.id, "Pickup")
+
+    rp = RoutePassangerModel(
+        route_id=route.id,
+        user_id=passenger.id,
+        status="pending",
+        pickup_address_id=pickup.id,
+    )
+
+    repo = RoutePassangerRepositoryImpl(db_session)
+    saved = repo.save(rp)
+
+    db_session.expire_all()
+    refetched = db_session.get(RoutePassangerModel, saved.id)
+    assert refetched is not None
+    assert refetched.user_id == passenger.id
+
+
+def test_route_passanger_repository_save_with_dependent_id(db_session) -> None:
+    """save deve persistir o dependent_id quando o vínculo é em nome de um dependente."""
+    from src.domains.dependents.entity import DependentModel
+    from src.domains.route_passangers.entity import RoutePassangerModel
+    from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
+
+    driver = make_user(db_session, role="driver")
+    guardian = make_user(db_session)
+    dep = DependentModel(id=uuid.uuid4(), guardian_id=guardian.id, name="Filho")
+    db_session.add(dep)
+    db_session.flush()
+    origin = make_address(db_session, driver.id, "Casa")
+    destination = make_address(db_session, driver.id, "PUCRS")
+    route = make_route(db_session, driver.id, origin.id, destination.id)
+    pickup = make_address(db_session, guardian.id, "Pickup")
+
+    rp = RoutePassangerModel(
+        route_id=route.id,
+        user_id=guardian.id,
+        dependent_id=dep.id,
+        status="pending",
+        pickup_address_id=pickup.id,
+    )
+
+    repo = RoutePassangerRepositoryImpl(db_session)
+    saved = repo.save(rp)
+
+    assert saved.dependent_id == dep.id
+
+
+# ---------------------------------------------------------------------------
 # find_by_id
 # ---------------------------------------------------------------------------
 
