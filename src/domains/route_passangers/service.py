@@ -28,6 +28,7 @@ from src.domains.route_passangers.dtos import (
 from src.domains.route_passangers.entity import RoutePassangerModel
 from src.domains.route_passangers.errors import (
     NotRoutePassangerError,
+    RoutePassangerAlreadyProcessedError,
     RoutePassangerNotFoundError,
 )
 from src.domains.route_passangers.repository import IRoutePassangerRepository
@@ -93,7 +94,26 @@ class RoutePassangerService:
         - Atualiza status para 'rejected' (joined_at permanece None)
         - Chama notification_service.notify_passanger_rejected(rp)
         """
-        pass
+        route = self.route_repository.find_by_id(route_id)
+        if route is None:
+            raise RouteNotFoundError()
+
+        if route.driver_id != driver_id:
+            raise RouteOwnershipError()
+
+        if route.status == "em_andamento":
+            raise RouteInProgressError()
+
+        rp = self.route_passanger_repository.find_by_id(rp_id)
+        if rp is None:
+            raise RoutePassangerNotFoundError()
+
+        if rp.status != "pending":
+            raise RoutePassangerAlreadyProcessedError()
+
+        updated = self.route_passanger_repository.update_status(rp.id, "rejected")
+        self.notification_service.notify_passanger_rejected(updated)
+        return self._to_response(updated)
 
     def remove_passanger(self, route_id: UUID, rp_id: UUID, driver_id: UUID) -> None:
         """
@@ -135,12 +155,51 @@ class RoutePassangerService:
         - ValueError se status não for um dos valores válidos (pending/accepted/rejected/None)
         - Resolve nomes (user_name, dependent_name, guardian_name) em cada response
         """
-        pass
+        route = self.route_repository.find_by_id(route_id)
+        if route is None:
+            raise RouteNotFoundError()
+
+        if route.driver_id != driver_id:
+            raise RouteOwnershipError()
+
+        valid_statuses = {"pending", "accepted", "rejected", None}
+        if status not in valid_statuses:
+            raise ValueError(f"Status inválido: '{status}'. Valores permitidos: pending, accepted, rejected")
+
+        rps = self.route_passanger_repository.find_by_route_and_status(route_id, status)
+        return [self._to_response(rp) for rp in rps]
 
     # Helper interno (sem @abstractmethod — não está na interface)
     def _to_response(self, rp: RoutePassangerModel) -> RoutePassangerResponse:
-        """Constrói RoutePassangerResponse resolvendo nomes de user/dependent/guardian."""
-        pass
+        """Constrói RoutePassangerResponse resolvendo nomes de user/dependent/guardian.
+
+        Usa model_construct para evitar revalidação de dados que já passaram pelo ORM
+        (e para compatibilidade com mocks nos testes unitários).
+        """
+        user = self.user_repository.find_by_id(rp.user_id)
+
+        dependent_name: str | None = None
+        guardian_name: str | None = None
+        if rp.dependent_id is not None:
+            dep = self.dependent_repository.get_by_id(rp.dependent_id)
+            if dep is not None:
+                dependent_name = dep.name
+                guardian_name = user.name
+
+        return RoutePassangerResponse.model_construct(
+            id=rp.id,
+            route_id=rp.route_id,
+            status=rp.status,
+            requested_at=rp.requested_at,
+            user_id=rp.user_id,
+            user_name=user.name,
+            user_phone=user.phone,
+            pickup_address_id=rp.pickup_address_id,
+            joined_at=rp.joined_at,
+            dependent_id=rp.dependent_id,
+            dependent_name=dependent_name,
+            guardian_name=guardian_name,
+        )
 
     # -----------------------------------------------------------------
     # US08 — operações originadas pelo passageiro

@@ -431,7 +431,6 @@ def test_accept_request_stop_links_to_route_and_rp() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US06-TK10")
 def test_reject_request_success_returns_response() -> None:
     driver_id = uuid.uuid4()
     route = make_route_mock(driver_id, status="ativa")
@@ -449,7 +448,6 @@ def test_reject_request_success_returns_response() -> None:
     assert response.status == "rejected"
 
 
-@pytest.mark.skip(reason="US06-TK10")
 def test_reject_request_calls_update_status_rejected() -> None:
     driver_id = uuid.uuid4()
     route = make_route_mock(driver_id, status="ativa")
@@ -466,7 +464,6 @@ def test_reject_request_calls_update_status_rejected() -> None:
     rp_repo.update_status.assert_called_once_with(rp.id, "rejected")
 
 
-@pytest.mark.skip(reason="US06-TK10")
 def test_reject_request_notifies_rejected() -> None:
     driver_id = uuid.uuid4()
     route = make_route_mock(driver_id, status="ativa")
@@ -483,7 +480,6 @@ def test_reject_request_notifies_rejected() -> None:
     notif.notify_passanger_rejected.assert_called_once()
 
 
-@pytest.mark.skip(reason="US06-TK10")
 def test_reject_request_in_progress_raises() -> None:
     from src.domains.routes.errors import RouteInProgressError
 
@@ -499,7 +495,6 @@ def test_reject_request_in_progress_raises() -> None:
         service.reject_request(route.id, rp.id, driver_id)
 
 
-@pytest.mark.skip(reason="US06-TK10")
 def test_reject_request_already_processed_raises() -> None:
     from src.domains.route_passangers.errors import RoutePassangerAlreadyProcessedError
 
@@ -515,7 +510,6 @@ def test_reject_request_already_processed_raises() -> None:
         service.reject_request(route.id, rp.id, driver_id)
 
 
-@pytest.mark.skip(reason="US06-TK10")
 def test_reject_request_wrong_owner_raises() -> None:
     from src.domains.routes.errors import RouteOwnershipError
 
@@ -531,7 +525,6 @@ def test_reject_request_wrong_owner_raises() -> None:
         service.reject_request(route.id, uuid.uuid4(), driver_id)
 
 
-@pytest.mark.skip(reason="US06-TK10")
 def test_reject_request_route_not_found_raises() -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
@@ -543,7 +536,6 @@ def test_reject_request_route_not_found_raises() -> None:
         service.reject_request(uuid.uuid4(), uuid.uuid4(), driver_id)
 
 
-@pytest.mark.skip(reason="US06-TK10")
 def test_reject_request_rp_not_found_raises() -> None:
     from src.domains.route_passangers.errors import RoutePassangerNotFoundError
 
@@ -558,7 +550,6 @@ def test_reject_request_rp_not_found_raises() -> None:
         service.reject_request(route.id, uuid.uuid4(), driver_id)
 
 
-@pytest.mark.skip(reason="US06-TK10")
 def test_reject_request_does_not_check_capacity() -> None:
     """Reject não deve chamar count_accepted_by_route."""
     driver_id = uuid.uuid4()
@@ -729,7 +720,6 @@ def test_remove_passanger_deletes_stop_before_rp_delete() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US06-TK14")
 def test_list_by_status_returns_responses() -> None:
     driver_id = uuid.uuid4()
     route = make_route_mock(driver_id, status="ativa")
@@ -746,7 +736,6 @@ def test_list_by_status_returns_responses() -> None:
     assert len(result) == 2
 
 
-@pytest.mark.skip(reason="US06-TK14")
 def test_list_by_status_filters_via_repository() -> None:
     driver_id = uuid.uuid4()
     route = make_route_mock(driver_id, status="ativa")
@@ -760,7 +749,6 @@ def test_list_by_status_filters_via_repository() -> None:
     rp_repo.find_by_route_and_status.assert_called_once_with(route.id, "pending")
 
 
-@pytest.mark.skip(reason="US06-TK14")
 def test_list_by_status_no_filter_passes_none() -> None:
     driver_id = uuid.uuid4()
     route = make_route_mock(driver_id, status="ativa")
@@ -774,7 +762,6 @@ def test_list_by_status_no_filter_passes_none() -> None:
     rp_repo.find_by_route_and_status.assert_called_once_with(route.id, None)
 
 
-@pytest.mark.skip(reason="US06-TK14")
 def test_list_by_status_route_not_found_raises() -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
@@ -786,7 +773,6 @@ def test_list_by_status_route_not_found_raises() -> None:
         service.list_by_status(uuid.uuid4(), driver_id, status="pending")
 
 
-@pytest.mark.skip(reason="US06-TK14")
 def test_list_by_status_wrong_owner_raises() -> None:
     from src.domains.routes.errors import RouteOwnershipError
 
@@ -800,7 +786,6 @@ def test_list_by_status_wrong_owner_raises() -> None:
         service.list_by_status(route.id, driver_id, status="pending")
 
 
-@pytest.mark.skip(reason="US06-TK14")
 def test_list_by_status_invalid_status_raises_value_error() -> None:
     driver_id = uuid.uuid4()
     route = make_route_mock(driver_id, status="ativa")
@@ -812,7 +797,6 @@ def test_list_by_status_invalid_status_raises_value_error() -> None:
         service.list_by_status(route.id, driver_id, status="invalid_status")
 
 
-@pytest.mark.skip(reason="US06-TK14")
 def test_list_by_status_empty_list_returned() -> None:
     driver_id = uuid.uuid4()
     route = make_route_mock(driver_id, status="ativa")
@@ -826,7 +810,6 @@ def test_list_by_status_empty_list_returned() -> None:
     assert result == []
 
 
-@pytest.mark.skip(reason="US06-TK14")
 def test_list_by_status_resolves_user_name() -> None:
     driver_id = uuid.uuid4()
     route = make_route_mock(driver_id, status="ativa")
@@ -845,7 +828,6 @@ def test_list_by_status_resolves_user_name() -> None:
     assert result[0].user_phone == "54988887777"
 
 
-@pytest.mark.skip(reason="US06-TK14")
 def test_list_by_status_resolves_dependent_and_guardian_names() -> None:
     driver_id = uuid.uuid4()
     route = make_route_mock(driver_id, status="ativa")
