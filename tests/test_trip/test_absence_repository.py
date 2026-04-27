@@ -86,7 +86,6 @@ def test_find_by_route_and_date_handles_missing_route(db_session) -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US06-TK18")
 def test_save_persists_new_absence(db_session) -> None:
     driver = make_driver(db_session)
     route = make_route(db_session, driver.id)
@@ -106,7 +105,6 @@ def test_save_persists_new_absence(db_session) -> None:
     assert saved.reason == "Consulta"
 
 
-@pytest.mark.skip(reason="US06-TK18")
 def test_save_sets_created_at_automatically(db_session) -> None:
     driver = make_driver(db_session)
     route = make_route(db_session, driver.id)
@@ -124,7 +122,6 @@ def test_save_sets_created_at_automatically(db_session) -> None:
     assert saved.created_at is not None
 
 
-@pytest.mark.skip(reason="US06-TK18")
 def test_find_for_route_passanger_on_date_returns_existing(db_session) -> None:
     driver = make_driver(db_session)
     route = make_route(db_session, driver.id)
@@ -141,7 +138,6 @@ def test_find_for_route_passanger_on_date_returns_existing(db_session) -> None:
     assert result.route_passanger_id == rp.id
 
 
-@pytest.mark.skip(reason="US06-TK18")
 def test_find_for_route_passanger_on_date_ignores_other_days(db_session) -> None:
     driver = make_driver(db_session)
     route = make_route(db_session, driver.id)
@@ -155,7 +151,6 @@ def test_find_for_route_passanger_on_date_ignores_other_days(db_session) -> None
     assert repo.find_for_route_passanger_on_date(rp.id, day) is None
 
 
-@pytest.mark.skip(reason="US06-TK18")
 def test_find_for_route_passanger_on_date_matches_by_day_interval(db_session) -> None:
     """Deve achar absence gravada em qualquer hora do mesmo dia."""
     driver = make_driver(db_session)
@@ -171,7 +166,6 @@ def test_find_for_route_passanger_on_date_matches_by_day_interval(db_session) ->
     assert repo.find_for_route_passanger_on_date(rp.id, queried_at) is not None
 
 
-@pytest.mark.skip(reason="US06-TK18")
 def test_find_for_route_passanger_on_date_missing_returns_none(db_session) -> None:
     repo = AbsenceRepositoryImpl(db_session)
     assert (

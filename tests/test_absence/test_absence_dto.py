@@ -18,7 +18,6 @@ from src.domains.absences.dtos import AbsenceResponse, CreateAbsenceRequest
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US06-TK18")
 def test_create_absence_request_minimal_payload() -> None:
     payload = {
         "route_id": uuid.uuid4(),
@@ -31,7 +30,6 @@ def test_create_absence_request_minimal_payload() -> None:
     assert dto.reason is None
 
 
-@pytest.mark.skip(reason="US06-TK18")
 def test_create_absence_request_with_dependent_and_reason() -> None:
     payload = {
         "route_id": uuid.uuid4(),
@@ -44,19 +42,16 @@ def test_create_absence_request_with_dependent_and_reason() -> None:
     assert dto.reason == "Consulta médica"
 
 
-@pytest.mark.skip(reason="US06-TK18")
 def test_create_absence_request_missing_route_id_raises() -> None:
     with pytest.raises(ValidationError):
         CreateAbsenceRequest(absence_date=date(2026, 4, 23))
 
 
-@pytest.mark.skip(reason="US06-TK18")
 def test_create_absence_request_missing_absence_date_raises() -> None:
     with pytest.raises(ValidationError):
         CreateAbsenceRequest(route_id=uuid.uuid4())
 
 
-@pytest.mark.skip(reason="US06-TK18")
 def test_create_absence_request_reason_max_length_enforced() -> None:
     with pytest.raises(ValidationError):
         CreateAbsenceRequest(
@@ -71,7 +66,6 @@ def test_create_absence_request_reason_max_length_enforced() -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US06-TK18")
 def test_absence_response_serializes_full_payload() -> None:
     payload = {
         "id": uuid.uuid4(),
@@ -86,7 +80,6 @@ def test_absence_response_serializes_full_payload() -> None:
     assert dto.reason == "Consulta"
 
 
-@pytest.mark.skip(reason="US06-TK18")
 def test_absence_response_accepts_none_reason() -> None:
     dto = AbsenceResponse(
         id=uuid.uuid4(),
@@ -98,7 +91,6 @@ def test_absence_response_accepts_none_reason() -> None:
     assert dto.reason is None
 
 
-@pytest.mark.skip(reason="US06-TK18")
 def test_absence_response_from_attributes() -> None:
     """Deve construir via model_validate a partir de um AbsenceModel ORM."""
 
