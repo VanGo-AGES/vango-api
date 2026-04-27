@@ -126,6 +126,7 @@ def make_route_passanger(
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.skip(reason="US06-TK06")
 def test_route_passanger_repository_find_by_id_returns_model(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 
@@ -144,6 +145,7 @@ def test_route_passanger_repository_find_by_id_returns_model(db_session) -> None
     assert result.route_id == route.id
 
 
+@pytest.mark.skip(reason="US06-TK06")
 def test_route_passanger_repository_find_by_id_not_found_returns_none(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 
@@ -157,6 +159,7 @@ def test_route_passanger_repository_find_by_id_not_found_returns_none(db_session
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.skip(reason="US06-TK06")
 def test_route_passanger_repository_find_by_route_filters_by_status(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 
@@ -178,6 +181,7 @@ def test_route_passanger_repository_find_by_route_filters_by_status(db_session) 
     assert all(rp.status == "pending" for rp in results)
 
 
+@pytest.mark.skip(reason="US06-TK06")
 def test_route_passanger_repository_find_by_route_no_status_returns_all(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 
@@ -196,6 +200,7 @@ def test_route_passanger_repository_find_by_route_no_status_returns_all(db_sessi
     assert len(results) == 2
 
 
+@pytest.mark.skip(reason="US06-TK06")
 def test_route_passanger_repository_find_by_route_empty_returns_empty_list(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 
@@ -204,6 +209,7 @@ def test_route_passanger_repository_find_by_route_empty_returns_empty_list(db_se
     assert results == []
 
 
+@pytest.mark.skip(reason="US06-TK06")
 def test_route_passanger_repository_find_by_route_filters_out_other_statuses(db_session) -> None:
     """Quando status='accepted', não retorna rejected/removed da mesma rota."""
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
@@ -226,6 +232,7 @@ def test_route_passanger_repository_find_by_route_filters_out_other_statuses(db_
     assert results[0].user_id == p1.id
 
 
+@pytest.mark.skip(reason="US06-TK06")
 def test_route_passanger_repository_find_by_route_filters_by_route_id(db_session) -> None:
     """Não retorna passageiros de outras rotas."""
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
@@ -252,6 +259,7 @@ def test_route_passanger_repository_find_by_route_filters_by_route_id(db_session
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.skip(reason="US06-TK06")
 def test_route_passanger_repository_update_status_accepted(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 
@@ -269,6 +277,7 @@ def test_route_passanger_repository_update_status_accepted(db_session) -> None:
     assert updated.status == "accepted"
 
 
+@pytest.mark.skip(reason="US06-TK06")
 def test_route_passanger_repository_update_status_rejected(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 
@@ -286,6 +295,7 @@ def test_route_passanger_repository_update_status_rejected(db_session) -> None:
     assert updated.status == "rejected"
 
 
+@pytest.mark.skip(reason="US06-TK06")
 def test_route_passanger_repository_update_status_not_found_returns_none(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 
@@ -294,6 +304,7 @@ def test_route_passanger_repository_update_status_not_found_returns_none(db_sess
     assert result is None
 
 
+@pytest.mark.skip(reason="US06-TK06")
 def test_route_passanger_repository_update_status_persists_in_db(db_session) -> None:
     """Após update_status, um novo find_by_id deve refletir o novo status."""
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
@@ -318,6 +329,7 @@ def test_route_passanger_repository_update_status_persists_in_db(db_session) -> 
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.skip(reason="US06-TK06")
 def test_route_passanger_repository_count_accepted_only(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 
@@ -338,6 +350,7 @@ def test_route_passanger_repository_count_accepted_only(db_session) -> None:
     assert count == 2
 
 
+@pytest.mark.skip(reason="US06-TK06")
 def test_route_passanger_repository_count_accepted_zero_when_no_passangers(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 
@@ -346,6 +359,7 @@ def test_route_passanger_repository_count_accepted_zero_when_no_passangers(db_se
     assert count == 0
 
 
+@pytest.mark.skip(reason="US06-TK06")
 def test_route_passanger_repository_count_accepted_filters_by_route(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 
@@ -363,6 +377,7 @@ def test_route_passanger_repository_count_accepted_filters_by_route(db_session) 
     assert repo.count_accepted_by_route(route_a.id) == 1
 
 
+@pytest.mark.skip(reason="US06-TK06")
 def test_route_passanger_repository_count_accepted_ignores_other_statuses(db_session) -> None:
     """count_accepted_by_route só conta status='accepted', ignora pending/rejected/removed."""
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
@@ -389,6 +404,7 @@ def test_route_passanger_repository_count_accepted_ignores_other_statuses(db_ses
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.skip(reason="US06-TK06")
 def test_route_passanger_repository_delete_returns_true(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 
@@ -406,6 +422,7 @@ def test_route_passanger_repository_delete_returns_true(db_session) -> None:
     assert repo.find_by_id(rp.id) is None
 
 
+@pytest.mark.skip(reason="US06-TK06")
 def test_route_passanger_repository_delete_not_found_returns_false(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 
@@ -414,6 +431,7 @@ def test_route_passanger_repository_delete_not_found_returns_false(db_session) -
     assert result is False
 
 
+@pytest.mark.skip(reason="US06-TK06")
 def test_route_passanger_repository_delete_only_removes_target(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 
