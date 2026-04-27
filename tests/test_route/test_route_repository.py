@@ -429,7 +429,6 @@ def test_route_repository_find_by_invite_code_is_exact_match(db_session) -> None
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US06-TK17")
 def test_route_repository_delete_returns_true_when_existing(db_session) -> None:
     from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
 
@@ -444,7 +443,6 @@ def test_route_repository_delete_returns_true_when_existing(db_session) -> None:
     assert result is True
 
 
-@pytest.mark.skip(reason="US06-TK17")
 def test_route_repository_delete_removes_route_from_db(db_session) -> None:
     from src.domains.routes.entity import RouteModel
     from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
@@ -462,7 +460,6 @@ def test_route_repository_delete_removes_route_from_db(db_session) -> None:
     assert found is None
 
 
-@pytest.mark.skip(reason="US06-TK17")
 def test_route_repository_delete_not_found_returns_false(db_session) -> None:
     from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
 
@@ -471,7 +468,6 @@ def test_route_repository_delete_not_found_returns_false(db_session) -> None:
     assert result is False
 
 
-@pytest.mark.skip(reason="US06-TK17")
 def test_route_repository_delete_cascades_passengers(db_session) -> None:
     """Ao deletar a rota, route_passangers associados também devem sumir via cascade."""
     from src.domains.route_passangers.entity import RoutePassangerModel
@@ -512,7 +508,6 @@ def test_route_repository_delete_cascades_passengers(db_session) -> None:
     assert remaining is None
 
 
-@pytest.mark.skip(reason="US06-TK17")
 def test_route_repository_delete_cascades_stops(db_session) -> None:
     """Ao deletar a rota, stops associadas também devem sumir via cascade."""
     from src.domains.route_passangers.entity import RoutePassangerModel
