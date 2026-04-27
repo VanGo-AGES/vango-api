@@ -28,6 +28,7 @@ from src.domains.route_passangers.dtos import (
 from src.domains.route_passangers.entity import RoutePassangerModel
 from src.domains.route_passangers.errors import (
     NotRoutePassangerError,
+    RoutePassangerAlreadyProcessedError,
     RoutePassangerNotFoundError,
 )
 from src.domains.route_passangers.repository import IRoutePassangerRepository
@@ -93,7 +94,26 @@ class RoutePassangerService:
         - Atualiza status para 'rejected' (joined_at permanece None)
         - Chama notification_service.notify_passanger_rejected(rp)
         """
-        pass
+        route = self.route_repository.find_by_id(route_id)
+        if route is None:
+            raise RouteNotFoundError()
+
+        if route.driver_id != driver_id:
+            raise RouteOwnershipError()
+
+        if route.status == "em_andamento":
+            raise RouteInProgressError()
+
+        rp = self.route_passanger_repository.find_by_id(rp_id)
+        if rp is None:
+            raise RoutePassangerNotFoundError()
+
+        if rp.status != "pending":
+            raise RoutePassangerAlreadyProcessedError()
+
+        updated = self.route_passanger_repository.update_status(rp.id, "rejected")
+        self.notification_service.notify_passanger_rejected(updated)
+        return self._to_response(updated)
 
     def remove_passanger(self, route_id: UUID, rp_id: UUID, driver_id: UUID) -> None:
         """

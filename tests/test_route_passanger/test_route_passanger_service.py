@@ -431,7 +431,6 @@ def test_accept_request_stop_links_to_route_and_rp() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US06-TK10")
 def test_reject_request_success_returns_response() -> None:
     driver_id = uuid.uuid4()
     route = make_route_mock(driver_id, status="ativa")
@@ -449,7 +448,6 @@ def test_reject_request_success_returns_response() -> None:
     assert response.status == "rejected"
 
 
-@pytest.mark.skip(reason="US06-TK10")
 def test_reject_request_calls_update_status_rejected() -> None:
     driver_id = uuid.uuid4()
     route = make_route_mock(driver_id, status="ativa")
@@ -466,7 +464,6 @@ def test_reject_request_calls_update_status_rejected() -> None:
     rp_repo.update_status.assert_called_once_with(rp.id, "rejected")
 
 
-@pytest.mark.skip(reason="US06-TK10")
 def test_reject_request_notifies_rejected() -> None:
     driver_id = uuid.uuid4()
     route = make_route_mock(driver_id, status="ativa")
@@ -483,7 +480,6 @@ def test_reject_request_notifies_rejected() -> None:
     notif.notify_passanger_rejected.assert_called_once()
 
 
-@pytest.mark.skip(reason="US06-TK10")
 def test_reject_request_in_progress_raises() -> None:
     from src.domains.routes.errors import RouteInProgressError
 
@@ -499,7 +495,6 @@ def test_reject_request_in_progress_raises() -> None:
         service.reject_request(route.id, rp.id, driver_id)
 
 
-@pytest.mark.skip(reason="US06-TK10")
 def test_reject_request_already_processed_raises() -> None:
     from src.domains.route_passangers.errors import RoutePassangerAlreadyProcessedError
 
@@ -515,7 +510,6 @@ def test_reject_request_already_processed_raises() -> None:
         service.reject_request(route.id, rp.id, driver_id)
 
 
-@pytest.mark.skip(reason="US06-TK10")
 def test_reject_request_wrong_owner_raises() -> None:
     from src.domains.routes.errors import RouteOwnershipError
 
@@ -531,7 +525,6 @@ def test_reject_request_wrong_owner_raises() -> None:
         service.reject_request(route.id, uuid.uuid4(), driver_id)
 
 
-@pytest.mark.skip(reason="US06-TK10")
 def test_reject_request_route_not_found_raises() -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
@@ -543,7 +536,6 @@ def test_reject_request_route_not_found_raises() -> None:
         service.reject_request(uuid.uuid4(), uuid.uuid4(), driver_id)
 
 
-@pytest.mark.skip(reason="US06-TK10")
 def test_reject_request_rp_not_found_raises() -> None:
     from src.domains.route_passangers.errors import RoutePassangerNotFoundError
 
@@ -558,7 +550,6 @@ def test_reject_request_rp_not_found_raises() -> None:
         service.reject_request(route.id, uuid.uuid4(), driver_id)
 
 
-@pytest.mark.skip(reason="US06-TK10")
 def test_reject_request_does_not_check_capacity() -> None:
     """Reject não deve chamar count_accepted_by_route."""
     driver_id = uuid.uuid4()
