@@ -5,7 +5,7 @@ US06-TK18 estende com save/find_for_route_passanger_on_date (criação de
 Absence pelo passageiro/guardian a partir da tela 2.3).
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -36,7 +36,10 @@ class AbsenceRepositoryImpl(IAbsenceRepository):
 
     # US06-TK18
     def save(self, absence: AbsenceModel) -> AbsenceModel:
-        pass
+        self.session.add(absence)
+        self.session.commit()
+        self.session.refresh(absence)
+        return absence
 
     # US06-TK18
     def find_for_route_passanger_on_date(
@@ -44,4 +47,16 @@ class AbsenceRepositoryImpl(IAbsenceRepository):
         route_passanger_id: UUID,
         absence_date: datetime,
     ) -> AbsenceModel | None:
-        pass
+        tzinfo = absence_date.tzinfo
+        start_of_day = datetime.combine(absence_date.date(), time.min, tzinfo=tzinfo)
+        end_of_day = datetime.combine(absence_date.date(), time.max, tzinfo=tzinfo)
+
+        return (
+            self.session.query(AbsenceModel)
+            .filter(
+                AbsenceModel.route_passanger_id == route_passanger_id,
+                AbsenceModel.absence_date >= start_of_day,
+                AbsenceModel.absence_date <= end_of_day,
+            )
+            .first()
+        )
