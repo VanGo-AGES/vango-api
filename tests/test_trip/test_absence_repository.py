@@ -21,7 +21,6 @@ from tests.test_trip._helpers import (
 )
 
 
-@pytest.mark.skip(reason="US09-TK04")
 def test_find_by_route_and_date_returns_absences_of_that_day(db_session) -> None:
     driver = make_driver(db_session)
     route = make_route(db_session, driver.id)
@@ -44,7 +43,6 @@ def test_find_by_route_and_date_returns_absences_of_that_day(db_session) -> None
     assert len(result) == 2
 
 
-@pytest.mark.skip(reason="US09-TK04")
 def test_find_by_route_and_date_returns_empty_when_nothing(db_session) -> None:
     driver = make_driver(db_session)
     route = make_route(db_session, driver.id)
@@ -55,7 +53,6 @@ def test_find_by_route_and_date_returns_empty_when_nothing(db_session) -> None:
     assert result == []
 
 
-@pytest.mark.skip(reason="US09-TK04")
 def test_find_by_route_and_date_filters_by_route(db_session) -> None:
     driver = make_driver(db_session)
     route_a = make_route(db_session, driver.id)
@@ -75,7 +72,6 @@ def test_find_by_route_and_date_filters_by_route(db_session) -> None:
     assert result[0].route_passanger_id == rp_a.id
 
 
-@pytest.mark.skip(reason="US09-TK04")
 def test_find_by_route_and_date_handles_missing_route(db_session) -> None:
     repo = AbsenceRepositoryImpl(db_session)
     assert repo.find_by_route_and_date(uuid.uuid4(), datetime.now(timezone.utc)) == []
