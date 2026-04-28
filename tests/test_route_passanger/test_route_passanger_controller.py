@@ -1528,7 +1528,6 @@ def make_passanger_route_response(
     return PassangerRouteResponse(**payload)
 
 
-@pytest.mark.skip(reason="US08-TK15")
 def test_list_my_routes_success_returns_200() -> None:
     mock_service = Mock(spec=RoutePassangerService)
     mock_service.list_my_routes.return_value = [
@@ -1546,7 +1545,6 @@ def test_list_my_routes_success_returns_200() -> None:
     assert len(body) == 2
 
 
-@pytest.mark.skip(reason="US08-TK15")
 def test_list_my_routes_empty_returns_200_with_empty_list() -> None:
     mock_service = Mock(spec=RoutePassangerService)
     mock_service.list_my_routes.return_value = []
@@ -1560,7 +1558,6 @@ def test_list_my_routes_empty_returns_200_with_empty_list() -> None:
     assert response.json() == []
 
 
-@pytest.mark.skip(reason="US08-TK15")
 def test_list_my_routes_calls_service_with_user_id() -> None:
     mock_service = Mock(spec=RoutePassangerService)
     mock_service.list_my_routes.return_value = []
@@ -1574,7 +1571,6 @@ def test_list_my_routes_calls_service_with_user_id() -> None:
     assert mock_service.list_my_routes.call_args.args[0] == user_id
 
 
-@pytest.mark.skip(reason="US08-TK15")
 def test_list_my_routes_exposes_dependent_name_when_present() -> None:
     mock_service = Mock(spec=RoutePassangerService)
     mock_service.list_my_routes.return_value = [
@@ -1590,7 +1586,6 @@ def test_list_my_routes_exposes_dependent_name_when_present() -> None:
     assert response.json()[0]["dependent_name"] == "Maria Silva"
 
 
-@pytest.mark.skip(reason="US08-TK15")
 def test_list_my_routes_exposes_driver_phone() -> None:
     """US13 — driver_phone precisa chegar no response pro FE montar deeplink."""
     mock_service = Mock(spec=RoutePassangerService)
@@ -1612,7 +1607,6 @@ def test_list_my_routes_exposes_driver_phone() -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US08-TK15")
 def test_integration_list_my_routes_returns_active_memberships(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)
@@ -1629,7 +1623,6 @@ def test_integration_list_my_routes_returns_active_memberships(integration_clien
     assert len(body) == 2
 
 
-@pytest.mark.skip(reason="US08-TK15")
 def test_integration_list_my_routes_empty_returns_empty_list(integration_client, db_session) -> None:
     passenger = make_integration_passenger(db_session)
     headers = {"X-User-Id": str(passenger.id), "X-User-Role": "guardian"}
@@ -1640,7 +1633,6 @@ def test_integration_list_my_routes_empty_returns_empty_list(integration_client,
     assert response.json() == []
 
 
-@pytest.mark.skip(reason="US08-TK15")
 def test_integration_list_my_routes_ignores_rejected_and_removed(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)
@@ -1658,7 +1650,6 @@ def test_integration_list_my_routes_ignores_rejected_and_removed(integration_cli
     assert len(response.json()) == 1
 
 
-@pytest.mark.skip(reason="US08-TK15")
 def test_integration_list_my_routes_does_not_collide_with_route_by_id(integration_client, db_session) -> None:
     """GET /routes/me deve ser resolvido como rota literal, não cair no
     matcher de GET /routes/{route_id} (que rejeitaria 'me' como UUID)."""

@@ -750,7 +750,6 @@ def test_rp_repository_find_by_user_and_route_filters_by_route(db_session) -> No
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US08-TK13")
 def test_rp_repository_find_active_with_route_returns_self_memberships(db_session) -> None:
     """Retorna RPs do próprio user com status pending/accepted."""
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
@@ -771,7 +770,6 @@ def test_rp_repository_find_active_with_route_returns_self_memberships(db_sessio
     assert {rp.route_id for rp in results} == {route_a.id, route_b.id}
 
 
-@pytest.mark.skip(reason="US08-TK13")
 def test_rp_repository_find_active_with_route_ignores_rejected_and_removed(db_session) -> None:
     """Não retorna rejected/removed — só pending/accepted."""
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
@@ -794,7 +792,6 @@ def test_rp_repository_find_active_with_route_ignores_rejected_and_removed(db_se
     assert results[0].route_id == route_c.id
 
 
-@pytest.mark.skip(reason="US08-TK13")
 def test_rp_repository_find_active_with_route_includes_dependents(db_session) -> None:
     """Retorna também vínculos ativos de dependentes do guardian."""
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
@@ -817,7 +814,6 @@ def test_rp_repository_find_active_with_route_includes_dependents(db_session) ->
     assert len(results) == 2
 
 
-@pytest.mark.skip(reason="US08-TK13")
 def test_rp_repository_find_active_with_route_empty_returns_empty_list(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 
@@ -825,7 +821,6 @@ def test_rp_repository_find_active_with_route_empty_returns_empty_list(db_sessio
     assert repo.find_active_with_route_by_user(uuid.uuid4()) == []
 
 
-@pytest.mark.skip(reason="US08-TK13")
 def test_rp_repository_find_active_with_route_filters_by_user(db_session) -> None:
     """Não retorna vínculos de outros usuários."""
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
@@ -846,7 +841,6 @@ def test_rp_repository_find_active_with_route_filters_by_user(db_session) -> Non
     assert results[0].user_id == p1.id
 
 
-@pytest.mark.skip(reason="US08-TK13")
 def test_rp_repository_find_active_with_route_orders_by_joined_at_desc(db_session) -> None:
     """Resultados ordenados por joined_at desc — vínculo mais recente primeiro."""
     from datetime import datetime, timedelta, timezone
@@ -875,7 +869,6 @@ def test_rp_repository_find_active_with_route_orders_by_joined_at_desc(db_sessio
     assert results[1].id == older.id
 
 
-@pytest.mark.skip(reason="US08-TK13")
 def test_rp_repository_find_active_with_route_loads_route_relationship(db_session) -> None:
     """Os RPs retornados devem trazer o RouteModel acessível (eager load)."""
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl

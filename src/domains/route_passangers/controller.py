@@ -51,7 +51,7 @@ def list_my_routes(
     service: Annotated[RoutePassangerService, Depends(get_route_passanger_service)],
     x_user_id: Annotated[str, Header(alias="X-User-Id")],
 ) -> list[PassangerRouteResponse]:
-    pass
+    return service.list_my_routes(UUID(x_user_id))
 
 
 # US06-TK09

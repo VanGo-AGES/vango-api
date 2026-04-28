@@ -1277,7 +1277,6 @@ def make_rp_with_route_mock(
     return rp
 
 
-@pytest.mark.skip(reason="US08-TK14")
 def test_list_my_routes_empty_returns_empty_list() -> None:
     service, rp_repo, *_ = build_service()
     rp_repo.find_active_with_route_by_user.return_value = []
@@ -1287,7 +1286,6 @@ def test_list_my_routes_empty_returns_empty_list() -> None:
     assert result == []
 
 
-@pytest.mark.skip(reason="US08-TK14")
 def test_list_my_routes_calls_repo_with_user_id() -> None:
     user_id = uuid.uuid4()
     service, rp_repo, *_ = build_service()
@@ -1298,7 +1296,6 @@ def test_list_my_routes_calls_repo_with_user_id() -> None:
     rp_repo.find_active_with_route_by_user.assert_called_once_with(user_id)
 
 
-@pytest.mark.skip(reason="US08-TK14")
 def test_list_my_routes_returns_one_item_per_membership() -> None:
     user_id = uuid.uuid4()
     driver = make_user_mock("Motorista")
@@ -1315,7 +1312,6 @@ def test_list_my_routes_returns_one_item_per_membership() -> None:
     assert len(result) == 2
 
 
-@pytest.mark.skip(reason="US08-TK14")
 def test_list_my_routes_resolves_driver_name() -> None:
     user_id = uuid.uuid4()
     driver = make_user_mock("Carlos Motorista")
@@ -1330,7 +1326,6 @@ def test_list_my_routes_resolves_driver_name() -> None:
     assert result[0].driver_name == "Carlos Motorista"
 
 
-@pytest.mark.skip(reason="US08-TK14")
 def test_list_my_routes_resolves_driver_phone() -> None:
     """US13 — service precisa carregar driver.phone pro deeplink do FE."""
     user_id = uuid.uuid4()
@@ -1346,7 +1341,6 @@ def test_list_my_routes_resolves_driver_phone() -> None:
     assert result[0].driver_phone == "54988887777"
 
 
-@pytest.mark.skip(reason="US08-TK14")
 def test_list_my_routes_exposes_membership_status() -> None:
     """Distingue rp.status (membership) do route.status (rota)."""
     user_id = uuid.uuid4()
@@ -1366,7 +1360,6 @@ def test_list_my_routes_exposes_membership_status() -> None:
     assert result[0].status == "ativa"
 
 
-@pytest.mark.skip(reason="US08-TK14")
 def test_list_my_routes_resolves_dependent_name_when_present() -> None:
     guardian_id = uuid.uuid4()
     dep = make_dependent_mock("Maria Dependente", guardian_id=guardian_id)
@@ -1386,7 +1379,6 @@ def test_list_my_routes_resolves_dependent_name_when_present() -> None:
     assert result[0].dependent_name == "Maria Dependente"
 
 
-@pytest.mark.skip(reason="US08-TK14")
 def test_list_my_routes_dependent_name_none_for_self_membership() -> None:
     user_id = uuid.uuid4()
     driver = make_user_mock()
