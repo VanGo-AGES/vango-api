@@ -14,7 +14,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 
-from src.domains.routes.errors import RouteNotFoundError
+from src.domains.routes.errors import RouteNotFoundError, RouteOwnershipError
 from src.infrastructure.dependencies.route_passanger_dependencies import (
     get_route_passanger_service,
 )
@@ -60,7 +60,7 @@ def list_my_routes(
     response_model=RoutePassangerResponse,
     status_code=status.HTTP_200_OK,
     summary="Aceitar solicitação de passageiro",
-    description=("Aprova uma solicitação pending. Valida ownership, bloqueio de rota " "em andamento e capacidade máxima do veículo."),
+    description=("Aprova uma solicitação pending. Valida ownership, bloqueio de rota em andamento e capacidade máxima do veículo."),
 )
 def accept_request(
     route_id: UUID,
@@ -77,7 +77,7 @@ def accept_request(
     response_model=RoutePassangerResponse,
     status_code=status.HTTP_200_OK,
     summary="Recusar solicitação de passageiro",
-    description=("Recusa uma solicitação pending. Valida ownership e bloqueio de rota em andamento. " "Não valida capacidade."),
+    description=("Recusa uma solicitação pending. Valida ownership e bloqueio de rota em andamento. Não valida capacidade."),
 )
 def reject_request(
     route_id: UUID,
@@ -111,8 +111,7 @@ def remove_passanger(
     status_code=status.HTTP_200_OK,
     summary="Listar passageiros/solicitações da rota",
     description=(
-        "Lista vínculos de passageiros da rota. Aceita filtro opcional por status "
-        "(pending, accepted, rejected). Sem filtro retorna todos."
+        "Lista vínculos de passageiros da rota. Aceita filtro opcional por status (pending, accepted, rejected). Sem filtro retorna todos."
     ),
 )
 def list_passangers(
@@ -121,7 +120,15 @@ def list_passangers(
     x_user_id: Annotated[str, Header(alias="X-User-Id")],
     status_filter: Annotated[str | None, Query(alias="status")] = None,
 ) -> list[RoutePassangerResponse]:
-    pass
+    try:
+        driver_id = UUID(x_user_id)
+        return service.list_by_status(route_id, driver_id, status=status_filter)
+    except RouteNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
+    except RouteOwnershipError as error:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error)) from error
+    except ValueError as error:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error)) from error
 
 
 # US08-TK08
