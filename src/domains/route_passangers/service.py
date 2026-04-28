@@ -42,6 +42,7 @@ from src.domains.routes.dtos import AddressResponse
 from src.domains.routes.errors import RouteInProgressError, RouteNotFoundError, RouteOwnershipError
 from src.domains.routes.repository import IRouteRepository
 from src.domains.stops.dtos import StopResponse
+from src.domains.stops.entity import StopModel
 from src.domains.stops.repository import IStopRepository
 from src.domains.users.repository import IUserRepository
 
@@ -82,7 +83,45 @@ class RoutePassangerService:
             - order_index = max(order_index das stops da rota) + 1 (ou 0 se não houver)
         - Chama notification_service.notify_passanger_accepted(rp)
         """
-        pass
+        route = self.route_repository.find_by_id(route_id)
+        if route is None:
+            raise RouteNotFoundError()
+
+        if route.driver_id != driver_id:
+            raise RouteOwnershipError()
+
+        if route.status == "em_andamento":
+            raise RouteInProgressError()
+
+        rp = self.route_passanger_repository.find_by_id(rp_id)
+        if rp is None:
+            raise RoutePassangerNotFoundError()
+
+        if rp.status != "pending":
+            raise RoutePassangerAlreadyProcessedError()
+
+        accepted_count = self.route_passanger_repository.count_accepted_by_route(route_id)
+        if accepted_count >= route.max_passengers:
+            raise RouteCapacityExceededError()
+
+        updated = self.route_passanger_repository.update_status(rp.id, "accepted")
+
+        raw_stops = self.stop_repository.find_by_route_id(route.id)
+        existing_stops: list = raw_stops if isinstance(raw_stops, list) else []
+        order_index = max((s.order_index for s in existing_stops), default=-1) + 1
+
+        stop_type = "embarque" if route.route_type == "outbound" else "desembarque"
+        stop = StopModel(
+            route_id=route.id,
+            route_passanger_id=rp.id,
+            address_id=rp.pickup_address_id,
+            order_index=order_index,
+            type=stop_type,
+        )
+        self.stop_repository.save(stop)
+
+        self.notification_service.notify_passanger_accepted(updated)
+        return self._to_response(updated)
 
     # US06-TK10
     def reject_request(self, route_id: UUID, rp_id: UUID, driver_id: UUID) -> RoutePassangerResponse:
