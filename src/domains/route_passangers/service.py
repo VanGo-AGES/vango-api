@@ -13,6 +13,7 @@ Regras gerais:
 - Response resolve nomes de user, dependent e guardian.
 """
 
+from datetime import UTC, datetime
 from uuid import UUID
 
 from src.domains.dependents.repository import IDependentRepository
@@ -362,7 +363,59 @@ class RoutePassangerService:
             - schedules a partir de rp.schedules
         - Se o usuário não tiver nenhum vínculo ativo, retorna [].
         """
-        pass
+        memberships = self.route_passanger_repository.find_active_with_route_by_user(user_id)
+        if not memberships:
+            return []
+
+        results: list[PassangerRouteResponse] = []
+        for rp in memberships:
+            route = rp.route
+            driver = self.user_repository.find_by_id(route.driver_id)
+            if driver is None:
+                continue
+
+            route_data = getattr(route, "__dict__", {})
+            origin_address = route_data.get("origin_address") or route_data.get("origin")
+            destination_address = route_data.get("destination_address") or route_data.get("destination")
+            origin_label = getattr(origin_address, "label", "")
+            destination_label = getattr(destination_address, "label", "")
+
+            dependent_name: str | None = None
+            if rp.dependent_id is not None:
+                dependent = self.dependent_repository.find_by_id(rp.dependent_id)
+                if dependent is not None:
+                    dependent_name = dependent.name
+
+            recurrence = route.recurrence
+            recurrence_list = [day.strip() for day in recurrence.split(",")] if isinstance(recurrence, str) else list(recurrence)
+
+            schedules_list: list[RoutePassangerScheduleResponse] = []
+            for schedule in getattr(rp, "schedules", []) or []:
+                try:
+                    schedules_list.append(RoutePassangerScheduleResponse.model_validate(schedule))
+                # Sinalizando para o Ruff que o Exception genérico é intencional
+                except Exception:  # noqa: BLE001
+                    pass
+
+            results.append(
+                PassangerRouteResponse(
+                    route_id=route.id,
+                    route_name=route.name,
+                    driver_name=driver.name,
+                    driver_phone=driver.phone,
+                    origin_label=origin_label,
+                    destination_label=destination_label,
+                    expected_time=route.expected_time,
+                    recurrence=recurrence_list,
+                    status=route.status,
+                    membership_status=rp.status,
+                    schedules=schedules_list,
+                    joined_at=rp.joined_at or datetime.now(UTC),
+                    dependent_name=dependent_name,
+                )
+            )
+
+        return results
 
     def get_my_route_detail(
         self,
