@@ -27,11 +27,14 @@ from src.domains.route_passangers.dtos import (
 )
 from src.domains.route_passangers.entity import RoutePassangerModel
 from src.domains.route_passangers.errors import (
+    DuplicateRoutePassangerError,
     NotRoutePassangerError,
+    RouteCapacityExceededError,
     RoutePassangerAlreadyProcessedError,
     RoutePassangerNotFoundError,
 )
 from src.domains.route_passangers.repository import IRoutePassangerRepository
+from src.domains.route_passangers.schedule_entity import RoutePassangerScheduleModel
 from src.domains.route_passangers.schedule_repository import (
     IRoutePassangerScheduleRepository,
 )
@@ -39,6 +42,7 @@ from src.domains.routes.dtos import AddressResponse
 from src.domains.routes.errors import RouteInProgressError, RouteNotFoundError, RouteOwnershipError
 from src.domains.routes.repository import IRouteRepository
 from src.domains.stops.dtos import StopResponse
+from src.domains.stops.entity import StopModel
 from src.domains.stops.repository import IStopRepository
 from src.domains.users.repository import IUserRepository
 
@@ -79,7 +83,45 @@ class RoutePassangerService:
             - order_index = max(order_index das stops da rota) + 1 (ou 0 se não houver)
         - Chama notification_service.notify_passanger_accepted(rp)
         """
-        pass
+        route = self.route_repository.find_by_id(route_id)
+        if route is None:
+            raise RouteNotFoundError()
+
+        if route.driver_id != driver_id:
+            raise RouteOwnershipError()
+
+        if route.status == "em_andamento":
+            raise RouteInProgressError()
+
+        rp = self.route_passanger_repository.find_by_id(rp_id)
+        if rp is None:
+            raise RoutePassangerNotFoundError()
+
+        if rp.status != "pending":
+            raise RoutePassangerAlreadyProcessedError()
+
+        accepted_count = self.route_passanger_repository.count_accepted_by_route(route_id)
+        if accepted_count >= route.max_passengers:
+            raise RouteCapacityExceededError()
+
+        updated = self.route_passanger_repository.update_status(rp.id, "accepted")
+
+        raw_stops = self.stop_repository.find_by_route_id(route.id)
+        existing_stops: list = raw_stops if isinstance(raw_stops, list) else []
+        order_index = max((s.order_index for s in existing_stops), default=-1) + 1
+
+        stop_type = "embarque" if route.route_type == "outbound" else "desembarque"
+        stop = StopModel(
+            route_id=route.id,
+            route_passanger_id=rp.id,
+            address_id=rp.pickup_address_id,
+            order_index=order_index,
+            type=stop_type,
+        )
+        self.stop_repository.save(stop)
+
+        self.notification_service.notify_passanger_accepted(updated)
+        return self._to_response(updated)
 
     # US06-TK10
     def reject_request(self, route_id: UUID, rp_id: UUID, driver_id: UUID) -> RoutePassangerResponse:
@@ -225,7 +267,43 @@ class RoutePassangerService:
         - Persiste schedules via schedule_repository.save_many
         - Notifica motorista via notify_driver_passanger_requested
         """
-        pass
+        route = self.route_repository.find_by_id(route_id)
+        if route is None:
+            raise RouteNotFoundError()
+
+        if route.status == "em_andamento":
+            raise RouteInProgressError()
+
+        existing = self.route_passanger_repository.find_active_by_user_and_route(user_id, data.dependent_id, route_id)
+        if existing is not None:
+            raise DuplicateRoutePassangerError()
+
+        accepted_count = self.route_passanger_repository.count_accepted_by_route(route_id)
+        if accepted_count >= route.max_passengers:
+            raise RouteCapacityExceededError()
+
+        rp = RoutePassangerModel(
+            route_id=route_id,
+            user_id=user_id,
+            dependent_id=data.dependent_id,
+            status="pending",
+            joined_at=None,
+            pickup_address_id=data.schedules[0].address_id,
+        )
+        saved_rp = self.route_passanger_repository.save(rp)
+
+        schedules = [
+            RoutePassangerScheduleModel(
+                route_passanger_id=saved_rp.id,
+                day_of_week=s.day_of_week,
+                address_id=s.address_id,
+            )
+            for s in data.schedules
+        ]
+        self.schedule_repository.save_many(schedules)
+
+        self.notification_service.notify_driver_passanger_requested(saved_rp)
+        return self._to_response(saved_rp)
 
     # US08-TK09
     def leave_route(

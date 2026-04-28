@@ -8,6 +8,11 @@ from src.domains.route_passangers.entity import RoutePassangerModel
 
 class IRoutePassangerRepository(ABC):
     @abstractmethod
+    def save(self, rp: RoutePassangerModel) -> RoutePassangerModel:
+        """Persiste um novo vínculo e retorna a instância salva (com id preenchido)."""
+        pass
+
+    @abstractmethod
     def find_by_id(self, rp_id: UUID) -> RoutePassangerModel | None:
         pass
 

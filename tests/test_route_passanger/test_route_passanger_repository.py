@@ -122,11 +122,127 @@ def make_route_passanger(
 
 
 # ---------------------------------------------------------------------------
+# save
+# ---------------------------------------------------------------------------
+
+
+def test_route_passanger_repository_save_returns_persisted_instance(db_session) -> None:
+    """save deve retornar o RoutePassangerModel com id preenchido pelo banco."""
+    from src.domains.route_passangers.entity import RoutePassangerModel
+    from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
+
+    driver = make_user(db_session, role="driver")
+    passenger = make_user(db_session)
+    origin = make_address(db_session, driver.id, "Casa")
+    destination = make_address(db_session, driver.id, "PUCRS")
+    route = make_route(db_session, driver.id, origin.id, destination.id)
+    pickup = make_address(db_session, passenger.id, "Pickup")
+
+    rp = RoutePassangerModel(
+        route_id=route.id,
+        user_id=passenger.id,
+        status="pending",
+        pickup_address_id=pickup.id,
+    )
+
+    repo = RoutePassangerRepositoryImpl(db_session)
+    saved = repo.save(rp)
+
+    assert saved is not None
+    assert saved.id is not None
+
+
+def test_route_passanger_repository_save_persists_correct_fields(db_session) -> None:
+    """Os campos obrigatórios do vínculo devem ser persistidos corretamente."""
+    from src.domains.route_passangers.entity import RoutePassangerModel
+    from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
+
+    driver = make_user(db_session, role="driver")
+    passenger = make_user(db_session)
+    origin = make_address(db_session, driver.id, "Casa")
+    destination = make_address(db_session, driver.id, "PUCRS")
+    route = make_route(db_session, driver.id, origin.id, destination.id)
+    pickup = make_address(db_session, passenger.id, "Pickup")
+
+    rp = RoutePassangerModel(
+        route_id=route.id,
+        user_id=passenger.id,
+        status="pending",
+        pickup_address_id=pickup.id,
+    )
+
+    repo = RoutePassangerRepositoryImpl(db_session)
+    saved = repo.save(rp)
+
+    assert saved.route_id == route.id
+    assert saved.user_id == passenger.id
+    assert saved.status == "pending"
+    assert saved.pickup_address_id == pickup.id
+
+
+def test_route_passanger_repository_save_is_queryable_after_save(db_session) -> None:
+    """Após save, o vínculo deve ser encontrável via find_by_id."""
+    from src.domains.route_passangers.entity import RoutePassangerModel
+    from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
+
+    driver = make_user(db_session, role="driver")
+    passenger = make_user(db_session)
+    origin = make_address(db_session, driver.id, "Casa")
+    destination = make_address(db_session, driver.id, "PUCRS")
+    route = make_route(db_session, driver.id, origin.id, destination.id)
+    pickup = make_address(db_session, passenger.id, "Pickup")
+
+    rp = RoutePassangerModel(
+        route_id=route.id,
+        user_id=passenger.id,
+        status="pending",
+        pickup_address_id=pickup.id,
+    )
+
+    repo = RoutePassangerRepositoryImpl(db_session)
+    saved = repo.save(rp)
+
+    db_session.expire_all()
+    refetched = db_session.get(RoutePassangerModel, saved.id)
+    assert refetched is not None
+    assert refetched.user_id == passenger.id
+
+
+def test_route_passanger_repository_save_with_dependent_id(db_session) -> None:
+    """save deve persistir o dependent_id quando o vínculo é em nome de um dependente."""
+    from src.domains.dependents.entity import DependentModel
+    from src.domains.route_passangers.entity import RoutePassangerModel
+    from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
+
+    driver = make_user(db_session, role="driver")
+    guardian = make_user(db_session)
+    dep = DependentModel(id=uuid.uuid4(), guardian_id=guardian.id, name="Filho")
+    db_session.add(dep)
+    db_session.flush()
+    origin = make_address(db_session, driver.id, "Casa")
+    destination = make_address(db_session, driver.id, "PUCRS")
+    route = make_route(db_session, driver.id, origin.id, destination.id)
+    pickup = make_address(db_session, guardian.id, "Pickup")
+
+    rp = RoutePassangerModel(
+        route_id=route.id,
+        user_id=guardian.id,
+        dependent_id=dep.id,
+        status="pending",
+        pickup_address_id=pickup.id,
+    )
+
+    repo = RoutePassangerRepositoryImpl(db_session)
+    saved = repo.save(rp)
+
+    assert saved.dependent_id == dep.id
+
+
+# ---------------------------------------------------------------------------
 # find_by_id
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US06-TK06")
 def test_route_passanger_repository_find_by_id_returns_model(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 
@@ -145,7 +261,6 @@ def test_route_passanger_repository_find_by_id_returns_model(db_session) -> None
     assert result.route_id == route.id
 
 
-@pytest.mark.skip(reason="US06-TK06")
 def test_route_passanger_repository_find_by_id_not_found_returns_none(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 
@@ -159,7 +274,6 @@ def test_route_passanger_repository_find_by_id_not_found_returns_none(db_session
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US06-TK06")
 def test_route_passanger_repository_find_by_route_filters_by_status(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 
@@ -181,7 +295,6 @@ def test_route_passanger_repository_find_by_route_filters_by_status(db_session) 
     assert all(rp.status == "pending" for rp in results)
 
 
-@pytest.mark.skip(reason="US06-TK06")
 def test_route_passanger_repository_find_by_route_no_status_returns_all(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 
@@ -200,7 +313,6 @@ def test_route_passanger_repository_find_by_route_no_status_returns_all(db_sessi
     assert len(results) == 2
 
 
-@pytest.mark.skip(reason="US06-TK06")
 def test_route_passanger_repository_find_by_route_empty_returns_empty_list(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 
@@ -209,7 +321,6 @@ def test_route_passanger_repository_find_by_route_empty_returns_empty_list(db_se
     assert results == []
 
 
-@pytest.mark.skip(reason="US06-TK06")
 def test_route_passanger_repository_find_by_route_filters_out_other_statuses(db_session) -> None:
     """Quando status='accepted', não retorna rejected/removed da mesma rota."""
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
@@ -232,7 +343,6 @@ def test_route_passanger_repository_find_by_route_filters_out_other_statuses(db_
     assert results[0].user_id == p1.id
 
 
-@pytest.mark.skip(reason="US06-TK06")
 def test_route_passanger_repository_find_by_route_filters_by_route_id(db_session) -> None:
     """Não retorna passageiros de outras rotas."""
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
@@ -259,7 +369,6 @@ def test_route_passanger_repository_find_by_route_filters_by_route_id(db_session
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US06-TK06")
 def test_route_passanger_repository_update_status_accepted(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 
@@ -277,7 +386,6 @@ def test_route_passanger_repository_update_status_accepted(db_session) -> None:
     assert updated.status == "accepted"
 
 
-@pytest.mark.skip(reason="US06-TK06")
 def test_route_passanger_repository_update_status_rejected(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 
@@ -295,7 +403,6 @@ def test_route_passanger_repository_update_status_rejected(db_session) -> None:
     assert updated.status == "rejected"
 
 
-@pytest.mark.skip(reason="US06-TK06")
 def test_route_passanger_repository_update_status_not_found_returns_none(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 
@@ -304,7 +411,6 @@ def test_route_passanger_repository_update_status_not_found_returns_none(db_sess
     assert result is None
 
 
-@pytest.mark.skip(reason="US06-TK06")
 def test_route_passanger_repository_update_status_persists_in_db(db_session) -> None:
     """Após update_status, um novo find_by_id deve refletir o novo status."""
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
@@ -329,7 +435,6 @@ def test_route_passanger_repository_update_status_persists_in_db(db_session) -> 
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US06-TK06")
 def test_route_passanger_repository_count_accepted_only(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 
@@ -350,7 +455,6 @@ def test_route_passanger_repository_count_accepted_only(db_session) -> None:
     assert count == 2
 
 
-@pytest.mark.skip(reason="US06-TK06")
 def test_route_passanger_repository_count_accepted_zero_when_no_passangers(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 
@@ -359,7 +463,6 @@ def test_route_passanger_repository_count_accepted_zero_when_no_passangers(db_se
     assert count == 0
 
 
-@pytest.mark.skip(reason="US06-TK06")
 def test_route_passanger_repository_count_accepted_filters_by_route(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 
@@ -377,7 +480,6 @@ def test_route_passanger_repository_count_accepted_filters_by_route(db_session) 
     assert repo.count_accepted_by_route(route_a.id) == 1
 
 
-@pytest.mark.skip(reason="US06-TK06")
 def test_route_passanger_repository_count_accepted_ignores_other_statuses(db_session) -> None:
     """count_accepted_by_route só conta status='accepted', ignora pending/rejected/removed."""
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
@@ -404,7 +506,6 @@ def test_route_passanger_repository_count_accepted_ignores_other_statuses(db_ses
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US06-TK06")
 def test_route_passanger_repository_delete_returns_true(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 
@@ -422,7 +523,6 @@ def test_route_passanger_repository_delete_returns_true(db_session) -> None:
     assert repo.find_by_id(rp.id) is None
 
 
-@pytest.mark.skip(reason="US06-TK06")
 def test_route_passanger_repository_delete_not_found_returns_false(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 
@@ -431,7 +531,6 @@ def test_route_passanger_repository_delete_not_found_returns_false(db_session) -
     assert result is False
 
 
-@pytest.mark.skip(reason="US06-TK06")
 def test_route_passanger_repository_delete_only_removes_target(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 

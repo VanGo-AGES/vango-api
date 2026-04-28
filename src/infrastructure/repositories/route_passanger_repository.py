@@ -12,20 +12,43 @@ class RoutePassangerRepositoryImpl(IRoutePassangerRepository):
     def __init__(self, session: Session):
         self.session = session
 
+    def save(self, rp: RoutePassangerModel) -> RoutePassangerModel:
+        self.session.add(rp)
+        self.session.flush()
+        self.session.refresh(rp)
+        return rp
+
     def find_by_id(self, rp_id: UUID) -> RoutePassangerModel | None:
-        pass
+        return self.session.query(RoutePassangerModel).filter(RoutePassangerModel.id == rp_id).first()
 
     def find_by_route_and_status(self, route_id: UUID, status: str | None = None) -> list[RoutePassangerModel]:
-        pass
+        query = self.session.query(RoutePassangerModel).filter(RoutePassangerModel.route_id == route_id)
+        if status is not None:
+            query = query.filter(RoutePassangerModel.status == status)
+        return query.all()
 
     def update_status(self, rp_id: UUID, new_status: str) -> RoutePassangerModel | None:
-        pass
+        rp = self.session.query(RoutePassangerModel).filter(RoutePassangerModel.id == rp_id).first()
+        if rp:
+            rp.status = new_status
+            self.session.commit()
+            return rp
+        return None
 
     def count_accepted_by_route(self, route_id: UUID) -> int:
-        pass
+        return (
+            self.session.query(RoutePassangerModel)
+            .filter(RoutePassangerModel.route_id == route_id, RoutePassangerModel.status == "accepted")
+            .count()
+        )
 
     def delete(self, rp_id: UUID) -> bool:
-        pass
+        rp = self.session.query(RoutePassangerModel).filter(RoutePassangerModel.id == rp_id).first()
+        if rp:
+            self.session.delete(rp)
+            self.session.commit()
+            return True
+        return False
 
     # -------------------------------------------------------------------
     # US08-TK03

@@ -5,7 +5,10 @@ viagem em andamento). Todos os DTOs começam com `pass` e serão
 implementados pelas TKs correspondentes.
 """
 
-from pydantic import BaseModel
+from datetime import datetime
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, Field
 
 
 # US09-TK01
@@ -18,7 +21,8 @@ class StartTripRequest(BaseModel):
     - trip_date: datetime | None — data/hora da viagem. Default: now()
     """
 
-    pass
+    vehicle_id: UUID = Field(..., description="Veículo que vai executar a viagem")
+    trip_date: datetime | None = Field(default=None, description="Data/hora da viagem")
 
 
 # US09-TK01
@@ -29,7 +33,7 @@ class FinishTripRequest(BaseModel):
     - total_km: float | None — distância total percorrida (opcional)
     """
 
-    pass
+    total_km: float | None = Field(default=None, description="Distância total percorrida")
 
 
 # US09-TK01
@@ -47,7 +51,16 @@ class TripPassangerResponse(BaseModel):
     - user_phone: str              — usado pelo FE para deeplink (US13)
     """
 
-    pass
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    route_passanger_id: UUID
+    passanger_name: str
+    status: str
+    pickup_address_label: str
+    boarded_at: datetime | None = None
+    alighted_at: datetime | None = None
+    user_phone: str
 
 
 # US09-TK01
@@ -67,7 +80,18 @@ class TripResponse(BaseModel):
     - trip_passangers: list[TripPassangerResponse]
     """
 
-    pass
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    route_id: UUID
+    route_name: str
+    vehicle_id: UUID
+    trip_date: datetime
+    status: str
+    total_km: float | None = None
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
+    trip_passangers: list[TripPassangerResponse] = Field(default_factory=list)
 
 
 # US09-TK01
@@ -84,4 +108,12 @@ class TripNextStopResponse(BaseModel):
     - trip_passanger_status: str    — "pendente" | "presente" | "ausente"
     """
 
-    pass
+    model_config = ConfigDict(from_attributes=True)
+
+    stop_id: UUID
+    order_index: int
+    address_label: str
+    passanger_name: str
+    passanger_phone: str
+    trip_passanger_id: UUID
+    trip_passanger_status: str

@@ -56,26 +56,22 @@ def _now():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US09-TK01")
 def test_start_trip_request_requires_vehicle_id() -> None:
     with pytest.raises(ValidationError):
         StartTripRequest()
 
 
-@pytest.mark.skip(reason="US09-TK01")
 def test_start_trip_request_accepts_uuid_vehicle_id() -> None:
     vehicle_id = uuid.uuid4()
     dto = StartTripRequest(vehicle_id=vehicle_id)
     assert dto.vehicle_id == vehicle_id
 
 
-@pytest.mark.skip(reason="US09-TK01")
 def test_start_trip_request_trip_date_is_optional() -> None:
     dto = StartTripRequest(vehicle_id=uuid.uuid4())
     assert getattr(dto, "trip_date", None) is None
 
 
-@pytest.mark.skip(reason="US09-TK01")
 def test_start_trip_request_accepts_trip_date() -> None:
     when = _now()
     dto = StartTripRequest(vehicle_id=uuid.uuid4(), trip_date=when)
@@ -87,13 +83,11 @@ def test_start_trip_request_accepts_trip_date() -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US09-TK01")
 def test_finish_trip_request_total_km_optional() -> None:
     dto = FinishTripRequest()
     assert getattr(dto, "total_km", None) is None
 
 
-@pytest.mark.skip(reason="US09-TK01")
 def test_finish_trip_request_accepts_total_km() -> None:
     dto = FinishTripRequest(total_km=12.5)
     assert dto.total_km == 12.5
@@ -119,7 +113,6 @@ def _trip_passanger_payload(**overrides):
     return base
 
 
-@pytest.mark.skip(reason="US09-TK01")
 def test_trip_passanger_response_valid() -> None:
     dto = TripPassangerResponse(**_trip_passanger_payload())
     assert dto.status == "pendente"
@@ -127,7 +120,6 @@ def test_trip_passanger_response_valid() -> None:
     assert dto.user_phone == "51999999999"
 
 
-@pytest.mark.skip(reason="US09-TK01")
 def test_trip_passanger_response_requires_user_phone() -> None:
     payload = _trip_passanger_payload()
     payload.pop("user_phone")
@@ -135,7 +127,6 @@ def test_trip_passanger_response_requires_user_phone() -> None:
         TripPassangerResponse(**payload)
 
 
-@pytest.mark.skip(reason="US09-TK01")
 def test_trip_passanger_response_accepts_boarded_and_alighted() -> None:
     now = _now()
     dto = TripPassangerResponse(**_trip_passanger_payload(boarded_at=now, alighted_at=now, status="presente"))
@@ -166,7 +157,6 @@ def _trip_payload(**overrides):
     return base
 
 
-@pytest.mark.skip(reason="US09-TK01")
 def test_trip_response_valid_minimal() -> None:
     dto = TripResponse(**_trip_payload())
     assert dto.status == "iniciada"
@@ -174,7 +164,6 @@ def test_trip_response_valid_minimal() -> None:
     assert dto.trip_passangers == []
 
 
-@pytest.mark.skip(reason="US09-TK01")
 def test_trip_response_nests_trip_passangers() -> None:
     tp = TripPassangerResponse(**_trip_passanger_payload())
     dto = TripResponse(**_trip_payload(trip_passangers=[tp]))
@@ -182,7 +171,6 @@ def test_trip_response_nests_trip_passangers() -> None:
     assert dto.trip_passangers[0].passanger_name == "João"
 
 
-@pytest.mark.skip(reason="US09-TK01")
 def test_trip_response_requires_core_fields() -> None:
     with pytest.raises(ValidationError):
         TripResponse()
@@ -207,13 +195,11 @@ def _next_stop_payload(**overrides):
     return base
 
 
-@pytest.mark.skip(reason="US09-TK01")
 def test_trip_next_stop_response_valid() -> None:
     dto = TripNextStopResponse(**_next_stop_payload())
     assert dto.passanger_phone == "51988887777"
 
 
-@pytest.mark.skip(reason="US09-TK01")
 def test_trip_next_stop_response_requires_passanger_phone() -> None:
     payload = _next_stop_payload()
     payload.pop("passanger_phone")
