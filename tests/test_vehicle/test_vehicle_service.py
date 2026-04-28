@@ -13,12 +13,13 @@ import pytest
 
 from src.domains.vehicles.dtos import VehicleCreate
 from src.domains.vehicles.entity import VehicleModel
-from src.domains.vehicles.errors import VehicleAccessDeniedError
+from src.domains.vehicles.errors import VehicleAccessDeniedError, VehiclePlateAlreadyExistsError
 from src.domains.vehicles.service import VehicleService
 
 
 def make_mock_repo(plate: str = "ABC1D23", capacity: int = 4) -> MagicMock:
     repo = MagicMock()
+    repo.get_by_plate.return_value = None
     repo.create.return_value = VehicleModel(
         id=uuid.uuid4(),
         driver_id=uuid.uuid4(),
@@ -123,6 +124,39 @@ def test_add_vehicle_repository_not_called_when_guardian():
     data = VehicleCreate(plate="ABC1D23", capacity=4)
     with pytest.raises(VehicleAccessDeniedError):
         service.add_vehicle(user_id=str(uuid.uuid4()), user_role="guardian", data=data)
+
+    repo.create.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
+# Placa duplicada — deve lançar VehiclePlateAlreadyExistsError
+# ---------------------------------------------------------------------------
+
+
+def test_add_vehicle_duplicate_plate_raises_error():
+    """Se a placa já existe no repositório, deve lançar VehiclePlateAlreadyExistsError."""
+    repo = make_mock_repo()
+    repo.get_by_plate.return_value = VehicleModel(
+        id=uuid.uuid4(), driver_id=uuid.uuid4(), plate="ABC1D23", capacity=4
+    )
+    service = VehicleService(repo)
+
+    data = VehicleCreate(plate="ABC1D23", capacity=4)
+    with pytest.raises(VehiclePlateAlreadyExistsError):
+        service.add_vehicle(user_id=str(uuid.uuid4()), user_role="driver", data=data)
+
+
+def test_add_vehicle_duplicate_plate_repo_create_not_called():
+    """Repositório create não deve ser chamado quando a placa já existe."""
+    repo = make_mock_repo()
+    repo.get_by_plate.return_value = VehicleModel(
+        id=uuid.uuid4(), driver_id=uuid.uuid4(), plate="ABC1D23", capacity=4
+    )
+    service = VehicleService(repo)
+
+    data = VehicleCreate(plate="ABC1D23", capacity=4)
+    with pytest.raises(VehiclePlateAlreadyExistsError):
+        service.add_vehicle(user_id=str(uuid.uuid4()), user_role="driver", data=data)
 
     repo.create.assert_not_called()
 

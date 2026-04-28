@@ -7,7 +7,7 @@ from src.infrastructure.dependencies.auth_dependencies import get_current_user
 from src.infrastructure.dependencies.vehicle_dependencies import get_vehicle_service
 
 from .dtos import VehicleCreate, VehicleResponse, VehicleUpdate
-from .errors import VehicleAccessDeniedError, VehicleNotFoundError, VehicleOwnershipError
+from .errors import VehicleAccessDeniedError, VehicleNotFoundError, VehicleOwnershipError, VehiclePlateAlreadyExistsError
 from .service import VehicleService
 
 router = APIRouter(prefix="/vehicles", tags=["Vehicles"])
@@ -33,6 +33,8 @@ def create_vehicle(
         )
     except VehicleAccessDeniedError as error:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error)) from error
+    except VehiclePlateAlreadyExistsError as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
 
 
 @router.get(

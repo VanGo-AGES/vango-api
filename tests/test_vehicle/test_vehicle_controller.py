@@ -14,7 +14,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.domains.vehicles.entity import VehicleModel
-from src.domains.vehicles.errors import VehicleAccessDeniedError
+from src.domains.vehicles.errors import VehicleAccessDeniedError, VehiclePlateAlreadyExistsError
 from src.domains.vehicles.service import VehicleService
 from src.infrastructure.dependencies.auth_dependencies import get_current_user
 from src.infrastructure.dependencies.vehicle_dependencies import get_vehicle_service
@@ -132,6 +132,21 @@ def test_create_vehicle_guardian_returns_403(client):
     app.dependency_overrides.clear()
 
     assert response.status_code == 403
+
+
+def test_create_vehicle_duplicate_plate_returns_409(client):
+    """POST /vehicles/ com placa já cadastrada deve retornar 409 Conflict."""
+    mock_service = MagicMock(spec=VehicleService)
+    mock_service.add_vehicle.side_effect = VehiclePlateAlreadyExistsError()
+
+    app.dependency_overrides[get_vehicle_service] = lambda: mock_service
+    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "driver"}
+
+    response = client.post("/vehicles/", json={"plate": "ABC1D23", "capacity": 4})
+
+    app.dependency_overrides.clear()
+
+    assert response.status_code == 409
 
 
 # ---------------------------------------------------------------------------
@@ -509,6 +524,17 @@ def test_integration_create_vehicle_guardian_returns_403(integration_client, db_
     response = integration_client.post("/vehicles/", json={"plate": "ITG0004", "capacity": 4})
 
     assert response.status_code == 403
+
+
+def test_integration_create_vehicle_duplicate_plate_returns_409(integration_client, db_session):
+    """[Integração] POST /vehicles/ com placa já cadastrada deve retornar 409 Conflict."""
+    driver = make_driver_in_db(db_session)
+    app.dependency_overrides[get_current_user] = lambda: {"id": str(driver.id), "role": "driver"}
+
+    integration_client.post("/vehicles/", json={"plate": "DUP0001", "capacity": 4})
+    response = integration_client.post("/vehicles/", json={"plate": "DUP0001", "capacity": 6})
+
+    assert response.status_code == 409
 
 
 # ---------------------------------------------------------------------------
