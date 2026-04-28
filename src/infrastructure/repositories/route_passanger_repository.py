@@ -2,10 +2,13 @@
 
 from uuid import UUID
 
-from sqlalchemy.orm import Session
+from sqlalchemy import or_
+from sqlalchemy.orm import Session, joinedload
 
+from src.domains.dependents.entity import DependentModel
 from src.domains.route_passangers.entity import RoutePassangerModel
 from src.domains.route_passangers.repository import IRoutePassangerRepository
+from src.domains.routes.entity import RouteModel
 
 
 class RoutePassangerRepositoryImpl(IRoutePassangerRepository):
@@ -96,4 +99,19 @@ class RoutePassangerRepositoryImpl(IRoutePassangerRepository):
         self,
         user_id: UUID,
     ) -> list[RoutePassangerModel]:
-        pass
+        return (
+            self.session.query(RoutePassangerModel)
+            .options(
+                joinedload(RoutePassangerModel.route).joinedload(RouteModel.driver),
+                joinedload(RoutePassangerModel.route).joinedload(RouteModel.origin_address),
+                joinedload(RoutePassangerModel.route).joinedload(RouteModel.destination_address),
+                joinedload(RoutePassangerModel.schedules),
+            )
+            .outerjoin(RoutePassangerModel.dependent)
+            .filter(
+                RoutePassangerModel.status.in_(["pending", "accepted"]),
+                or_(RoutePassangerModel.user_id == user_id, DependentModel.guardian_id == user_id),
+            )
+            .order_by(RoutePassangerModel.joined_at.desc())
+            .all()
+        )
