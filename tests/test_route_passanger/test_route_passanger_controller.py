@@ -52,7 +52,6 @@ def make_rp_response(status: str = "accepted", dependent: bool = False):
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US06-TK09")
 def test_accept_request_success_returns_200() -> None:
     mock_service = Mock(spec=RoutePassangerService)
     mock_service.accept_request.return_value = make_rp_response(status="accepted")
@@ -67,7 +66,6 @@ def test_accept_request_success_returns_200() -> None:
     assert response.json()["status"] == "accepted"
 
 
-@pytest.mark.skip(reason="US06-TK09")
 def test_accept_request_route_not_found_returns_404() -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
@@ -83,7 +81,6 @@ def test_accept_request_route_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US06-TK09")
 def test_accept_request_wrong_owner_returns_403() -> None:
     from src.domains.routes.errors import RouteOwnershipError
 
@@ -99,7 +96,6 @@ def test_accept_request_wrong_owner_returns_403() -> None:
     assert response.status_code == 403
 
 
-@pytest.mark.skip(reason="US06-TK09")
 def test_accept_request_in_progress_returns_409() -> None:
     from src.domains.routes.errors import RouteInProgressError
 
@@ -115,7 +111,6 @@ def test_accept_request_in_progress_returns_409() -> None:
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US06-TK09")
 def test_accept_request_rp_not_found_returns_404() -> None:
     from src.domains.route_passangers.errors import RoutePassangerNotFoundError
 
@@ -131,7 +126,6 @@ def test_accept_request_rp_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US06-TK09")
 def test_accept_request_already_processed_returns_409() -> None:
     from src.domains.route_passangers.errors import RoutePassangerAlreadyProcessedError
 
@@ -147,7 +141,6 @@ def test_accept_request_already_processed_returns_409() -> None:
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US06-TK09")
 def test_accept_request_capacity_exceeded_returns_409() -> None:
     from src.domains.route_passangers.errors import RouteCapacityExceededError
 
@@ -582,7 +575,6 @@ def make_integration_rp(db_session, route_id, user_id, status: str = "pending"):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US06-TK09")
 def test_integration_accept_request_success(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session, "Integ João")
@@ -598,7 +590,6 @@ def test_integration_accept_request_success(integration_client, db_session) -> N
     assert response.json()["status"] == "accepted"
 
 
-@pytest.mark.skip(reason="US06-TK09")
 def test_integration_accept_request_in_progress_returns_409(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)
@@ -613,7 +604,6 @@ def test_integration_accept_request_in_progress_returns_409(integration_client, 
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US06-TK09")
 def test_integration_accept_request_capacity_exceeded_returns_409(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     route = make_integration_route(db_session, driver.id, max_passengers=1)
@@ -631,7 +621,6 @@ def test_integration_accept_request_capacity_exceeded_returns_409(integration_cl
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US06-TK09")
 def test_integration_accept_request_wrong_owner_returns_403(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     other_driver, _ = make_integration_driver(db_session)
@@ -647,7 +636,6 @@ def test_integration_accept_request_wrong_owner_returns_403(integration_client, 
     assert response.status_code == 403
 
 
-@pytest.mark.skip(reason="US06-TK09")
 def test_integration_accept_request_persists_stop_in_db(integration_client, db_session) -> None:
     """Após accept bem-sucedido, deve existir uma Stop vinculada ao rp no DB."""
     from src.domains.stops.entity import StopModel
@@ -669,7 +657,6 @@ def test_integration_accept_request_persists_stop_in_db(integration_client, db_s
     assert stop.address_id == rp.pickup_address_id
 
 
-@pytest.mark.skip(reason="US06-TK09")
 def test_integration_accept_request_stop_type_matches_outbound(
     integration_client, db_session
 ) -> None:
