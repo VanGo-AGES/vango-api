@@ -54,7 +54,7 @@ class RouteRepositoryImpl(IRouteRepository):
 
     # US08-TK05
     def find_by_invite_code(self, invite_code: str) -> RouteModel | None:
-        pass
+        return self.session.query(RouteModel).filter(RouteModel.invite_code == invite_code).first()
 
     # US06-TK17
     def delete(self, route_id: UUID) -> bool:

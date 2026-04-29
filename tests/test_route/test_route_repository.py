@@ -384,7 +384,6 @@ def test_route_repository_update_empty_dict_is_noop(db_session) -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US08-TK05")
 def test_route_repository_find_by_invite_code_returns_route(db_session) -> None:
     from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
 
@@ -400,7 +399,6 @@ def test_route_repository_find_by_invite_code_returns_route(db_session) -> None:
     assert found.id == route.id
 
 
-@pytest.mark.skip(reason="US08-TK05")
 def test_route_repository_find_by_invite_code_not_found_returns_none(db_session) -> None:
     from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
 
@@ -408,7 +406,6 @@ def test_route_repository_find_by_invite_code_not_found_returns_none(db_session)
     assert repo.find_by_invite_code("Z9Z9Z") is None
 
 
-@pytest.mark.skip(reason="US08-TK05")
 def test_route_repository_find_by_invite_code_is_exact_match(db_session) -> None:
     """Não faz match parcial nem case-insensitive."""
     from src.infrastructure.repositories.route_repository import RouteRepositoryImpl

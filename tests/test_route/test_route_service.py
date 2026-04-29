@@ -544,7 +544,6 @@ def test_update_route_excludes_none_fields_from_repo_call() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US08-TK05")
 def test_get_by_invite_code_returns_route() -> None:
     from src.domains.routes.service import RouteService
 
@@ -559,7 +558,6 @@ def test_get_by_invite_code_returns_route() -> None:
     route_repo.find_by_invite_code.assert_called_once_with("A1B2C")
 
 
-@pytest.mark.skip(reason="US08-TK05")
 def test_get_by_invite_code_not_found_raises() -> None:
     from src.domains.routes.errors import RouteNotFoundError
     from src.domains.routes.service import RouteService
@@ -594,7 +592,6 @@ def make_route_for_summary_mock():
     return route
 
 
-@pytest.mark.skip(reason="US08-TK05")
 def test_get_invite_summary_returns_summary_with_accepted_count() -> None:
     from src.domains.routes.service import RouteService
 
@@ -614,7 +611,6 @@ def test_get_invite_summary_returns_summary_with_accepted_count() -> None:
     assert summary.max_passengers == 5
 
 
-@pytest.mark.skip(reason="US08-TK05")
 def test_get_invite_summary_not_found_raises() -> None:
     from src.domains.routes.errors import RouteNotFoundError
     from src.domains.routes.service import RouteService
@@ -629,7 +625,6 @@ def test_get_invite_summary_not_found_raises() -> None:
     rp_repo.count_accepted_by_route.assert_not_called()
 
 
-@pytest.mark.skip(reason="US08-TK05")
 def test_get_invite_summary_zero_accepted_is_valid() -> None:
     from src.domains.routes.service import RouteService
 
