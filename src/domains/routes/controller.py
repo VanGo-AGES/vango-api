@@ -172,4 +172,12 @@ def delete_route(
     service: Annotated[RouteService, Depends(get_route_service)],
     x_user_id: Annotated[str, Header(alias="X-User-Id")],
 ) -> None:
-    pass
+    driver_id = UUID(x_user_id)
+    try:
+        service.delete_route(route_id, driver_id)
+    except RouteNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except RouteOwnershipError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+    except RouteInProgressError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
