@@ -14,6 +14,10 @@ class IVehicleRepository(ABC):
         pass
 
     @abstractmethod
+    def get_by_plate(self, plate: str) -> VehicleModel | None:
+        pass
+
+    @abstractmethod
     def get_by_driver_id(self, driver_id: UUID) -> list[VehicleModel]:
         pass
 
