@@ -955,7 +955,6 @@ def test_integration_get_by_invite_code_counts_accepted_passangers(integration_c
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US06-TK19")
 def test_delete_route_success_returns_204() -> None:
     mock_service = Mock(spec=RouteService)
     mock_service.delete_route.return_value = None
@@ -968,7 +967,6 @@ def test_delete_route_success_returns_204() -> None:
     mock_service.delete_route.assert_called_once()
 
 
-@pytest.mark.skip(reason="US06-TK19")
 def test_delete_route_not_found_returns_404() -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
@@ -982,7 +980,6 @@ def test_delete_route_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US06-TK19")
 def test_delete_route_wrong_owner_returns_403() -> None:
     from src.domains.routes.errors import RouteOwnershipError
 
@@ -996,7 +993,6 @@ def test_delete_route_wrong_owner_returns_403() -> None:
     assert response.status_code == 403
 
 
-@pytest.mark.skip(reason="US06-TK19")
 def test_delete_route_in_progress_returns_409() -> None:
     from src.domains.routes.errors import RouteInProgressError
 
@@ -1013,7 +1009,6 @@ def test_delete_route_in_progress_returns_409() -> None:
 # --- Integração ---
 
 
-@pytest.mark.skip(reason="US06-TK19")
 def test_integration_delete_route_success(integration_client, db_session) -> None:
     from src.domains.routes.entity import RouteModel
 
@@ -1029,7 +1024,6 @@ def test_integration_delete_route_success(integration_client, db_session) -> Non
     assert remaining is None
 
 
-@pytest.mark.skip(reason="US06-TK19")
 def test_integration_delete_route_not_found_returns_404(integration_client, db_session) -> None:
     driver, _ = make_driver_with_vehicle(db_session)
     headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
@@ -1039,7 +1033,6 @@ def test_integration_delete_route_not_found_returns_404(integration_client, db_s
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US06-TK19")
 def test_integration_delete_route_wrong_owner_returns_403(integration_client, db_session) -> None:
     driver1, _ = make_driver_with_vehicle(db_session)
     driver2, _ = make_driver_with_vehicle(db_session)
@@ -1058,7 +1051,6 @@ def test_integration_delete_route_wrong_owner_returns_403(integration_client, db
     assert response.status_code == 403
 
 
-@pytest.mark.skip(reason="US06-TK19")
 def test_integration_delete_route_in_progress_returns_409(integration_client, db_session) -> None:
     from src.domains.routes.entity import RouteModel
 
@@ -1076,7 +1068,6 @@ def test_integration_delete_route_in_progress_returns_409(integration_client, db
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US06-TK19")
 def test_integration_delete_route_cascades_passangers(integration_client, db_session) -> None:
     """Ao deletar rota, route_passangers e stops associadas são removidos via cascade."""
     from src.domains.route_passangers.entity import RoutePassangerModel
