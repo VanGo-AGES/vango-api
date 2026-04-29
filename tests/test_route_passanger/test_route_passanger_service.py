@@ -981,7 +981,6 @@ def test_join_route_with_dependent_id_sets_dep_on_rp() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US08-TK09")
 def test_leave_route_success_deletes_rp() -> None:
     route = make_route_mock(uuid.uuid4(), status="ativa")
     user_id = uuid.uuid4()
@@ -996,7 +995,6 @@ def test_leave_route_success_deletes_rp() -> None:
     rp_repo.delete.assert_called_once_with(rp.id)
 
 
-@pytest.mark.skip(reason="US08-TK09")
 def test_leave_route_notifies_driver_before_delete() -> None:
     """Valida a ordem exata: notify vem antes de stop_repository.delete e de rp_repo.delete."""
     route = make_route_mock(uuid.uuid4(), status="ativa")
@@ -1024,7 +1022,6 @@ def test_leave_route_notifies_driver_before_delete() -> None:
         )
 
 
-@pytest.mark.skip(reason="US08-TK09")
 def test_leave_route_deletes_stop_explicitly() -> None:
     """Valida que stop_repository.delete_by_route_passanger_id é chamado explicitamente,
     permitindo hooks (push notification, auditoria) que a cascade do ORM não dispararia."""
@@ -1041,7 +1038,6 @@ def test_leave_route_deletes_stop_explicitly() -> None:
     stop_repo.delete_by_route_passanger_id.assert_called_once_with(rp.id)
 
 
-@pytest.mark.skip(reason="US08-TK09")
 def test_leave_route_route_not_found_raises() -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
@@ -1052,7 +1048,6 @@ def test_leave_route_route_not_found_raises() -> None:
         service.leave_route(uuid.uuid4(), uuid.uuid4())
 
 
-@pytest.mark.skip(reason="US08-TK09")
 def test_leave_route_em_andamento_raises() -> None:
     from src.domains.routes.errors import RouteInProgressError
 
@@ -1064,7 +1059,6 @@ def test_leave_route_em_andamento_raises() -> None:
         service.leave_route(route.id, uuid.uuid4())
 
 
-@pytest.mark.skip(reason="US08-TK09")
 def test_leave_route_no_active_rp_raises() -> None:
     from src.domains.route_passangers.errors import RoutePassangerNotFoundError
 
@@ -1077,7 +1071,6 @@ def test_leave_route_no_active_rp_raises() -> None:
         service.leave_route(route.id, uuid.uuid4())
 
 
-@pytest.mark.skip(reason="US08-TK09")
 def test_leave_route_with_dependent_id_uses_dependent_scope() -> None:
     route = make_route_mock(uuid.uuid4(), status="ativa")
     guardian_id = uuid.uuid4()

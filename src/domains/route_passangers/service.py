@@ -326,7 +326,21 @@ class RoutePassangerService:
           para disparar push notification no futuro)
         - Deleta RP via route_passanger_repository.delete (schedules caem na cascade)
         """
-        pass
+        route = self.route_repository.find_by_id(route_id)
+        if route is None:
+            raise RouteNotFoundError()
+
+        if route.status == "em_andamento":
+            raise RouteInProgressError()
+
+        rp = self.route_passanger_repository.find_active_by_user_and_route(user_id, dependent_id, route_id)
+        if rp is None:
+            raise RoutePassangerNotFoundError()
+
+        self.notification_service.notify_driver_passanger_left(rp)
+        self.stop_repository.delete_by_route_passanger_id(rp.id)
+        self.route_passanger_repository.delete(rp.id)
+        return
 
     # US08-TK11
     def update_schedules(
