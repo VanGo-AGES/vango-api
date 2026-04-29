@@ -14,6 +14,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 
+from src.domains.route_passangers.errors import DuplicateRoutePassangerError, RouteCapacityExceededError
 from src.domains.routes.errors import RouteInProgressError, RouteNotFoundError, RouteOwnershipError
 from src.infrastructure.dependencies.route_passanger_dependencies import (
     get_route_passanger_service,
@@ -160,7 +161,19 @@ def join_route(
     service: Annotated[RoutePassangerService, Depends(get_route_passanger_service)],
     x_user_id: Annotated[str, Header(alias="X-User-Id")],
 ) -> RoutePassangerResponse:
-    pass
+    try:
+        user_id = UUID(x_user_id)
+        return service.join_route(route_id, user_id, body)
+    except RouteNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
+    except RouteInProgressError as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
+    except RouteCapacityExceededError as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
+    except DuplicateRoutePassangerError as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
+    except ValueError as error:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error)) from error
 
 
 # US08-TK10

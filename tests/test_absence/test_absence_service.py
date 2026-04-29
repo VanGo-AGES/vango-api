@@ -66,7 +66,6 @@ def build_service(**overrides):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US06-TK19")
 def test_create_absence_success_persists_and_notifies() -> None:
     from src.domains.absences.dtos import CreateAbsenceRequest
     from src.domains.trips.entity import AbsenceModel
@@ -101,7 +100,6 @@ def test_create_absence_success_persists_and_notifies() -> None:
     assert result.id == saved.id
 
 
-@pytest.mark.skip(reason="US06-TK19")
 def test_create_absence_guardian_for_dependent_uses_dependent_rp() -> None:
     from src.domains.absences.dtos import CreateAbsenceRequest
 
@@ -133,7 +131,6 @@ def test_create_absence_guardian_for_dependent_uses_dependent_rp() -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US06-TK19")
 def test_create_absence_route_not_found_raises_404() -> None:
     from src.domains.absences.dtos import CreateAbsenceRequest
     from src.domains.routes.errors import RouteNotFoundError
@@ -151,7 +148,6 @@ def test_create_absence_route_not_found_raises_404() -> None:
         )
 
 
-@pytest.mark.skip(reason="US06-TK19")
 def test_create_absence_no_active_membership_raises_403() -> None:
     from src.domains.absences.dtos import CreateAbsenceRequest
     from src.domains.route_passangers.errors import NotRoutePassangerError
@@ -171,7 +167,6 @@ def test_create_absence_no_active_membership_raises_403() -> None:
         )
 
 
-@pytest.mark.skip(reason="US06-TK19")
 def test_create_absence_duplicate_raises_409() -> None:
     from src.domains.absences.dtos import CreateAbsenceRequest
     from src.domains.absences.errors import AbsenceAlreadyReportedError
@@ -196,7 +191,6 @@ def test_create_absence_duplicate_raises_409() -> None:
         )
 
 
-@pytest.mark.skip(reason="US06-TK19")
 def test_create_absence_past_date_raises_409() -> None:
     from src.domains.absences.dtos import CreateAbsenceRequest
     from src.domains.absences.errors import AbsenceDateNotAllowedError
@@ -218,7 +212,6 @@ def test_create_absence_past_date_raises_409() -> None:
         )
 
 
-@pytest.mark.skip(reason="US06-TK19")
 def test_create_absence_date_not_in_route_recurrence_raises_409() -> None:
     """Se a rota só roda seg-sex e o passageiro avisa ausência num sábado,
     bloqueia."""
@@ -244,7 +237,6 @@ def test_create_absence_date_not_in_route_recurrence_raises_409() -> None:
         )
 
 
-@pytest.mark.skip(reason="US06-TK19")
 def test_create_absence_does_not_notify_on_validation_error() -> None:
     from src.domains.absences.dtos import CreateAbsenceRequest
     from src.domains.route_passangers.errors import NotRoutePassangerError

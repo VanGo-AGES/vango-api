@@ -947,7 +947,6 @@ def make_join_payload(dependent_id=None, days=("monday",), address_id=None):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US08-TK08")
 def test_join_route_success_returns_201() -> None:
     mock_service = Mock(spec=RoutePassangerService)
     mock_service.join_route.return_value = make_rp_response(status="pending")
@@ -964,7 +963,6 @@ def test_join_route_success_returns_201() -> None:
     assert response.json()["status"] == "pending"
 
 
-@pytest.mark.skip(reason="US08-TK08")
 def test_join_route_route_not_found_returns_404() -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
@@ -982,7 +980,6 @@ def test_join_route_route_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US08-TK08")
 def test_join_route_in_progress_returns_409() -> None:
     from src.domains.routes.errors import RouteInProgressError
 
@@ -1000,7 +997,6 @@ def test_join_route_in_progress_returns_409() -> None:
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US08-TK08")
 def test_join_route_full_returns_409() -> None:
     from src.domains.route_passangers.errors import RouteCapacityExceededError
 
@@ -1018,7 +1014,6 @@ def test_join_route_full_returns_409() -> None:
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US08-TK08")
 def test_join_route_duplicate_returns_409() -> None:
     from src.domains.route_passangers.errors import DuplicateRoutePassangerError
 
@@ -1036,7 +1031,6 @@ def test_join_route_duplicate_returns_409() -> None:
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US08-TK08")
 def test_join_route_invalid_payload_returns_422() -> None:
     mock_service = Mock(spec=RoutePassangerService)
     app.dependency_overrides[get_route_passanger_service] = lambda: mock_service
@@ -1072,7 +1066,6 @@ def make_integration_pickup_address(db_session, user_id):
     return addr
 
 
-@pytest.mark.skip(reason="US08-TK08")
 def test_integration_join_route_success(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session, "Integ Ana")
@@ -1090,7 +1083,6 @@ def test_integration_join_route_success(integration_client, db_session) -> None:
     assert response.json()["status"] == "pending"
 
 
-@pytest.mark.skip(reason="US08-TK08")
 def test_integration_join_route_creates_schedules(integration_client, db_session) -> None:
     from src.domains.route_passangers.schedule_entity import RoutePassangerScheduleModel
 
@@ -1116,7 +1108,6 @@ def test_integration_join_route_creates_schedules(integration_client, db_session
     assert len(schedules) == 2
 
 
-@pytest.mark.skip(reason="US08-TK08")
 def test_integration_join_route_duplicate_returns_409(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)
@@ -1134,7 +1125,6 @@ def test_integration_join_route_duplicate_returns_409(integration_client, db_ses
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US08-TK08")
 def test_integration_join_route_in_progress_returns_409(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)
