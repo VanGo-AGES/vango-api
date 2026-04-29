@@ -168,7 +168,6 @@ def test_accept_request_capacity_exceeded_returns_409() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US06-TK11")
 def test_reject_request_success_returns_200() -> None:
     mock_service = Mock(spec=RoutePassangerService)
     mock_service.reject_request.return_value = make_rp_response(status="rejected")
@@ -183,7 +182,6 @@ def test_reject_request_success_returns_200() -> None:
     assert response.json()["status"] == "rejected"
 
 
-@pytest.mark.skip(reason="US06-TK11")
 def test_reject_request_rp_not_found_returns_404() -> None:
     from src.domains.route_passangers.errors import RoutePassangerNotFoundError
 
@@ -199,7 +197,6 @@ def test_reject_request_rp_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US06-TK11")
 def test_reject_request_route_not_found_returns_404() -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
@@ -215,7 +212,6 @@ def test_reject_request_route_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US06-TK11")
 def test_reject_request_wrong_owner_returns_403() -> None:
     from src.domains.routes.errors import RouteOwnershipError
 
@@ -231,7 +227,6 @@ def test_reject_request_wrong_owner_returns_403() -> None:
     assert response.status_code == 403
 
 
-@pytest.mark.skip(reason="US06-TK11")
 def test_reject_request_in_progress_returns_409() -> None:
     from src.domains.routes.errors import RouteInProgressError
 
@@ -247,7 +242,6 @@ def test_reject_request_in_progress_returns_409() -> None:
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US06-TK11")
 def test_reject_request_already_processed_returns_409() -> None:
     from src.domains.route_passangers.errors import RoutePassangerAlreadyProcessedError
 
@@ -702,7 +696,6 @@ def test_integration_accept_request_stop_type_matches_outbound(
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US06-TK11")
 def test_integration_reject_request_success(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)
@@ -718,7 +711,6 @@ def test_integration_reject_request_success(integration_client, db_session) -> N
     assert response.json()["status"] == "rejected"
 
 
-@pytest.mark.skip(reason="US06-TK11")
 def test_integration_reject_request_in_progress_returns_409(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)
@@ -733,7 +725,6 @@ def test_integration_reject_request_in_progress_returns_409(integration_client, 
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US06-TK11")
 def test_integration_reject_request_already_processed_returns_409(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)
@@ -748,7 +739,6 @@ def test_integration_reject_request_already_processed_returns_409(integration_cl
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US06-TK11")
 def test_integration_reject_request_wrong_owner_returns_403(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     other_driver, _ = make_integration_driver(db_session)
