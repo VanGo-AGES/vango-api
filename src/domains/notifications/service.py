@@ -116,7 +116,11 @@ class LoggingNotificationService(INotificationService):
 
     # US06-TK19
     def notify_driver_passanger_absence_reported(self, rp: RoutePassangerModel) -> None:
-        pass
+        logger.info(
+            "notify_driver_passanger_absence_reported: ausência avisada ao motorista " "[rp_id=%s, user_id=%s]",
+            rp.id,
+            rp.user_id,
+        )
 
     # US09-TK05
     def notify_trip_started(self, trip: TripModel) -> None:
