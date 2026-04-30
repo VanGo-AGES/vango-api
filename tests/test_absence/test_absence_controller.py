@@ -52,7 +52,6 @@ def valid_payload(**overrides) -> dict:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US06-TK20")
 def test_create_absence_success_returns_201() -> None:
     mock_service = Mock(spec=AbsenceService)
     mock_service.create_absence.return_value = make_absence_response()
@@ -65,7 +64,6 @@ def test_create_absence_success_returns_201() -> None:
     assert response.json()["reason"] == "Consulta"
 
 
-@pytest.mark.skip(reason="US06-TK20")
 def test_create_absence_route_not_found_returns_404() -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
@@ -79,7 +77,6 @@ def test_create_absence_route_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US06-TK20")
 def test_create_absence_not_passanger_returns_403() -> None:
     from src.domains.route_passangers.errors import NotRoutePassangerError
 
@@ -93,7 +90,6 @@ def test_create_absence_not_passanger_returns_403() -> None:
     assert response.status_code == 403
 
 
-@pytest.mark.skip(reason="US06-TK20")
 def test_create_absence_duplicate_returns_409() -> None:
     from src.domains.absences.errors import AbsenceAlreadyReportedError
 
@@ -107,7 +103,6 @@ def test_create_absence_duplicate_returns_409() -> None:
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US06-TK20")
 def test_create_absence_invalid_date_returns_409() -> None:
     from src.domains.absences.errors import AbsenceDateNotAllowedError
 
@@ -121,7 +116,6 @@ def test_create_absence_invalid_date_returns_409() -> None:
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US06-TK20")
 def test_create_absence_missing_body_fields_returns_422() -> None:
     mock_service = Mock(spec=AbsenceService)
     app.dependency_overrides[get_absence_service] = lambda: mock_service
@@ -132,7 +126,6 @@ def test_create_absence_missing_body_fields_returns_422() -> None:
     assert response.status_code == 422
 
 
-@pytest.mark.skip(reason="US06-TK20")
 def test_create_absence_forwards_user_id_from_header() -> None:
     mock_service = Mock(spec=AbsenceService)
     mock_service.create_absence.return_value = make_absence_response()
@@ -253,7 +246,6 @@ def make_integration_rp(db_session, route_id, user_id, status: str = "accepted")
     return rp
 
 
-@pytest.mark.skip(reason="US06-TK20")
 def test_integration_create_absence_success(integration_client, db_session) -> None:
     driver = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)
@@ -276,7 +268,6 @@ def test_integration_create_absence_success(integration_client, db_session) -> N
     assert body["reason"] == "Consulta"
 
 
-@pytest.mark.skip(reason="US06-TK20")
 def test_integration_create_absence_route_not_found_returns_404(
     integration_client, db_session
 ) -> None:
@@ -292,7 +283,6 @@ def test_integration_create_absence_route_not_found_returns_404(
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US06-TK20")
 def test_integration_create_absence_outsider_returns_403(
     integration_client, db_session
 ) -> None:
@@ -310,7 +300,6 @@ def test_integration_create_absence_outsider_returns_403(
     assert response.status_code == 403
 
 
-@pytest.mark.skip(reason="US06-TK20")
 def test_integration_create_absence_duplicate_returns_409(
     integration_client, db_session
 ) -> None:
@@ -329,7 +318,6 @@ def test_integration_create_absence_duplicate_returns_409(
     assert second.status_code == 409
 
 
-@pytest.mark.skip(reason="US06-TK20")
 def test_integration_create_absence_persists_in_db(
     integration_client, db_session
 ) -> None:
@@ -351,7 +339,6 @@ def test_integration_create_absence_persists_in_db(
     assert len(stored) == 1
 
 
-@pytest.mark.skip(reason="US06-TK20")
 def test_integration_create_absence_invalid_recurrence_returns_409(
     integration_client, db_session
 ) -> None:
