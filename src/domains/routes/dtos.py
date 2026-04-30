@@ -3,6 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from src.domains.addresses.dtos import AddressResponse
 from src.domains.stops.dtos import StopResponse
 
 VALID_RECURRENCE_DAYS = {"seg", "ter", "qua", "qui", "sex", "sab", "dom"}
@@ -26,21 +27,6 @@ class AddressCreate(BaseModel):
     @classmethod
     def normalize_state_to_uppercase(cls, v: str) -> str:
         return v.upper()
-
-
-class AddressResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: UUID
-    label: str
-    street: str
-    number: str
-    neighborhood: str
-    zip: str
-    city: str
-    state: str
-    latitude: float | None = None
-    longitude: float | None = None
 
 
 # ---------------------------------------------------------------------------

@@ -4,7 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from src.domains.routes.dtos import AddressResponse
+from src.domains.addresses.dtos import AddressResponse
 from src.domains.stops.dtos import StopResponse
 
 

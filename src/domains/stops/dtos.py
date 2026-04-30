@@ -1,13 +1,11 @@
-"""US07 — DTOs de Stop.
-
-StopResponse espelha a tabela `stops` do banco:
-- id, route_id, route_passanger_id, address_id, order_index, type, updated_at.
-"""
+"""US07 — DTOs de Stop."""
 
 from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
+
+from src.domains.addresses.dtos import AddressResponse
 
 
 class StopResponse(BaseModel):
@@ -20,3 +18,4 @@ class StopResponse(BaseModel):
     order_index: int
     type: str
     updated_at: datetime
+    address: AddressResponse
