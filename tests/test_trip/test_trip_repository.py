@@ -20,7 +20,6 @@ from tests.test_trip._helpers import (
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US09-TK02")
 def test_save_persists_trip(db_session) -> None:
     driver = make_driver(db_session)
     vehicle = make_vehicle(db_session, driver.id)
@@ -44,7 +43,6 @@ def test_save_persists_trip(db_session) -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US09-TK02")
 def test_find_by_id_returns_trip(db_session) -> None:
     driver = make_driver(db_session)
     vehicle = make_vehicle(db_session, driver.id)
@@ -58,7 +56,6 @@ def test_find_by_id_returns_trip(db_session) -> None:
     assert result.id == trip.id
 
 
-@pytest.mark.skip(reason="US09-TK02")
 def test_find_by_id_returns_none_when_missing(db_session) -> None:
     repo = TripRepositoryImpl(db_session)
     assert repo.find_by_id(uuid.uuid4()) is None
@@ -69,7 +66,6 @@ def test_find_by_id_returns_none_when_missing(db_session) -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US09-TK02")
 def test_find_in_progress_returns_started_trip(db_session) -> None:
     driver = make_driver(db_session)
     vehicle = make_vehicle(db_session, driver.id)
@@ -83,7 +79,6 @@ def test_find_in_progress_returns_started_trip(db_session) -> None:
     assert result.id == trip.id
 
 
-@pytest.mark.skip(reason="US09-TK02")
 def test_find_in_progress_ignores_finished(db_session) -> None:
     driver = make_driver(db_session)
     vehicle = make_vehicle(db_session, driver.id)
@@ -94,7 +89,6 @@ def test_find_in_progress_ignores_finished(db_session) -> None:
     assert repo.find_in_progress_by_route(route.id) is None
 
 
-@pytest.mark.skip(reason="US09-TK02")
 def test_find_in_progress_returns_none_when_no_trip(db_session) -> None:
     driver = make_driver(db_session)
     make_vehicle(db_session, driver.id)
@@ -109,7 +103,6 @@ def test_find_in_progress_returns_none_when_no_trip(db_session) -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US09-TK02")
 def test_update_status_finishes_trip(db_session) -> None:
     driver = make_driver(db_session)
     vehicle = make_vehicle(db_session, driver.id)
@@ -123,10 +116,9 @@ def test_update_status_finishes_trip(db_session) -> None:
     assert result is not None
     assert result.status == "finalizada"
     assert result.total_km == 12.5
-    assert result.finished_at == finished_at
+    assert result.finished_at.replace(tzinfo=timezone.utc) == finished_at
 
 
-@pytest.mark.skip(reason="US09-TK02")
 def test_update_status_returns_none_when_missing(db_session) -> None:
     repo = TripRepositoryImpl(db_session)
     result = repo.update_status(uuid.uuid4(), "finalizada", datetime.now(timezone.utc), None)
