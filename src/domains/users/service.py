@@ -1,6 +1,10 @@
 from src.domains.users.dtos import UserCreate, UserUpdate
 from src.domains.users.entity import UserModel
-from src.domains.users.errors import DuplicateEmailError, UserNotFoundError
+from src.domains.users.errors import (
+    DuplicateEmailError,
+    InvalidCredentialsError,
+    UserNotFoundError,
+)
 from src.domains.users.repository import IPasswordHasher, IUserRepository
 
 
@@ -55,3 +59,19 @@ class UserService:
 
     def list_users(self) -> list[UserModel]:
         return self.repository.find_all()
+
+    def login(self, email: str, password: str) -> UserModel:
+        """Login intermediário: valida email + senha e devolve o UserModel.
+
+        - UserNotFoundError quando o e-mail não existe.
+        - InvalidCredentialsError quando o e-mail existe mas a senha está errada.
+        Não há emissão de token nesse fluxo — autenticação completa virá em US futura.
+        """
+        user = self.repository.find_by_email(email)
+        if not user:
+            raise UserNotFoundError()
+
+        if not self.password_hasher.verify(password, user.password_hash):
+            raise InvalidCredentialsError()
+
+        return user

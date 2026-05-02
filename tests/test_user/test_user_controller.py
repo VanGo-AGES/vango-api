@@ -6,7 +6,11 @@ from uuid import uuid4
 from fastapi.testclient import TestClient
 
 from src.domains.users.dtos import UserResponse
-from src.domains.users.errors import DuplicateEmailError, UserNotFoundError
+from src.domains.users.errors import (
+    DuplicateEmailError,
+    InvalidCredentialsError,
+    UserNotFoundError,
+)
 from src.domains.users.service import UserService
 from src.infrastructure.dependencies.user_dependencies import get_user_service
 from src.main import app
@@ -501,3 +505,128 @@ def test_integration_delete_user_not_found_returns_404(integration_client):
     response = integration_client.delete(f"/users/{uuid4()}")
 
     assert response.status_code == 404
+
+
+# ===========================================================================
+# POST /users/login — login intermediário (email + senha)
+# ===========================================================================
+
+
+# Teste 1: happy path — 200 com UserResponse
+def test_login_success_returns_200():
+    """POST /users/login com credenciais válidas deve retornar 200 e o UserResponse."""
+    mock_service = Mock(spec=UserService)
+    mock_service.login.return_value = make_user_response()
+
+    app.dependency_overrides[get_user_service] = lambda: mock_service
+    client = TestClient(app)
+
+    response = client.post("/users/login", json={
+        "email": "john@email.com",
+        "password": "senha123",
+    })
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["email"] == "john@email.com"
+    assert "password" not in body
+
+    app.dependency_overrides.clear()
+
+
+# Teste 2: email não cadastrado retorna 404
+def test_login_user_not_found_returns_404():
+    """POST /users/login com email não cadastrado deve retornar 404."""
+    mock_service = Mock(spec=UserService)
+    mock_service.login.side_effect = UserNotFoundError()
+
+    app.dependency_overrides[get_user_service] = lambda: mock_service
+    client = TestClient(app)
+
+    response = client.post("/users/login", json={
+        "email": "ghost@email.com",
+        "password": "senha123",
+    })
+
+    assert response.status_code == 404
+
+    app.dependency_overrides.clear()
+
+
+# Teste 3: senha incorreta retorna 401
+def test_login_invalid_password_returns_401():
+    """POST /users/login com senha errada deve retornar 401."""
+    mock_service = Mock(spec=UserService)
+    mock_service.login.side_effect = InvalidCredentialsError()
+
+    app.dependency_overrides[get_user_service] = lambda: mock_service
+    client = TestClient(app)
+
+    response = client.post("/users/login", json={
+        "email": "john@email.com",
+        "password": "senha_errada",
+    })
+
+    assert response.status_code == 401
+
+    app.dependency_overrides.clear()
+
+
+# Teste 4: payload sem email/senha retorna 422
+def test_login_missing_fields_returns_422():
+    """POST /users/login sem campos obrigatórios deve retornar 422."""
+    mock_service = Mock(spec=UserService)
+
+    app.dependency_overrides[get_user_service] = lambda: mock_service
+    client = TestClient(app)
+
+    response = client.post("/users/login", json={})
+
+    assert response.status_code == 422
+    mock_service.login.assert_not_called()
+
+    app.dependency_overrides.clear()
+
+
+# ---- Integração ----
+
+
+def test_integration_login_success(integration_client):
+    """[Integração] POST /users/login com credenciais válidas deve retornar 200 com o UserResponse."""
+    payload = make_user_payload()
+    integration_client.post("/users/", json=payload)
+
+    response = integration_client.post("/users/login", json={
+        "email": payload["email"],
+        "password": payload["password"],
+    })
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["email"] == payload["email"]
+    assert body["role"] == payload["role"]
+    assert "password" not in body
+    assert "password_hash" not in body
+
+
+def test_integration_login_user_not_found_returns_404(integration_client):
+    """[Integração] POST /users/login com email não cadastrado deve retornar 404."""
+    response = integration_client.post("/users/login", json={
+        "email": f"ghost_{uuid4()}@test.com",
+        "password": "qualquer",
+    })
+
+    assert response.status_code == 404
+
+
+def test_integration_login_invalid_password_returns_401(integration_client):
+    """[Integração] POST /users/login com senha errada deve retornar 401."""
+    payload = make_user_payload()
+    integration_client.post("/users/", json=payload)
+
+    response = integration_client.post("/users/login", json={
+        "email": payload["email"],
+        "password": "senha_errada",
+    })
+
+    assert response.status_code == 401
