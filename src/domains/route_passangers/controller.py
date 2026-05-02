@@ -244,7 +244,15 @@ def update_schedules(
     x_user_id: Annotated[str, Header(alias="X-User-Id")],
     dependent_id: Annotated[UUID | None, Query()] = None,
 ) -> RoutePassangerResponse:
-    pass
+    try:
+        user_id = UUID(x_user_id)
+        return service.update_schedules(route_id, user_id, body, dependent_id=dependent_id)
+    except RouteNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
+    except RouteInProgressError as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
+    except RoutePassangerNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
 
 
 # IMPORTANTE: este endpoint precisa ser resolvido ANTES de
