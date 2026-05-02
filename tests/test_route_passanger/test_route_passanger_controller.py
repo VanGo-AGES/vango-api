@@ -1264,7 +1264,6 @@ def make_update_payload(days=("monday",), address_id=None):
     }
 
 
-@pytest.mark.skip(reason="US08-TK12")
 def test_update_schedules_success_returns_200() -> None:
     mock_service = Mock(spec=RoutePassangerService)
     mock_service.update_schedules.return_value = make_rp_response(status="pending")
@@ -1280,7 +1279,6 @@ def test_update_schedules_success_returns_200() -> None:
     assert response.status_code == 200
 
 
-@pytest.mark.skip(reason="US08-TK12")
 def test_update_schedules_with_dependent_id_query_forwarded() -> None:
     mock_service = Mock(spec=RoutePassangerService)
     mock_service.update_schedules.return_value = make_rp_response(status="pending", dependent=True)
@@ -1300,7 +1298,6 @@ def test_update_schedules_with_dependent_id_query_forwarded() -> None:
     assert dep_id in call_args or call_kwargs.get("dependent_id") == dep_id
 
 
-@pytest.mark.skip(reason="US08-TK12")
 def test_update_schedules_route_not_found_returns_404() -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
@@ -1318,7 +1315,6 @@ def test_update_schedules_route_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US08-TK12")
 def test_update_schedules_in_progress_returns_409() -> None:
     from src.domains.routes.errors import RouteInProgressError
 
@@ -1336,7 +1332,6 @@ def test_update_schedules_in_progress_returns_409() -> None:
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US08-TK12")
 def test_update_schedules_rp_not_found_returns_404() -> None:
     from src.domains.route_passangers.errors import RoutePassangerNotFoundError
 
@@ -1354,7 +1349,6 @@ def test_update_schedules_rp_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US08-TK12")
 def test_update_schedules_invalid_payload_returns_422() -> None:
     mock_service = Mock(spec=RoutePassangerService)
     app.dependency_overrides[get_route_passanger_service] = lambda: mock_service
@@ -1374,7 +1368,6 @@ def test_update_schedules_invalid_payload_returns_422() -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US08-TK12")
 def test_integration_update_schedules_success(integration_client, db_session) -> None:
     from src.domains.route_passangers.schedule_entity import RoutePassangerScheduleModel
 
@@ -1400,7 +1393,6 @@ def test_integration_update_schedules_success(integration_client, db_session) ->
     assert len(schedules) == 2
 
 
-@pytest.mark.skip(reason="US08-TK12")
 def test_integration_update_schedules_no_active_rp_returns_404(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)
@@ -1417,7 +1409,6 @@ def test_integration_update_schedules_no_active_rp_returns_404(integration_clien
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US08-TK12")
 def test_integration_update_schedules_in_progress_returns_409(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)
