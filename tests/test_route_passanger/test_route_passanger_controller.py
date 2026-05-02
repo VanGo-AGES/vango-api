@@ -1133,7 +1133,6 @@ def test_integration_join_route_in_progress_returns_409(integration_client, db_s
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US08-TK10")
 def test_leave_route_success_returns_204() -> None:
     mock_service = Mock(spec=RoutePassangerService)
     mock_service.leave_route.return_value = None
@@ -1148,7 +1147,6 @@ def test_leave_route_success_returns_204() -> None:
     assert response.status_code == 204
 
 
-@pytest.mark.skip(reason="US08-TK10")
 def test_leave_route_with_dependent_id_query_forwarded() -> None:
     mock_service = Mock(spec=RoutePassangerService)
     mock_service.leave_route.return_value = None
@@ -1167,7 +1165,6 @@ def test_leave_route_with_dependent_id_query_forwarded() -> None:
     assert dep_id in call_args or call_kwargs.get("dependent_id") == dep_id
 
 
-@pytest.mark.skip(reason="US08-TK10")
 def test_leave_route_route_not_found_returns_404() -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
@@ -1184,7 +1181,6 @@ def test_leave_route_route_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US08-TK10")
 def test_leave_route_in_progress_returns_409() -> None:
     from src.domains.routes.errors import RouteInProgressError
 
@@ -1201,7 +1197,6 @@ def test_leave_route_in_progress_returns_409() -> None:
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US08-TK10")
 def test_leave_route_rp_not_found_returns_404() -> None:
     from src.domains.route_passangers.errors import RoutePassangerNotFoundError
 
@@ -1223,7 +1218,6 @@ def test_leave_route_rp_not_found_returns_404() -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US08-TK10")
 def test_integration_leave_route_success(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)
@@ -1238,7 +1232,6 @@ def test_integration_leave_route_success(integration_client, db_session) -> None
     assert response.status_code == 204
 
 
-@pytest.mark.skip(reason="US08-TK10")
 def test_integration_leave_route_no_active_rp_returns_404(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)
@@ -1252,7 +1245,6 @@ def test_integration_leave_route_no_active_rp_returns_404(integration_client, db
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US08-TK10")
 def test_integration_leave_route_in_progress_returns_409(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)
