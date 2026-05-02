@@ -116,3 +116,13 @@ class IAbsenceRepository(ABC):
         Considera-se data o intervalo [00:00, 23:59] do dia fornecido.
         """
         pass
+
+    @abstractmethod
+    def find_by_route_and_date_with_passangers(self, route_id: UUID, absence_date: datetime) -> list[AbsenceModel]:
+        """Retorna ausências da rota numa data com route_passanger, user e dependent eager-loaded.
+
+        Usado pela view do motorista (GET /routes/{route_id}/absences) para
+        exibir nomes dos passageiros ausentes sem N+1 queries.
+        Considera-se data o intervalo [00:00, 23:59] do dia fornecido.
+        """
+        pass

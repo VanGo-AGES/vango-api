@@ -1,5 +1,6 @@
 import random
 import string
+from datetime import datetime
 from uuid import UUID
 
 from src.domains.addresses.entity import AddressModel
@@ -18,6 +19,7 @@ from src.domains.routes.errors import (
     RouteOwnershipError,
 )
 from src.domains.routes.repository import IAddressRepository, IRouteRepository
+from src.domains.trips.repository import IAbsenceRepository
 from src.domains.vehicles.repository import IVehicleRepository
 
 
@@ -29,6 +31,7 @@ class RouteService:
         vehicle_repository: IVehicleRepository,
         route_passanger_repository: IRoutePassangerRepository | None = None,
         notification_service: INotificationService | None = None,
+        absence_repository: IAbsenceRepository | None = None,
     ):
         self.route_repository = route_repository
         self.address_repository = address_repository
@@ -38,6 +41,8 @@ class RouteService:
         self.route_passanger_repository = route_passanger_repository
         # Usado pela US06-TK18 (delete_route). Opcional pelo mesmo motivo.
         self.notification_service = notification_service
+        # Usado pelo GET /routes/{route_id}/absences (view do motorista).
+        self.absence_repository = absence_repository
 
     # US05 - TK03
     def create_route(self, driver_id: UUID, data: RouteCreate) -> RouteModel:
@@ -203,6 +208,42 @@ class RouteService:
         if route.driver_id != driver_id:
             raise RouteOwnershipError()
         return route
+
+    def get_accepted_count(self, route_id: UUID) -> int:
+        """Retorna a quantidade de passageiros com status='accepted' na rota."""
+        if self.route_passanger_repository is None:
+            return 0
+        return self.route_passanger_repository.count_accepted_by_route(route_id)
+
+    def get_route_absences(self, route_id: UUID, driver_id: UUID, absence_date: datetime) -> list:
+        """Retorna ausências avisadas para a rota numa data específica.
+
+        - 404 RouteNotFoundError se rota não existir
+        - 403 RouteOwnershipError se driver não for dono
+        Cada item inclui user_name e dependent_name para exibição direta pelo frontend.
+        """
+        from src.domains.absences.dtos import RouteAbsenceResponse
+
+        route = self.route_repository.find_by_id(route_id)
+        if route is None:
+            raise RouteNotFoundError()
+        if route.driver_id != driver_id:
+            raise RouteOwnershipError()
+
+        absences = self.absence_repository.find_by_route_and_date_with_passangers(route_id, absence_date)
+
+        return [
+            RouteAbsenceResponse.model_construct(
+                route_passanger_id=a.route_passanger_id,
+                user_id=a.route_passanger.user_id,
+                user_name=a.route_passanger.user.name,
+                dependent_id=a.route_passanger.dependent_id,
+                dependent_name=a.route_passanger.dependent.name if a.route_passanger.dependent else None,
+                absence_date=a.absence_date,
+                reason=a.reason,
+            )
+            for a in absences
+        ]
 
     # US06-TK18
     def delete_route(self, route_id: UUID, driver_id: UUID) -> None:
