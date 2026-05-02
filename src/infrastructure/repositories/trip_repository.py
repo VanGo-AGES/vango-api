@@ -8,7 +8,7 @@ from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from src.domains.trips.entity import TripModel
 from src.domains.trips.repository import ITripRepository
@@ -32,8 +32,8 @@ class TripRepositoryImpl(ITripRepository):
             .options(
                 joinedload(TripModel.route),
                 joinedload(TripModel.vehicle),
-                joinedload(TripModel.trip_passangers),
-                joinedload(TripModel.absences),
+                selectinload(TripModel.trip_passangers),
+                selectinload(TripModel.absences),
             )
             .where(TripModel.id == trip_id)
         )
@@ -47,8 +47,8 @@ class TripRepositoryImpl(ITripRepository):
             .options(
                 joinedload(TripModel.route),
                 joinedload(TripModel.vehicle),
-                joinedload(TripModel.trip_passangers),
-                joinedload(TripModel.absences),
+                selectinload(TripModel.trip_passangers),
+                selectinload(TripModel.absences),
             )
             .where(
                 TripModel.route_id == route_id,

@@ -116,6 +116,7 @@ def test_update_status_finishes_trip(db_session) -> None:
     assert result is not None
     assert result.status == "finalizada"
     assert result.total_km == 12.5
+    # SQLite strips tzinfo on storage; re-attach for comparison (PostgreSQL preserves it)
     assert result.finished_at.replace(tzinfo=timezone.utc) == finished_at
 
 

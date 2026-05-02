@@ -27,12 +27,13 @@ PASSENGER_HEADERS = {"X-User-Id": str(uuid.uuid4()), "X-User-Role": "guardian"}
 
 
 def future_weekday_iso():
-    target = date.today() + timedelta(days=7)
+    target = date.today() + timedelta(days=5)
 
     while target.weekday() > 4:  # seg-sex
         target += timedelta(days=1)
 
     return target.isoformat()
+
 
 def make_absence_response(reason: str | None = "Consulta"):
     from src.domains.absences.dtos import AbsenceResponse
