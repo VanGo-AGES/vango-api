@@ -11,7 +11,7 @@ Cobre:
 """
 
 import uuid
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timezone,timedelta
 from unittest.mock import Mock
 
 import pytest
@@ -20,6 +20,13 @@ import pytest
 # Helpers
 # ---------------------------------------------------------------------------
 
+def future_weekday() -> date:
+    target = date.today() + timedelta(days=5)
+
+    while target.weekday() > 4:  # seg-sex
+        target += timedelta(days=1)
+
+    return target
 
 def make_route_mock(driver_id: uuid.UUID, status: str = "ativa", recurrence: str = "seg,ter,qua,qui,sex"):
     from src.domains.routes.entity import RouteModel
@@ -90,7 +97,7 @@ def test_create_absence_success_persists_and_notifies() -> None:
 
     req = CreateAbsenceRequest(
         route_id=route.id,
-        absence_date=date(2026, 4, 27),
+        absence_date=future_weekday(),
         reason="Consulta",
     )
     result = service.create_absence(user_id=user_id, data=req)
@@ -116,7 +123,7 @@ def test_create_absence_guardian_for_dependent_uses_dependent_rp() -> None:
 
     req = CreateAbsenceRequest(
         route_id=route.id,
-        absence_date=date(2026, 4, 27),
+        absence_date=future_weekday(),
         dependent_id=dependent_id,
     )
     service.create_absence(user_id=guardian_id, data=req)
@@ -143,7 +150,7 @@ def test_create_absence_route_not_found_raises_404() -> None:
             user_id=uuid.uuid4(),
             data=CreateAbsenceRequest(
                 route_id=uuid.uuid4(),
-                absence_date=date(2026, 4, 27),
+                absence_date=future_weekday(),
             ),
         )
 
@@ -162,7 +169,7 @@ def test_create_absence_no_active_membership_raises_403() -> None:
             user_id=uuid.uuid4(),
             data=CreateAbsenceRequest(
                 route_id=route.id,
-                absence_date=date(2026, 4, 27),
+                absence_date=future_weekday(),
             ),
         )
 
@@ -186,7 +193,7 @@ def test_create_absence_duplicate_raises_409() -> None:
             user_id=uuid.uuid4(),
             data=CreateAbsenceRequest(
                 route_id=route.id,
-                absence_date=date(2026, 4, 27),
+                absence_date=future_weekday(),
             ),
         )
 
@@ -251,7 +258,7 @@ def test_create_absence_does_not_notify_on_validation_error() -> None:
             user_id=uuid.uuid4(),
             data=CreateAbsenceRequest(
                 route_id=route.id,
-                absence_date=date(2026, 4, 27),
+                absence_date=future_weekday(),
             ),
         )
 

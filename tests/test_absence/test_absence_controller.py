@@ -6,7 +6,7 @@ Cobre:
 """
 
 import uuid
-from datetime import date, datetime, time, timezone
+from datetime import date, datetime, time, timezone, timedelta
 from unittest.mock import Mock
 
 import pytest
@@ -24,6 +24,15 @@ from src.main import app
 client = TestClient(app, raise_server_exceptions=False)
 
 PASSENGER_HEADERS = {"X-User-Id": str(uuid.uuid4()), "X-User-Role": "guardian"}
+
+
+def future_weekday_iso():
+    target = date.today() + timedelta(days=5)
+
+    while target.weekday() > 4:  # seg-sex
+        target += timedelta(days=1)
+
+    return target.isoformat()
 
 
 def make_absence_response(reason: str | None = "Consulta"):
@@ -257,7 +266,7 @@ def test_integration_create_absence_success(integration_client, db_session) -> N
         "/absences",
         json={
             "route_id": str(route.id),
-            "absence_date": "2026-04-27",
+            "absence_date": future_weekday_iso(),
             "reason": "Consulta",
         },
         headers=headers,
@@ -276,7 +285,7 @@ def test_integration_create_absence_route_not_found_returns_404(
 
     response = integration_client.post(
         "/absences",
-        json={"route_id": str(uuid.uuid4()), "absence_date": "2026-04-27"},
+        json={"route_id": str(uuid.uuid4()), "absence_date": future_weekday_iso()},
         headers=headers,
     )
 
@@ -293,7 +302,7 @@ def test_integration_create_absence_outsider_returns_403(
     headers = {"X-User-Id": str(outsider.id), "X-User-Role": "guardian"}
     response = integration_client.post(
         "/absences",
-        json={"route_id": str(route.id), "absence_date": "2026-04-27"},
+        json={"route_id": str(route.id), "absence_date": future_weekday_iso()},
         headers=headers,
     )
 
@@ -309,7 +318,7 @@ def test_integration_create_absence_duplicate_returns_409(
     make_integration_rp(db_session, route.id, passenger.id, status="accepted")
 
     headers = {"X-User-Id": str(passenger.id), "X-User-Role": "guardian"}
-    payload = {"route_id": str(route.id), "absence_date": "2026-04-27"}
+    payload = {"route_id": str(route.id), "absence_date": future_weekday_iso()}
 
     first = integration_client.post("/absences", json=payload, headers=headers)
     assert first.status_code == 201
@@ -331,7 +340,7 @@ def test_integration_create_absence_persists_in_db(
     headers = {"X-User-Id": str(passenger.id), "X-User-Role": "guardian"}
     integration_client.post(
         "/absences",
-        json={"route_id": str(route.id), "absence_date": "2026-04-27"},
+        json={"route_id": str(route.id), "absence_date": future_weekday_iso()},
         headers=headers,
     )
 
