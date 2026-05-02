@@ -16,6 +16,7 @@ Regras gerais:
 from datetime import UTC, datetime
 from uuid import UUID
 
+from src.domains.addresses.entity import AddressModel
 from src.domains.dependents.repository import IDependentRepository
 from src.domains.notifications.service import INotificationService
 from src.domains.route_passangers.dtos import (
@@ -41,7 +42,7 @@ from src.domains.route_passangers.schedule_repository import (
 )
 from src.domains.routes.dtos import AddressResponse
 from src.domains.routes.errors import RouteInProgressError, RouteNotFoundError, RouteOwnershipError
-from src.domains.routes.repository import IRouteRepository
+from src.domains.routes.repository import IAddressRepository, IRouteRepository
 from src.domains.stops.dtos import StopResponse
 from src.domains.stops.entity import StopModel
 from src.domains.stops.repository import IStopRepository
@@ -58,6 +59,7 @@ class RoutePassangerService:
         notification_service: INotificationService,
         stop_repository: IStopRepository,
         schedule_repository: IRoutePassangerScheduleRepository,
+        address_repository: IAddressRepository | None = None,
     ):
         self.route_passanger_repository = route_passanger_repository
         self.route_repository = route_repository
@@ -66,6 +68,9 @@ class RoutePassangerService:
         self.notification_service = notification_service
         self.stop_repository = stop_repository
         self.schedule_repository = schedule_repository
+        # Usado por join_route para criar o endereço de embarque inline.
+        # Opcional para não quebrar instanciações pré-inline que não passam esse repo.
+        self.address_repository = address_repository
 
     # US06-TK08
     def accept_request(self, route_id: UUID, rp_id: UUID, driver_id: UUID) -> RoutePassangerResponse:
@@ -283,13 +288,27 @@ class RoutePassangerService:
         if accepted_count >= route.max_passengers:
             raise RouteCapacityExceededError()
 
+        # Cria o endereço de embarque inline — o frontend envia os dados do
+        # endereço diretamente no payload, sem precisar de um POST /addresses prévio.
+        pickup_address = AddressModel(
+            user_id=user_id,
+            label=data.address.label,
+            street=data.address.street,
+            number=data.address.number,
+            neighborhood=data.address.neighborhood,
+            zip=data.address.zip,
+            city=data.address.city,
+            state=data.address.state,
+        )
+        saved_address = self.address_repository.save(pickup_address)
+
         rp = RoutePassangerModel(
             route_id=route_id,
             user_id=user_id,
             dependent_id=data.dependent_id,
             status="pending",
             joined_at=None,
-            pickup_address_id=data.schedules[0].address_id,
+            pickup_address_id=saved_address.id,
         )
         saved_rp = self.route_passanger_repository.save(rp)
 
@@ -297,7 +316,7 @@ class RoutePassangerService:
             RoutePassangerScheduleModel(
                 route_passanger_id=saved_rp.id,
                 day_of_week=s.day_of_week,
-                address_id=s.address_id,
+                address_id=saved_address.id,
             )
             for s in data.schedules
         ]
