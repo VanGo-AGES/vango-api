@@ -163,7 +163,10 @@ class RouteService:
 
         - 404 RouteNotFoundError se não existir rota com esse invite_code.
         """
-        pass
+        route = self.route_repository.find_by_invite_code(invite_code)
+        if route is None:
+            raise RouteNotFoundError()
+        return route
 
     # US08-TK05
     def get_invite_summary(self, invite_code: str) -> RouteInviteSummaryResponse:
@@ -173,7 +176,19 @@ class RouteService:
         - 404 RouteNotFoundError se não existir.
         - accepted_count vem de route_passanger_repository.count_accepted_by_route.
         """
-        pass
+        route = self.get_by_invite_code(invite_code)
+        accepted_count = self.route_passanger_repository.count_accepted_by_route(route.id)
+        return RouteInviteSummaryResponse.model_construct(
+            id=route.id,
+            name=route.name,
+            route_type=route.route_type,
+            recurrence=route.recurrence,
+            expected_time=route.expected_time,
+            max_passengers=route.max_passengers,
+            accepted_count=accepted_count,
+            origin_address=route.origin_address,
+            destination_address=route.destination_address,
+        )
 
     def get_route(self, route_id: UUID, driver_id: UUID) -> RouteModel:
         """
@@ -206,4 +221,20 @@ class RouteService:
           schedules e stops associadas.
         - Retorna None.
         """
-        pass
+        route = self.route_repository.find_by_id(route_id)
+        if route is None:
+            raise RouteNotFoundError()
+        if route.driver_id != driver_id:
+            raise RouteOwnershipError()
+        if route.status == "em_andamento":
+            raise RouteInProgressError()
+
+        active_passengers: dict = {}
+        for status in ("pending", "accepted"):
+            for rp in self.route_passanger_repository.find_by_route_and_status(route_id, status):
+                active_passengers[rp.id] = rp
+
+        for rp in active_passengers.values():
+            self.notification_service.notify_passanger_route_cancelled(rp)
+
+        self.route_repository.delete(route_id)

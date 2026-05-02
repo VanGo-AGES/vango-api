@@ -1,8 +1,4 @@
-"""US07 — Tests de StopResponse DTO e StopNotFoundError.
-
-Campos de StopResponse (espelha a tabela `stops` do banco):
-- id, route_id, route_passanger_id, address_id, order_index, type, updated_at.
-"""
+"""US07 — Tests de StopResponse DTO e StopNotFoundError."""
 
 import uuid
 from datetime import datetime
@@ -12,6 +8,17 @@ from pydantic import ValidationError
 
 from src.domains.stops.dtos import StopResponse
 from src.domains.stops.errors import StopNotFoundError
+
+_ADDRESS = {
+    "id": uuid.uuid4(),
+    "label": "Parada 1",
+    "street": "Rua Carazinho",
+    "number": "500",
+    "neighborhood": "Centro",
+    "zip": "90000-000",
+    "city": "Porto Alegre",
+    "state": "RS",
+}
 
 
 def _valid_payload(**overrides):
@@ -23,6 +30,7 @@ def _valid_payload(**overrides):
         "order_index": 1,
         "type": "embarque",
         "updated_at": datetime.now(),
+        "address": _ADDRESS,
     }
     payload.update(overrides)
     return payload
@@ -146,6 +154,18 @@ def test_stop_response_coerces_uuid_from_string() -> None:
 def test_stop_response_from_attributes_mode() -> None:
     """StopResponse deve aceitar ORM mode (from_attributes)."""
 
+    class FakeAddress:
+        id = uuid.uuid4()
+        label = "Parada 1"
+        street = "Rua Carazinho"
+        number = "500"
+        neighborhood = "Centro"
+        zip = "90000-000"
+        city = "Porto Alegre"
+        state = "RS"
+        latitude = None
+        longitude = None
+
     class FakeORM:
         id = uuid.uuid4()
         route_id = uuid.uuid4()
@@ -154,6 +174,7 @@ def test_stop_response_from_attributes_mode() -> None:
         order_index = 2
         type = "desembarque"
         updated_at = datetime.now()
+        address = FakeAddress()
 
     stop = StopResponse.model_validate(FakeORM(), from_attributes=True)
     assert stop.id == FakeORM.id

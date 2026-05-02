@@ -52,7 +52,6 @@ def make_rp_response(status: str = "accepted", dependent: bool = False):
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US06-TK09")
 def test_accept_request_success_returns_200() -> None:
     mock_service = Mock(spec=RoutePassangerService)
     mock_service.accept_request.return_value = make_rp_response(status="accepted")
@@ -67,7 +66,6 @@ def test_accept_request_success_returns_200() -> None:
     assert response.json()["status"] == "accepted"
 
 
-@pytest.mark.skip(reason="US06-TK09")
 def test_accept_request_route_not_found_returns_404() -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
@@ -83,7 +81,6 @@ def test_accept_request_route_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US06-TK09")
 def test_accept_request_wrong_owner_returns_403() -> None:
     from src.domains.routes.errors import RouteOwnershipError
 
@@ -99,7 +96,6 @@ def test_accept_request_wrong_owner_returns_403() -> None:
     assert response.status_code == 403
 
 
-@pytest.mark.skip(reason="US06-TK09")
 def test_accept_request_in_progress_returns_409() -> None:
     from src.domains.routes.errors import RouteInProgressError
 
@@ -115,7 +111,6 @@ def test_accept_request_in_progress_returns_409() -> None:
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US06-TK09")
 def test_accept_request_rp_not_found_returns_404() -> None:
     from src.domains.route_passangers.errors import RoutePassangerNotFoundError
 
@@ -131,7 +126,6 @@ def test_accept_request_rp_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US06-TK09")
 def test_accept_request_already_processed_returns_409() -> None:
     from src.domains.route_passangers.errors import RoutePassangerAlreadyProcessedError
 
@@ -147,7 +141,6 @@ def test_accept_request_already_processed_returns_409() -> None:
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US06-TK09")
 def test_accept_request_capacity_exceeded_returns_409() -> None:
     from src.domains.route_passangers.errors import RouteCapacityExceededError
 
@@ -168,7 +161,6 @@ def test_accept_request_capacity_exceeded_returns_409() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US06-TK11")
 def test_reject_request_success_returns_200() -> None:
     mock_service = Mock(spec=RoutePassangerService)
     mock_service.reject_request.return_value = make_rp_response(status="rejected")
@@ -183,7 +175,6 @@ def test_reject_request_success_returns_200() -> None:
     assert response.json()["status"] == "rejected"
 
 
-@pytest.mark.skip(reason="US06-TK11")
 def test_reject_request_rp_not_found_returns_404() -> None:
     from src.domains.route_passangers.errors import RoutePassangerNotFoundError
 
@@ -199,7 +190,6 @@ def test_reject_request_rp_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US06-TK11")
 def test_reject_request_route_not_found_returns_404() -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
@@ -215,7 +205,6 @@ def test_reject_request_route_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US06-TK11")
 def test_reject_request_wrong_owner_returns_403() -> None:
     from src.domains.routes.errors import RouteOwnershipError
 
@@ -231,7 +220,6 @@ def test_reject_request_wrong_owner_returns_403() -> None:
     assert response.status_code == 403
 
 
-@pytest.mark.skip(reason="US06-TK11")
 def test_reject_request_in_progress_returns_409() -> None:
     from src.domains.routes.errors import RouteInProgressError
 
@@ -247,7 +235,6 @@ def test_reject_request_in_progress_returns_409() -> None:
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US06-TK11")
 def test_reject_request_already_processed_returns_409() -> None:
     from src.domains.route_passangers.errors import RoutePassangerAlreadyProcessedError
 
@@ -346,7 +333,6 @@ def test_remove_passanger_in_progress_returns_409() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US06-TK15")
 def test_list_passangers_success_returns_200() -> None:
     mock_service = Mock(spec=RoutePassangerService)
     mock_service.list_by_status.return_value = [
@@ -365,7 +351,6 @@ def test_list_passangers_success_returns_200() -> None:
     assert len(data) == 2
 
 
-@pytest.mark.skip(reason="US06-TK15")
 def test_list_passangers_filters_by_status() -> None:
     mock_service = Mock(spec=RoutePassangerService)
     mock_service.list_by_status.return_value = []
@@ -380,7 +365,6 @@ def test_list_passangers_filters_by_status() -> None:
     assert "accepted" in called_args.args or called_args.kwargs.get("status") == "accepted"
 
 
-@pytest.mark.skip(reason="US06-TK15")
 def test_list_passangers_no_filter_returns_all() -> None:
     mock_service = Mock(spec=RoutePassangerService)
     mock_service.list_by_status.return_value = [
@@ -397,7 +381,6 @@ def test_list_passangers_no_filter_returns_all() -> None:
     assert len(response.json()) == 3
 
 
-@pytest.mark.skip(reason="US06-TK15")
 def test_list_passangers_route_not_found_returns_404() -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
@@ -413,7 +396,6 @@ def test_list_passangers_route_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US06-TK15")
 def test_list_passangers_wrong_owner_returns_403() -> None:
     from src.domains.routes.errors import RouteOwnershipError
 
@@ -429,7 +411,6 @@ def test_list_passangers_wrong_owner_returns_403() -> None:
     assert response.status_code == 403
 
 
-@pytest.mark.skip(reason="US06-TK15")
 def test_list_passangers_invalid_status_returns_422() -> None:
     mock_service = Mock(spec=RoutePassangerService)
     mock_service.list_by_status.side_effect = ValueError("status inválido")
@@ -443,7 +424,6 @@ def test_list_passangers_invalid_status_returns_422() -> None:
     assert response.status_code in (400, 422)
 
 
-@pytest.mark.skip(reason="US06-TK15")
 def test_list_passangers_response_includes_names() -> None:
     """GET /passangers deve expor user_name, dependent_name e guardian_name."""
     mock_service = Mock(spec=RoutePassangerService)
@@ -590,7 +570,6 @@ def make_integration_rp(db_session, route_id, user_id, status: str = "pending"):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US06-TK09")
 def test_integration_accept_request_success(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session, "Integ João")
@@ -606,7 +585,6 @@ def test_integration_accept_request_success(integration_client, db_session) -> N
     assert response.json()["status"] == "accepted"
 
 
-@pytest.mark.skip(reason="US06-TK09")
 def test_integration_accept_request_in_progress_returns_409(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)
@@ -621,7 +599,6 @@ def test_integration_accept_request_in_progress_returns_409(integration_client, 
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US06-TK09")
 def test_integration_accept_request_capacity_exceeded_returns_409(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     route = make_integration_route(db_session, driver.id, max_passengers=1)
@@ -639,7 +616,6 @@ def test_integration_accept_request_capacity_exceeded_returns_409(integration_cl
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US06-TK09")
 def test_integration_accept_request_wrong_owner_returns_403(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     other_driver, _ = make_integration_driver(db_session)
@@ -655,7 +631,6 @@ def test_integration_accept_request_wrong_owner_returns_403(integration_client, 
     assert response.status_code == 403
 
 
-@pytest.mark.skip(reason="US06-TK09")
 def test_integration_accept_request_persists_stop_in_db(integration_client, db_session) -> None:
     """Após accept bem-sucedido, deve existir uma Stop vinculada ao rp no DB."""
     from src.domains.stops.entity import StopModel
@@ -677,7 +652,6 @@ def test_integration_accept_request_persists_stop_in_db(integration_client, db_s
     assert stop.address_id == rp.pickup_address_id
 
 
-@pytest.mark.skip(reason="US06-TK09")
 def test_integration_accept_request_stop_type_matches_outbound(
     integration_client, db_session
 ) -> None:
@@ -704,7 +678,6 @@ def test_integration_accept_request_stop_type_matches_outbound(
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US06-TK11")
 def test_integration_reject_request_success(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)
@@ -720,7 +693,6 @@ def test_integration_reject_request_success(integration_client, db_session) -> N
     assert response.json()["status"] == "rejected"
 
 
-@pytest.mark.skip(reason="US06-TK11")
 def test_integration_reject_request_in_progress_returns_409(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)
@@ -735,7 +707,6 @@ def test_integration_reject_request_in_progress_returns_409(integration_client, 
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US06-TK11")
 def test_integration_reject_request_already_processed_returns_409(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)
@@ -750,7 +721,6 @@ def test_integration_reject_request_already_processed_returns_409(integration_cl
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US06-TK11")
 def test_integration_reject_request_wrong_owner_returns_403(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     other_driver, _ = make_integration_driver(db_session)
@@ -852,7 +822,6 @@ def test_integration_remove_passanger_deletes_stop_from_db(
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US06-TK15")
 def test_integration_list_passangers_filter_pending(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     route = make_integration_route(db_session, driver.id)
@@ -874,7 +843,6 @@ def test_integration_list_passangers_filter_pending(integration_client, db_sessi
     assert all(rp["status"] == "pending" for rp in data)
 
 
-@pytest.mark.skip(reason="US06-TK15")
 def test_integration_list_passangers_no_filter_returns_all(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     route = make_integration_route(db_session, driver.id)
@@ -892,7 +860,6 @@ def test_integration_list_passangers_no_filter_returns_all(integration_client, d
     assert len(response.json()) == 2
 
 
-@pytest.mark.skip(reason="US06-TK15")
 def test_integration_list_passangers_resolves_user_name(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     route = make_integration_route(db_session, driver.id)
@@ -908,7 +875,6 @@ def test_integration_list_passangers_resolves_user_name(integration_client, db_s
     assert response.json()[0]["user_name"] == "Maria da Silva"
 
 
-@pytest.mark.skip(reason="US06-TK15")
 def test_integration_list_passangers_wrong_owner_returns_403(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     other_driver, _ = make_integration_driver(db_session)
@@ -922,7 +888,6 @@ def test_integration_list_passangers_wrong_owner_returns_403(integration_client,
     assert response.status_code == 403
 
 
-@pytest.mark.skip(reason="US06-TK15")
 def test_integration_list_passangers_route_not_found_returns_404(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
@@ -960,7 +925,6 @@ def make_join_payload(dependent_id=None, days=("monday",), address_id=None):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US08-TK08")
 def test_join_route_success_returns_201() -> None:
     mock_service = Mock(spec=RoutePassangerService)
     mock_service.join_route.return_value = make_rp_response(status="pending")
@@ -977,7 +941,6 @@ def test_join_route_success_returns_201() -> None:
     assert response.json()["status"] == "pending"
 
 
-@pytest.mark.skip(reason="US08-TK08")
 def test_join_route_route_not_found_returns_404() -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
@@ -995,7 +958,6 @@ def test_join_route_route_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US08-TK08")
 def test_join_route_in_progress_returns_409() -> None:
     from src.domains.routes.errors import RouteInProgressError
 
@@ -1013,7 +975,6 @@ def test_join_route_in_progress_returns_409() -> None:
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US08-TK08")
 def test_join_route_full_returns_409() -> None:
     from src.domains.route_passangers.errors import RouteCapacityExceededError
 
@@ -1031,7 +992,6 @@ def test_join_route_full_returns_409() -> None:
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US08-TK08")
 def test_join_route_duplicate_returns_409() -> None:
     from src.domains.route_passangers.errors import DuplicateRoutePassangerError
 
@@ -1049,7 +1009,6 @@ def test_join_route_duplicate_returns_409() -> None:
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US08-TK08")
 def test_join_route_invalid_payload_returns_422() -> None:
     mock_service = Mock(spec=RoutePassangerService)
     app.dependency_overrides[get_route_passanger_service] = lambda: mock_service
@@ -1085,7 +1044,6 @@ def make_integration_pickup_address(db_session, user_id):
     return addr
 
 
-@pytest.mark.skip(reason="US08-TK08")
 def test_integration_join_route_success(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session, "Integ Ana")
@@ -1103,7 +1061,6 @@ def test_integration_join_route_success(integration_client, db_session) -> None:
     assert response.json()["status"] == "pending"
 
 
-@pytest.mark.skip(reason="US08-TK08")
 def test_integration_join_route_creates_schedules(integration_client, db_session) -> None:
     from src.domains.route_passangers.schedule_entity import RoutePassangerScheduleModel
 
@@ -1129,7 +1086,6 @@ def test_integration_join_route_creates_schedules(integration_client, db_session
     assert len(schedules) == 2
 
 
-@pytest.mark.skip(reason="US08-TK08")
 def test_integration_join_route_duplicate_returns_409(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)
@@ -1147,7 +1103,6 @@ def test_integration_join_route_duplicate_returns_409(integration_client, db_ses
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US08-TK08")
 def test_integration_join_route_in_progress_returns_409(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)
@@ -1169,7 +1124,6 @@ def test_integration_join_route_in_progress_returns_409(integration_client, db_s
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US08-TK10")
 def test_leave_route_success_returns_204() -> None:
     mock_service = Mock(spec=RoutePassangerService)
     mock_service.leave_route.return_value = None
@@ -1184,7 +1138,6 @@ def test_leave_route_success_returns_204() -> None:
     assert response.status_code == 204
 
 
-@pytest.mark.skip(reason="US08-TK10")
 def test_leave_route_with_dependent_id_query_forwarded() -> None:
     mock_service = Mock(spec=RoutePassangerService)
     mock_service.leave_route.return_value = None
@@ -1203,7 +1156,6 @@ def test_leave_route_with_dependent_id_query_forwarded() -> None:
     assert dep_id in call_args or call_kwargs.get("dependent_id") == dep_id
 
 
-@pytest.mark.skip(reason="US08-TK10")
 def test_leave_route_route_not_found_returns_404() -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
@@ -1220,7 +1172,6 @@ def test_leave_route_route_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US08-TK10")
 def test_leave_route_in_progress_returns_409() -> None:
     from src.domains.routes.errors import RouteInProgressError
 
@@ -1237,7 +1188,6 @@ def test_leave_route_in_progress_returns_409() -> None:
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US08-TK10")
 def test_leave_route_rp_not_found_returns_404() -> None:
     from src.domains.route_passangers.errors import RoutePassangerNotFoundError
 
@@ -1259,7 +1209,6 @@ def test_leave_route_rp_not_found_returns_404() -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US08-TK10")
 def test_integration_leave_route_success(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)
@@ -1274,7 +1223,6 @@ def test_integration_leave_route_success(integration_client, db_session) -> None
     assert response.status_code == 204
 
 
-@pytest.mark.skip(reason="US08-TK10")
 def test_integration_leave_route_no_active_rp_returns_404(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)
@@ -1288,7 +1236,6 @@ def test_integration_leave_route_no_active_rp_returns_404(integration_client, db
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US08-TK10")
 def test_integration_leave_route_in_progress_returns_409(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)
@@ -1519,7 +1466,6 @@ def make_passanger_route_response(
     return PassangerRouteResponse(**payload)
 
 
-@pytest.mark.skip(reason="US08-TK15")
 def test_list_my_routes_success_returns_200() -> None:
     mock_service = Mock(spec=RoutePassangerService)
     mock_service.list_my_routes.return_value = [
@@ -1537,7 +1483,6 @@ def test_list_my_routes_success_returns_200() -> None:
     assert len(body) == 2
 
 
-@pytest.mark.skip(reason="US08-TK15")
 def test_list_my_routes_empty_returns_200_with_empty_list() -> None:
     mock_service = Mock(spec=RoutePassangerService)
     mock_service.list_my_routes.return_value = []
@@ -1551,7 +1496,6 @@ def test_list_my_routes_empty_returns_200_with_empty_list() -> None:
     assert response.json() == []
 
 
-@pytest.mark.skip(reason="US08-TK15")
 def test_list_my_routes_calls_service_with_user_id() -> None:
     mock_service = Mock(spec=RoutePassangerService)
     mock_service.list_my_routes.return_value = []
@@ -1565,7 +1509,6 @@ def test_list_my_routes_calls_service_with_user_id() -> None:
     assert mock_service.list_my_routes.call_args.args[0] == user_id
 
 
-@pytest.mark.skip(reason="US08-TK15")
 def test_list_my_routes_exposes_dependent_name_when_present() -> None:
     mock_service = Mock(spec=RoutePassangerService)
     mock_service.list_my_routes.return_value = [
@@ -1581,7 +1524,6 @@ def test_list_my_routes_exposes_dependent_name_when_present() -> None:
     assert response.json()[0]["dependent_name"] == "Maria Silva"
 
 
-@pytest.mark.skip(reason="US08-TK15")
 def test_list_my_routes_exposes_driver_phone() -> None:
     """US13 — driver_phone precisa chegar no response pro FE montar deeplink."""
     mock_service = Mock(spec=RoutePassangerService)
@@ -1603,7 +1545,6 @@ def test_list_my_routes_exposes_driver_phone() -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US08-TK15")
 def test_integration_list_my_routes_returns_active_memberships(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)
@@ -1620,7 +1561,6 @@ def test_integration_list_my_routes_returns_active_memberships(integration_clien
     assert len(body) == 2
 
 
-@pytest.mark.skip(reason="US08-TK15")
 def test_integration_list_my_routes_empty_returns_empty_list(integration_client, db_session) -> None:
     passenger = make_integration_passenger(db_session)
     headers = {"X-User-Id": str(passenger.id), "X-User-Role": "guardian"}
@@ -1631,7 +1571,6 @@ def test_integration_list_my_routes_empty_returns_empty_list(integration_client,
     assert response.json() == []
 
 
-@pytest.mark.skip(reason="US08-TK15")
 def test_integration_list_my_routes_ignores_rejected_and_removed(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)
@@ -1649,7 +1588,6 @@ def test_integration_list_my_routes_ignores_rejected_and_removed(integration_cli
     assert len(response.json()) == 1
 
 
-@pytest.mark.skip(reason="US08-TK15")
 def test_integration_list_my_routes_does_not_collide_with_route_by_id(integration_client, db_session) -> None:
     """GET /routes/me deve ser resolvido como rota literal, não cair no
     matcher de GET /routes/{route_id} (que rejeitaria 'me' como UUID)."""

@@ -435,7 +435,6 @@ def make_passanger_route_payload(**kwargs) -> dict:
     return defaults
 
 
-@pytest.mark.skip(reason="US08-TK13")
 def test_passanger_route_response_requires_route_id() -> None:
     from pydantic import ValidationError
 
@@ -447,7 +446,6 @@ def test_passanger_route_response_requires_route_id() -> None:
         PassangerRouteResponse(**payload)
 
 
-@pytest.mark.skip(reason="US08-TK13")
 def test_passanger_route_response_requires_membership_status() -> None:
     from pydantic import ValidationError
 
@@ -459,7 +457,6 @@ def test_passanger_route_response_requires_membership_status() -> None:
         PassangerRouteResponse(**payload)
 
 
-@pytest.mark.skip(reason="US08-TK13")
 def test_passanger_route_response_requires_joined_at() -> None:
     from pydantic import ValidationError
 
@@ -471,7 +468,6 @@ def test_passanger_route_response_requires_joined_at() -> None:
         PassangerRouteResponse(**payload)
 
 
-@pytest.mark.skip(reason="US08-TK13")
 def test_passanger_route_response_requires_driver_phone() -> None:
     """US13 — passageiro precisa do phone do motorista pro deeplink."""
     from pydantic import ValidationError
@@ -484,7 +480,6 @@ def test_passanger_route_response_requires_driver_phone() -> None:
         PassangerRouteResponse(**payload)
 
 
-@pytest.mark.skip(reason="US08-TK13")
 def test_passanger_route_response_exposes_driver_phone() -> None:
     from src.domains.route_passangers.dtos import PassangerRouteResponse
 
@@ -493,7 +488,6 @@ def test_passanger_route_response_exposes_driver_phone() -> None:
     assert response.driver_phone == "54988887777"
 
 
-@pytest.mark.skip(reason="US08-TK13")
 def test_passanger_route_response_dependent_name_defaults_to_none() -> None:
     from src.domains.route_passangers.dtos import PassangerRouteResponse
 
@@ -503,7 +497,6 @@ def test_passanger_route_response_dependent_name_defaults_to_none() -> None:
     assert response.dependent_name is None
 
 
-@pytest.mark.skip(reason="US08-TK13")
 def test_passanger_route_response_accepts_valid_self_payload() -> None:
     from src.domains.route_passangers.dtos import PassangerRouteResponse
 
@@ -515,7 +508,6 @@ def test_passanger_route_response_accepts_valid_self_payload() -> None:
     assert response.dependent_name is None
 
 
-@pytest.mark.skip(reason="US08-TK13")
 def test_passanger_route_response_accepts_dependent_payload() -> None:
     from src.domains.route_passangers.dtos import PassangerRouteResponse
 
@@ -524,7 +516,6 @@ def test_passanger_route_response_accepts_dependent_payload() -> None:
     assert response.dependent_name == "Maria Silva"
 
 
-@pytest.mark.skip(reason="US08-TK13")
 def test_passanger_route_response_membership_status_preserves_values() -> None:
     from src.domains.route_passangers.dtos import PassangerRouteResponse
 
@@ -534,7 +525,6 @@ def test_passanger_route_response_membership_status_preserves_values() -> None:
         assert response.membership_status == status_value
 
 
-@pytest.mark.skip(reason="US08-TK13")
 def test_passanger_route_response_builds_from_orm_like_object() -> None:
     from src.domains.route_passangers.dtos import PassangerRouteResponse
 

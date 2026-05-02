@@ -106,7 +106,6 @@ def build_service(**overrides):
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US06-TK08")
 def test_accept_request_success_returns_response() -> None:
     driver_id = uuid.uuid4()
     route = make_route_mock(driver_id, status="ativa", max_passengers=5)
@@ -126,7 +125,6 @@ def test_accept_request_success_returns_response() -> None:
     assert response.status == "accepted"
 
 
-@pytest.mark.skip(reason="US06-TK08")
 def test_accept_request_calls_update_status_accepted() -> None:
     driver_id = uuid.uuid4()
     route = make_route_mock(driver_id, status="ativa")
@@ -144,7 +142,6 @@ def test_accept_request_calls_update_status_accepted() -> None:
     rp_repo.update_status.assert_called_once_with(rp.id, "accepted")
 
 
-@pytest.mark.skip(reason="US06-TK08")
 def test_accept_request_notifies_accepted() -> None:
     driver_id = uuid.uuid4()
     route = make_route_mock(driver_id, status="ativa")
@@ -163,7 +160,6 @@ def test_accept_request_notifies_accepted() -> None:
     notif.notify_passanger_accepted.assert_called_once()
 
 
-@pytest.mark.skip(reason="US06-TK08")
 def test_accept_request_route_not_found_raises() -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
@@ -175,7 +171,6 @@ def test_accept_request_route_not_found_raises() -> None:
         service.accept_request(uuid.uuid4(), uuid.uuid4(), driver_id)
 
 
-@pytest.mark.skip(reason="US06-TK08")
 def test_accept_request_wrong_owner_raises() -> None:
     from src.domains.routes.errors import RouteOwnershipError
 
@@ -191,7 +186,6 @@ def test_accept_request_wrong_owner_raises() -> None:
         service.accept_request(route.id, uuid.uuid4(), driver_id)
 
 
-@pytest.mark.skip(reason="US06-TK08")
 def test_accept_request_route_in_progress_raises() -> None:
     from src.domains.routes.errors import RouteInProgressError
 
@@ -207,7 +201,6 @@ def test_accept_request_route_in_progress_raises() -> None:
         service.accept_request(route.id, rp.id, driver_id)
 
 
-@pytest.mark.skip(reason="US06-TK08")
 def test_accept_request_rp_not_found_raises() -> None:
     from src.domains.route_passangers.errors import RoutePassangerNotFoundError
 
@@ -222,7 +215,6 @@ def test_accept_request_rp_not_found_raises() -> None:
         service.accept_request(route.id, uuid.uuid4(), driver_id)
 
 
-@pytest.mark.skip(reason="US06-TK08")
 def test_accept_request_already_processed_raises() -> None:
     from src.domains.route_passangers.errors import RoutePassangerAlreadyProcessedError
 
@@ -238,7 +230,6 @@ def test_accept_request_already_processed_raises() -> None:
         service.accept_request(route.id, rp.id, driver_id)
 
 
-@pytest.mark.skip(reason="US06-TK08")
 def test_accept_request_capacity_exceeded_raises() -> None:
     from src.domains.route_passangers.errors import RouteCapacityExceededError
 
@@ -255,7 +246,6 @@ def test_accept_request_capacity_exceeded_raises() -> None:
         service.accept_request(route.id, rp.id, driver_id)
 
 
-@pytest.mark.skip(reason="US06-TK08")
 def test_accept_request_capacity_at_limit_blocks() -> None:
     """count==max_passengers já deve bloquear."""
     from src.domains.route_passangers.errors import RouteCapacityExceededError
@@ -278,7 +268,6 @@ def test_accept_request_capacity_at_limit_blocks() -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US06-TK08")
 def test_accept_request_creates_stop_via_stop_repository() -> None:
     """accept_request deve chamar stop_repository.save com a Stop do passageiro."""
     driver_id = uuid.uuid4()
@@ -298,7 +287,6 @@ def test_accept_request_creates_stop_via_stop_repository() -> None:
     stop_repo.save.assert_called_once()
 
 
-@pytest.mark.skip(reason="US06-TK08")
 def test_accept_request_stop_uses_rp_pickup_address_id() -> None:
     """A Stop criada deve usar o pickup_address_id do passageiro."""
     driver_id = uuid.uuid4()
@@ -320,7 +308,6 @@ def test_accept_request_stop_uses_rp_pickup_address_id() -> None:
     assert saved_stop.address_id == pickup
 
 
-@pytest.mark.skip(reason="US06-TK08")
 def test_accept_request_stop_type_embarque_for_outbound_route() -> None:
     driver_id = uuid.uuid4()
     route = make_route_mock(driver_id, status="ativa", route_type="outbound")
@@ -340,7 +327,6 @@ def test_accept_request_stop_type_embarque_for_outbound_route() -> None:
     assert saved_stop.type == "embarque"
 
 
-@pytest.mark.skip(reason="US06-TK08")
 def test_accept_request_stop_type_desembarque_for_inbound_route() -> None:
     driver_id = uuid.uuid4()
     route = make_route_mock(driver_id, status="ativa", route_type="inbound")
@@ -360,7 +346,6 @@ def test_accept_request_stop_type_desembarque_for_inbound_route() -> None:
     assert saved_stop.type == "desembarque"
 
 
-@pytest.mark.skip(reason="US06-TK08")
 def test_accept_request_stop_order_index_is_zero_when_no_stops() -> None:
     driver_id = uuid.uuid4()
     route = make_route_mock(driver_id, status="ativa", route_type="outbound")
@@ -380,7 +365,6 @@ def test_accept_request_stop_order_index_is_zero_when_no_stops() -> None:
     assert saved_stop.order_index == 0
 
 
-@pytest.mark.skip(reason="US06-TK08")
 def test_accept_request_stop_order_index_is_max_plus_one() -> None:
     driver_id = uuid.uuid4()
     route = make_route_mock(driver_id, status="ativa", route_type="outbound")
@@ -405,7 +389,6 @@ def test_accept_request_stop_order_index_is_max_plus_one() -> None:
     assert saved_stop.order_index == 4
 
 
-@pytest.mark.skip(reason="US06-TK08")
 def test_accept_request_stop_links_to_route_and_rp() -> None:
     driver_id = uuid.uuid4()
     route = make_route_mock(driver_id, status="ativa", route_type="outbound")
@@ -867,7 +850,6 @@ def make_join_request(dependent_id=None, days=("monday",), address_id=None):
     return JoinRouteRequest(dependent_id=dependent_id, schedules=schedules)
 
 
-@pytest.mark.skip(reason="US08-TK07")
 def test_join_route_success_creates_pending_rp() -> None:
     route = make_route_mock(uuid.uuid4(), status="ativa", max_passengers=5)
     user_id = uuid.uuid4()
@@ -887,7 +869,6 @@ def test_join_route_success_creates_pending_rp() -> None:
     schedule_repo.save_many.assert_called_once()
 
 
-@pytest.mark.skip(reason="US08-TK07")
 def test_join_route_pickup_address_equals_first_schedule() -> None:
     route = make_route_mock(uuid.uuid4(), status="ativa")
     user_id = uuid.uuid4()
@@ -905,7 +886,6 @@ def test_join_route_pickup_address_equals_first_schedule() -> None:
     assert saved_rp.pickup_address_id == address_id
 
 
-@pytest.mark.skip(reason="US08-TK07")
 def test_join_route_notifies_driver() -> None:
     route = make_route_mock(uuid.uuid4(), status="ativa")
     service, rp_repo, route_repo, _, _, notif, _, _ = build_service()
@@ -918,7 +898,6 @@ def test_join_route_notifies_driver() -> None:
     notif.notify_driver_passanger_requested.assert_called_once()
 
 
-@pytest.mark.skip(reason="US08-TK07")
 def test_join_route_route_not_found_raises() -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
@@ -929,7 +908,6 @@ def test_join_route_route_not_found_raises() -> None:
         service.join_route(uuid.uuid4(), uuid.uuid4(), make_join_request())
 
 
-@pytest.mark.skip(reason="US08-TK07")
 def test_join_route_em_andamento_raises() -> None:
     from src.domains.routes.errors import RouteInProgressError
 
@@ -941,7 +919,6 @@ def test_join_route_em_andamento_raises() -> None:
         service.join_route(route.id, uuid.uuid4(), make_join_request())
 
 
-@pytest.mark.skip(reason="US08-TK07")
 def test_join_route_full_capacity_raises() -> None:
     from src.domains.route_passangers.errors import RouteCapacityExceededError
 
@@ -955,7 +932,6 @@ def test_join_route_full_capacity_raises() -> None:
         service.join_route(route.id, uuid.uuid4(), make_join_request())
 
 
-@pytest.mark.skip(reason="US08-TK07")
 def test_join_route_duplicate_active_raises() -> None:
     from src.domains.route_passangers.errors import DuplicateRoutePassangerError
 
@@ -971,7 +947,6 @@ def test_join_route_duplicate_active_raises() -> None:
         service.join_route(route.id, user_id, make_join_request())
 
 
-@pytest.mark.skip(reason="US08-TK07")
 def test_join_route_rejected_previous_allows_new_request() -> None:
     """Ter um RP rejected anterior NÃO bloqueia — find_active retorna None."""
     route = make_route_mock(uuid.uuid4(), status="ativa")
@@ -985,7 +960,6 @@ def test_join_route_rejected_previous_allows_new_request() -> None:
     rp_repo.save.assert_called_once()
 
 
-@pytest.mark.skip(reason="US08-TK07")
 def test_join_route_with_dependent_id_sets_dep_on_rp() -> None:
     route = make_route_mock(uuid.uuid4(), status="ativa")
     guardian_id = uuid.uuid4()
@@ -1007,7 +981,6 @@ def test_join_route_with_dependent_id_sets_dep_on_rp() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US08-TK09")
 def test_leave_route_success_deletes_rp() -> None:
     route = make_route_mock(uuid.uuid4(), status="ativa")
     user_id = uuid.uuid4()
@@ -1022,7 +995,6 @@ def test_leave_route_success_deletes_rp() -> None:
     rp_repo.delete.assert_called_once_with(rp.id)
 
 
-@pytest.mark.skip(reason="US08-TK09")
 def test_leave_route_notifies_driver_before_delete() -> None:
     """Valida a ordem exata: notify vem antes de stop_repository.delete e de rp_repo.delete."""
     route = make_route_mock(uuid.uuid4(), status="ativa")
@@ -1050,7 +1022,6 @@ def test_leave_route_notifies_driver_before_delete() -> None:
         )
 
 
-@pytest.mark.skip(reason="US08-TK09")
 def test_leave_route_deletes_stop_explicitly() -> None:
     """Valida que stop_repository.delete_by_route_passanger_id é chamado explicitamente,
     permitindo hooks (push notification, auditoria) que a cascade do ORM não dispararia."""
@@ -1067,7 +1038,6 @@ def test_leave_route_deletes_stop_explicitly() -> None:
     stop_repo.delete_by_route_passanger_id.assert_called_once_with(rp.id)
 
 
-@pytest.mark.skip(reason="US08-TK09")
 def test_leave_route_route_not_found_raises() -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
@@ -1078,7 +1048,6 @@ def test_leave_route_route_not_found_raises() -> None:
         service.leave_route(uuid.uuid4(), uuid.uuid4())
 
 
-@pytest.mark.skip(reason="US08-TK09")
 def test_leave_route_em_andamento_raises() -> None:
     from src.domains.routes.errors import RouteInProgressError
 
@@ -1090,7 +1059,6 @@ def test_leave_route_em_andamento_raises() -> None:
         service.leave_route(route.id, uuid.uuid4())
 
 
-@pytest.mark.skip(reason="US08-TK09")
 def test_leave_route_no_active_rp_raises() -> None:
     from src.domains.route_passangers.errors import RoutePassangerNotFoundError
 
@@ -1103,7 +1071,6 @@ def test_leave_route_no_active_rp_raises() -> None:
         service.leave_route(route.id, uuid.uuid4())
 
 
-@pytest.mark.skip(reason="US08-TK09")
 def test_leave_route_with_dependent_id_uses_dependent_scope() -> None:
     route = make_route_mock(uuid.uuid4(), status="ativa")
     guardian_id = uuid.uuid4()
@@ -1303,7 +1270,6 @@ def make_rp_with_route_mock(
     return rp
 
 
-@pytest.mark.skip(reason="US08-TK14")
 def test_list_my_routes_empty_returns_empty_list() -> None:
     service, rp_repo, *_ = build_service()
     rp_repo.find_active_with_route_by_user.return_value = []
@@ -1313,7 +1279,6 @@ def test_list_my_routes_empty_returns_empty_list() -> None:
     assert result == []
 
 
-@pytest.mark.skip(reason="US08-TK14")
 def test_list_my_routes_calls_repo_with_user_id() -> None:
     user_id = uuid.uuid4()
     service, rp_repo, *_ = build_service()
@@ -1324,7 +1289,6 @@ def test_list_my_routes_calls_repo_with_user_id() -> None:
     rp_repo.find_active_with_route_by_user.assert_called_once_with(user_id)
 
 
-@pytest.mark.skip(reason="US08-TK14")
 def test_list_my_routes_returns_one_item_per_membership() -> None:
     user_id = uuid.uuid4()
     driver = make_user_mock("Motorista")
@@ -1341,7 +1305,6 @@ def test_list_my_routes_returns_one_item_per_membership() -> None:
     assert len(result) == 2
 
 
-@pytest.mark.skip(reason="US08-TK14")
 def test_list_my_routes_resolves_driver_name() -> None:
     user_id = uuid.uuid4()
     driver = make_user_mock("Carlos Motorista")
@@ -1356,7 +1319,6 @@ def test_list_my_routes_resolves_driver_name() -> None:
     assert result[0].driver_name == "Carlos Motorista"
 
 
-@pytest.mark.skip(reason="US08-TK14")
 def test_list_my_routes_resolves_driver_phone() -> None:
     """US13 — service precisa carregar driver.phone pro deeplink do FE."""
     user_id = uuid.uuid4()
@@ -1372,7 +1334,6 @@ def test_list_my_routes_resolves_driver_phone() -> None:
     assert result[0].driver_phone == "54988887777"
 
 
-@pytest.mark.skip(reason="US08-TK14")
 def test_list_my_routes_exposes_membership_status() -> None:
     """Distingue rp.status (membership) do route.status (rota)."""
     user_id = uuid.uuid4()
@@ -1392,7 +1353,6 @@ def test_list_my_routes_exposes_membership_status() -> None:
     assert result[0].status == "ativa"
 
 
-@pytest.mark.skip(reason="US08-TK14")
 def test_list_my_routes_resolves_dependent_name_when_present() -> None:
     guardian_id = uuid.uuid4()
     dep = make_dependent_mock("Maria Dependente", guardian_id=guardian_id)
@@ -1412,7 +1372,6 @@ def test_list_my_routes_resolves_dependent_name_when_present() -> None:
     assert result[0].dependent_name == "Maria Dependente"
 
 
-@pytest.mark.skip(reason="US08-TK14")
 def test_list_my_routes_dependent_name_none_for_self_membership() -> None:
     user_id = uuid.uuid4()
     driver = make_user_mock()

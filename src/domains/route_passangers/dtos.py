@@ -1,10 +1,10 @@
-from typing import Literal
 from datetime import datetime, time
+from typing import Literal
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from src.domains.routes.dtos import AddressResponse
+from src.domains.addresses.dtos import AddressResponse
 from src.domains.stops.dtos import StopResponse
 
 
@@ -77,7 +77,21 @@ class UpdateSchedulesRequest(BaseModel):
 class PassangerRouteResponse(BaseModel):
     """Item da lista 'Minhas Rotas' da home do passageiro."""
 
-    pass
+    model_config = ConfigDict(from_attributes=True)
+
+    route_id: UUID
+    route_name: str
+    driver_name: str
+    driver_phone: str
+    origin_label: str
+    destination_label: str
+    expected_time: time
+    recurrence: list[str]
+    status: str
+    membership_status: str
+    schedules: list[RoutePassangerScheduleResponse]
+    joined_at: datetime
+    dependent_name: str | None = None
 
 
 # ---------------------------------------------------------------------------
