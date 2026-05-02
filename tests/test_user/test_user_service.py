@@ -6,7 +6,11 @@ from src.domains.users.service import UserService
 from src.domains.users.entity import UserModel
 from src.domains.users.dtos import UserUpdate
 from src.domains.users.dtos import UserCreate, UserUpdate
-from src.domains.users.errors import DuplicateEmailError, UserNotFoundError
+from src.domains.users.errors import (
+    DuplicateEmailError,
+    InvalidCredentialsError,
+    UserNotFoundError,
+)
 
 
 # ===========================================================================
@@ -333,3 +337,59 @@ def test_list_users_empty_returns_empty_list():
 
     repo.find_all.assert_called_once()
     assert result == []
+
+
+# ===========================================================================
+# UserService.login (intermediário, sem JWT)
+# ===========================================================================
+
+
+# Teste 1: happy path — email existe, senha confere, retorna o user
+def test_login_success():
+    """login deve buscar por email, verificar a senha e retornar o UserModel."""
+    repo = Mock()
+    hasher = Mock()
+
+    existing_user = make_existing_user()
+    repo.find_by_email.return_value = existing_user
+    hasher.verify.return_value = True
+
+    service = UserService(repo, hasher)
+    result = service.login("john@email.com", "senha123")
+
+    repo.find_by_email.assert_called_once_with("john@email.com")
+    hasher.verify.assert_called_once_with("senha123", existing_user.password_hash)
+    assert result == existing_user
+
+
+# Teste 2: email não cadastrado lança UserNotFoundError, sem chamar verify
+def test_login_user_not_found():
+    """login deve lançar UserNotFoundError quando o email não existir."""
+    repo = Mock()
+    hasher = Mock()
+
+    repo.find_by_email.return_value = None
+
+    service = UserService(repo, hasher)
+
+    with pytest.raises(UserNotFoundError):
+        service.login("ghost@email.com", "senha123")
+
+    hasher.verify.assert_not_called()
+
+
+# Teste 3: senha incorreta lança InvalidCredentialsError
+def test_login_invalid_password():
+    """login deve lançar InvalidCredentialsError quando a senha não bater."""
+    repo = Mock()
+    hasher = Mock()
+
+    repo.find_by_email.return_value = make_existing_user()
+    hasher.verify.return_value = False
+
+    service = UserService(repo, hasher)
+
+    with pytest.raises(InvalidCredentialsError):
+        service.login("john@email.com", "senha_errada")
+
+    hasher.verify.assert_called_once()
