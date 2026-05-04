@@ -323,7 +323,23 @@ class TripService:
           embarcou).
         - Atualiza alighted_at=now.
         """
-        pass
+        trip = self.trip_repository.find_by_id(trip_id)
+        if trip is None:
+            raise TripNotFoundError(f"Viagem {trip_id} não encontrada.")
+        if trip.route.driver_id != driver_id:
+            raise TripOwnershipError("Motorista não é dono desta viagem.")
+        if trip.status != "iniciada":
+            raise TripNotInProgressError("A viagem não está em andamento.")
+
+        tp = self.trip_passanger_repository.find_by_id(trip_passanger_id)
+        if tp is None or tp.trip_id != trip_id:
+            raise TripPassangerNotFoundError(f"Passageiro {trip_passanger_id} não encontrado na viagem.")
+
+        if tp.status != "presente":
+            raise InvalidTripPassangerStatusError(f"Não é possível desembarcar um passageiro com status '{tp.status}'.")
+
+        updated = self.trip_passanger_repository.update_status(trip_passanger_id, tp.status, alighted_at=datetime.now(UTC))
+        return self._build_trip_passanger_response(updated)
 
     # US09-TK13
     def finish_trip(self, trip_id: UUID, driver_id: UUID, data: FinishTripRequest) -> TripResponse:
