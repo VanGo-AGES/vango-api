@@ -75,6 +75,7 @@ class RouteResponse(BaseModel):
     expected_time: time
     invite_code: str
     max_passengers: int
+    accepted_count: int = Field(default=0, description="Quantidade de passageiros aceitos na rota")
     origin_address: AddressResponse
     destination_address: AddressResponse
     # US07-TK-S05 — paradas da rota (geradas a partir de passageiros aceitos)

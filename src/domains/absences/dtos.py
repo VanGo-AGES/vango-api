@@ -29,3 +29,15 @@ class AbsenceResponse(BaseModel):
     absence_date: datetime
     reason: str | None = None
     created_at: datetime
+
+
+class RouteAbsenceResponse(BaseModel):
+    """Ausência de um passageiro numa rota, vista pelo motorista."""
+
+    route_passanger_id: uuid.UUID
+    user_id: uuid.UUID
+    user_name: str
+    dependent_id: uuid.UUID | None
+    dependent_name: str | None
+    absence_date: datetime
+    reason: str | None

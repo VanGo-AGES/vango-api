@@ -7,9 +7,11 @@ from src.domains.notifications.service import INotificationService
 from src.domains.route_passangers.repository import IRoutePassangerRepository
 from src.domains.routes.repository import IAddressRepository, IRouteRepository
 from src.domains.routes.service import RouteService
+from src.domains.trips.repository import IAbsenceRepository
 from src.domains.vehicles.repository import IVehicleRepository
 from src.infrastructure.database import get_db
 from src.infrastructure.dependencies.notification_dependencies import get_notification_service
+from src.infrastructure.repositories.absence_repository import AbsenceRepositoryImpl
 from src.infrastructure.repositories.address_repository import AddressRepositoryImpl
 from src.infrastructure.repositories.route_passanger_repository import (
     RoutePassangerRepositoryImpl,
@@ -41,6 +43,10 @@ def get_route_passanger_repository_for_routes(
     return RoutePassangerRepositoryImpl(db)
 
 
+def get_absence_repository_for_routes(db: DatabaseSession) -> IAbsenceRepository:
+    return AbsenceRepositoryImpl(db)
+
+
 def get_route_service(
     route_repo: Annotated[IRouteRepository, Depends(get_route_repository)],
     address_repo: Annotated[IAddressRepository, Depends(get_address_repository)],
@@ -50,5 +56,6 @@ def get_route_service(
         Depends(get_route_passanger_repository_for_routes),
     ],
     notification_service: Annotated[INotificationService, Depends(get_notification_service)],
+    absence_repo: Annotated[IAbsenceRepository, Depends(get_absence_repository_for_routes)],
 ) -> RouteService:
-    return RouteService(route_repo, address_repo, vehicle_repo, rp_repo, notification_service)
+    return RouteService(route_repo, address_repo, vehicle_repo, rp_repo, notification_service, absence_repo)

@@ -234,6 +234,7 @@ def test_get_route_success_returns_200() -> None:
     route_id = uuid.uuid4()
     mock_service = Mock(spec=RouteService)
     mock_service.get_route.return_value = make_route_response_mock()
+    mock_service.get_accepted_count.return_value = 0
     app.dependency_overrides[get_route_service] = lambda: mock_service
 
     response = client.get(f"/routes/{route_id}", headers=DRIVER_HEADERS)
@@ -243,6 +244,7 @@ def test_get_route_success_returns_200() -> None:
     body = response.json()
     assert "origin_address" in body
     assert "destination_address" in body
+    assert "accepted_count" in body
 
 
 def test_get_route_not_found_returns_404() -> None:
@@ -712,6 +714,7 @@ def test_get_route_response_has_stops_field() -> None:
     route_id = uuid.uuid4()
     mock_service = Mock(spec=RouteService)
     mock_service.get_route.return_value = make_route_response_mock()
+    mock_service.get_accepted_count.return_value = 0
     app.dependency_overrides[get_route_service] = lambda: mock_service
 
     response = client.get(f"/routes/{route_id}", headers=DRIVER_HEADERS)
@@ -721,6 +724,62 @@ def test_get_route_response_has_stops_field() -> None:
     body = response.json()
     assert "stops" in body
     assert isinstance(body["stops"], list)
+
+
+def test_integration_get_route_returns_accepted_count_zero_when_no_passangers(integration_client, db_session) -> None:
+    """[Integração] GET /routes/{id} sem passageiros aceitos deve retornar accepted_count=0."""
+    driver, _ = make_driver_with_vehicle(db_session)
+    headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+
+    create_response = integration_client.post("/routes/", json=route_payload(), headers=headers)
+    route_id = create_response.json()["id"]
+
+    response = integration_client.get(f"/routes/{route_id}", headers=headers)
+
+    assert response.status_code == 200
+    assert response.json()["accepted_count"] == 0
+
+
+def test_integration_get_route_returns_correct_accepted_count(integration_client, db_session) -> None:
+    """[Integração] GET /routes/{id} deve retornar accepted_count igual ao nº de passageiros aceitos."""
+    from src.domains.addresses.entity import AddressModel
+    from src.domains.route_passangers.entity import RoutePassangerModel
+    from src.domains.users.entity import UserModel
+
+    driver, _ = make_driver_with_vehicle(db_session)
+    headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+
+    create_response = integration_client.post("/routes/", json=route_payload(), headers=headers)
+    route_id = uuid.UUID(create_response.json()["id"])
+
+    for i, status_val in enumerate(["accepted", "accepted", "pending"]):
+        passenger = UserModel(
+            name=f"Passageiro {i}",
+            email=f"pass_{uuid.uuid4().hex[:6]}@test.com",
+            phone="11988880000",
+            password_hash="h",
+            role="passanger",
+        )
+        db_session.add(passenger)
+        db_session.flush()
+        pickup = AddressModel(
+            user_id=passenger.id, label="Casa", street="R.1", number="1",
+            neighborhood="N", zip="00000-000", city="POA", state="RS",
+        )
+        db_session.add(pickup)
+        db_session.flush()
+        db_session.add(RoutePassangerModel(
+            route_id=route_id,
+            user_id=passenger.id,
+            pickup_address_id=pickup.id,
+            status=status_val,
+        ))
+    db_session.commit()
+
+    response = integration_client.get(f"/routes/{route_id}", headers=headers)
+
+    assert response.status_code == 200
+    assert response.json()["accepted_count"] == 2
 
 
 def test_integration_get_route_without_passangers_returns_empty_stops(integration_client, db_session) -> None:
