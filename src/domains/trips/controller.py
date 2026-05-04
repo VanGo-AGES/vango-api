@@ -22,6 +22,8 @@ from src.domains.trips.errors import (
 from src.domains.trips.service import TripService
 from src.infrastructure.dependencies.trip_dependencies import get_trip_service
 
+from .errors import TripNotFoundError, TripOwnershipError
+
 router = APIRouter(tags=["Trips"])
 
 
@@ -52,7 +54,13 @@ def get_trip(
     service: Annotated[TripService, Depends(get_trip_service)],
     x_user_id: Annotated[str, Header(alias="X-User-Id")],
 ) -> TripResponse:
-    pass
+    try:
+        driver_id = UUID(x_user_id)
+        return service.get_current_trip(trip_id, driver_id)
+    except TripNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except TripOwnershipError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
 
 
 # US09-TK16
