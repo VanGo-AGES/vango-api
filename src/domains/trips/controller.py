@@ -66,7 +66,12 @@ def get_next_stop(
     service: Annotated[TripService, Depends(get_trip_service)],
     x_user_id: Annotated[str, Header(alias="X-User-Id")],
 ) -> TripNextStopResponse | None:
-    pass
+    try:
+        return service.get_next_stop(trip_id, UUID(x_user_id))
+    except TripNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except TripOwnershipError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
 
 
 # US09-TK17

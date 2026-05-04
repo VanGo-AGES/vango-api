@@ -272,7 +272,6 @@ def test_get_trip_wrong_owner_returns_403() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US09-TK16")
 def test_get_next_stop_success_returns_200() -> None:
     mock_service = Mock(spec=TripService)
     mock_service.get_next_stop.return_value = make_next_stop_response()
@@ -287,7 +286,6 @@ def test_get_next_stop_success_returns_200() -> None:
     assert "passanger_phone" in body
 
 
-@pytest.mark.skip(reason="US09-TK16")
 def test_get_next_stop_none_when_no_pending_returns_200() -> None:
     """Quando todos os passageiros já foram atendidos, retorna null (200)."""
     mock_service = Mock(spec=TripService)
@@ -301,7 +299,6 @@ def test_get_next_stop_none_when_no_pending_returns_200() -> None:
     assert response.json() is None
 
 
-@pytest.mark.skip(reason="US09-TK16")
 def test_get_next_stop_trip_not_found_returns_404() -> None:
     from src.domains.trips.errors import TripNotFoundError
 
@@ -315,7 +312,6 @@ def test_get_next_stop_trip_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US09-TK16")
 def test_get_next_stop_wrong_owner_returns_403() -> None:
     from src.domains.trips.errors import TripOwnershipError
 
@@ -886,7 +882,6 @@ def test_integration_get_trip_wrong_owner_returns_403(integration_client, db_ses
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US09-TK16")
 def test_integration_next_stop_returns_first_pending(integration_client, db_session) -> None:
     driver = make_driver(db_session)
     vehicle = make_vehicle(db_session, driver.id)
@@ -908,7 +903,6 @@ def test_integration_next_stop_returns_first_pending(integration_client, db_sess
     assert body["trip_passanger_status"] == "pendente"
 
 
-@pytest.mark.skip(reason="US09-TK16")
 def test_integration_next_stop_returns_null_when_all_done(integration_client, db_session) -> None:
     driver = make_driver(db_session)
     vehicle = make_vehicle(db_session, driver.id)
