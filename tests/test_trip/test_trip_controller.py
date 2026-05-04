@@ -226,7 +226,6 @@ def test_start_trip_invalid_payload_returns_422() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US09-TK15")
 def test_get_trip_success_returns_200() -> None:
     mock_service = Mock(spec=TripService)
     mock_service.get_current_trip.return_value = make_trip_response(status="iniciada")
@@ -239,7 +238,6 @@ def test_get_trip_success_returns_200() -> None:
     assert response.json()["status"] == "iniciada"
 
 
-@pytest.mark.skip(reason="US09-TK15")
 def test_get_trip_not_found_returns_404() -> None:
     from src.domains.trips.errors import TripNotFoundError
 
@@ -253,7 +251,6 @@ def test_get_trip_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US09-TK15")
 def test_get_trip_wrong_owner_returns_403() -> None:
     from src.domains.trips.errors import TripOwnershipError
 
@@ -844,7 +841,6 @@ def test_integration_start_trip_vehicle_not_owned_returns_403(
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US09-TK15")
 def test_integration_get_trip_success(integration_client, db_session) -> None:
     driver = make_driver(db_session)
     vehicle = make_vehicle(db_session, driver.id)
@@ -859,7 +855,6 @@ def test_integration_get_trip_success(integration_client, db_session) -> None:
     assert response.json()["id"] == str(trip.id)
 
 
-@pytest.mark.skip(reason="US09-TK15")
 def test_integration_get_trip_not_found_returns_404(integration_client, db_session) -> None:
     driver = make_driver(db_session)
 
@@ -870,7 +865,6 @@ def test_integration_get_trip_not_found_returns_404(integration_client, db_sessi
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US09-TK15")
 def test_integration_get_trip_wrong_owner_returns_403(integration_client, db_session) -> None:
     driver = make_driver(db_session)
     other = make_driver(db_session, name="Outro")
