@@ -327,7 +327,6 @@ def test_get_next_stop_wrong_owner_returns_403() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US09-TK17")
 def test_board_passanger_success_returns_200() -> None:
     mock_service = Mock(spec=TripService)
     mock_service.board_passanger.return_value = make_trip_passanger_response(status="presente")
@@ -342,7 +341,6 @@ def test_board_passanger_success_returns_200() -> None:
     assert response.json()["status"] == "presente"
 
 
-@pytest.mark.skip(reason="US09-TK17")
 def test_board_passanger_trip_passanger_not_found_returns_404() -> None:
     from src.domains.trips.errors import TripPassangerNotFoundError
 
@@ -358,7 +356,6 @@ def test_board_passanger_trip_passanger_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US09-TK17")
 def test_board_passanger_wrong_owner_returns_403() -> None:
     from src.domains.trips.errors import TripOwnershipError
 
@@ -374,7 +371,6 @@ def test_board_passanger_wrong_owner_returns_403() -> None:
     assert response.status_code == 403
 
 
-@pytest.mark.skip(reason="US09-TK17")
 def test_board_passanger_trip_not_in_progress_returns_409() -> None:
     from src.domains.trips.errors import TripNotInProgressError
 
@@ -390,7 +386,6 @@ def test_board_passanger_trip_not_in_progress_returns_409() -> None:
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US09-TK17")
 def test_board_passanger_invalid_status_returns_409() -> None:
     from src.domains.trips.errors import InvalidTripPassangerStatusError
 
@@ -921,7 +916,6 @@ def test_integration_next_stop_returns_null_when_all_done(integration_client, db
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US09-TK17")
 def test_integration_board_passanger_success(integration_client, db_session) -> None:
     from src.domains.trips.entity import TripPassangerModel
 
@@ -944,7 +938,6 @@ def test_integration_board_passanger_success(integration_client, db_session) -> 
     assert refreshed.boarded_at is not None
 
 
-@pytest.mark.skip(reason="US09-TK17")
 def test_integration_board_trip_finished_returns_409(integration_client, db_session) -> None:
     driver = make_driver(db_session)
     vehicle = make_vehicle(db_session, driver.id)
