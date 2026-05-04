@@ -37,6 +37,7 @@ from src.domains.trips.errors import (
     TripNotInProgressError,
     TripOwnershipError,
     TripPassangerNotFoundError,
+    TripStopNotFoundError,
     VehicleNotOwnedError,
 )
 from src.domains.trips.repository import (
@@ -285,7 +286,33 @@ class TripService:
         - Atualiza todos para 'ausente'.
         - Retorna a lista atualizada.
         """
-        pass
+        trip = self.trip_repository.find_by_id(trip_id)
+        if trip is None:
+            raise TripNotFoundError()
+
+        if trip.route.driver_id != driver_id:
+            raise TripOwnershipError()
+
+        if trip.status != "iniciada":
+            raise TripNotInProgressError()
+
+        stop = self.stop_repository.find_by_id(stop_id)
+        if stop is None or stop.route_id != trip.route_id:
+            raise TripStopNotFoundError()
+
+        # Encontrar trip_passangers pendentes para essa stop
+        pending_tps = [
+            tp
+            for tp in self.trip_passanger_repository.find_by_trip(trip_id)
+            if tp.route_passanger_id == stop.route_passanger_id and tp.status == "pendente"
+        ]
+
+        updated_responses = []
+        for tp in pending_tps:
+            updated = self.trip_passanger_repository.update_status(tp.id, "ausente")
+            updated_responses.append(self._build_trip_passanger_response(updated))
+
+        return updated_responses
 
     # US09-TK12
     def alight_passanger(self, trip_id: UUID, trip_passanger_id: UUID, driver_id: UUID) -> TripPassangerResponse:
