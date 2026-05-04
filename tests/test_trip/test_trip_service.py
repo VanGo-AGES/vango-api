@@ -501,7 +501,6 @@ def test_skip_stop_raises_when_stop_not_in_route() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US09-TK12")
 def test_alight_passanger_sets_alighted_at() -> None:
     service, mocks = make_service()
     driver_id = uuid.uuid4()
@@ -521,7 +520,6 @@ def test_alight_passanger_sets_alighted_at() -> None:
     assert result.alighted_at is not None
 
 
-@pytest.mark.skip(reason="US09-TK12")
 def test_alight_passanger_rejects_if_not_presente() -> None:
     service, mocks = make_service()
     driver_id = uuid.uuid4()
