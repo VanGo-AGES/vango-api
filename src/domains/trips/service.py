@@ -27,6 +27,8 @@ from src.domains.trips.dtos import (
     TripPassangerResponse,
     TripResponse,
 )
+from src.domains.trips.entity import TripPassangerModel
+from src.domains.trips.errors import TripNotFoundError, TripOwnershipError
 from src.domains.trips.repository import (
     IAbsenceRepository,
     ITripPassangerRepository,
@@ -79,15 +81,45 @@ class TripService:
 
     # US09-TK07
     def get_current_trip(self, trip_id: UUID, driver_id: UUID) -> TripResponse:
-        """Retorna a trip (em qualquer status) pelo id, validando ownership.
+        """Retorna a trip (em qualquer status) pelo id, validando ownership."""
 
-        - Busca trip_repository.find_by_id.
-        - Se não existir → TripNotFoundError.
-        - Se route.driver_id != driver_id → TripOwnershipError.
-        - Monta TripResponse com trip_passangers (resolvendo nomes, endereços,
-          telefone via RoutePassanger.user/dependent/pickup_address).
-        """
-        pass
+        trip = self.trip_repository.find_by_id(trip_id)
+
+        if trip is None:
+            raise TripNotFoundError(f"Viagem {trip_id} não encontrada.")
+
+        if trip.route.driver_id != driver_id:
+            raise TripOwnershipError("Motorista não é dono desta viagem.")
+
+        return TripResponse(
+            id=trip.id,
+            route_id=trip.route_id,
+            route_name=trip.route.name,
+            vehicle_id=trip.vehicle_id,
+            trip_date=trip.trip_date,
+            status=trip.status,
+            total_km=trip.total_km,
+            started_at=trip.started_at,
+            finished_at=trip.finished_at,
+            trip_passangers=[self._build_trip_passanger_response(tp) for tp in trip.trip_passangers],
+        )
+
+    def _build_trip_passanger_response(self, tp: TripPassangerModel) -> TripPassangerResponse:
+        """Resolve nome, endereço e telefone a partir do RoutePassanger."""
+        rp = tp.route_passanger
+
+        passanger_name = rp.dependent.name if rp.dependent_id else rp.user.name
+
+        return TripPassangerResponse(
+            id=tp.id,
+            route_passanger_id=tp.route_passanger_id,
+            passanger_name=passanger_name,
+            status=tp.status,
+            pickup_address_label=rp.pickup_address.label,
+            boarded_at=tp.boarded_at,
+            alighted_at=tp.alighted_at,
+            user_phone=rp.user.phone,
+        )
 
     # US09-TK08
     def get_next_stop(self, trip_id: UUID, driver_id: UUID) -> TripNextStopResponse | None:
