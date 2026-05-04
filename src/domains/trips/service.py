@@ -32,6 +32,7 @@ from src.domains.trips.entity import TripModel, TripPassangerModel
 from src.domains.trips.errors import (
     InvalidTripPassangerStatusError,
     NoPassangersToStartError,
+    TripAlreadyFinishedError,
     TripAlreadyInProgressError,
     TripNotFoundError,
     TripNotInProgressError,
@@ -354,4 +355,40 @@ class TripService:
         - Dispara notify_trip_finished.
         - Retorna TripResponse final.
         """
-        pass
+
+        trip = self.trip_repository.find_by_id(trip_id)
+
+        if trip is None:
+            raise TripNotFoundError(f"Viagem {trip_id} não encontrada.")
+
+        if trip.route.driver_id != driver_id:
+            raise TripOwnershipError("Motorista não é dono desta viagem.")
+
+        if trip.status != "iniciada":
+            raise TripAlreadyFinishedError("A viagem já foi finalizada.")
+
+        now = datetime.now(UTC)
+
+        self.trip_passanger_repository.bulk_alight_presents(trip_id, now)
+
+        # Finaliza a trip
+        finished = self.trip_repository.update_status(trip_id, "finalizada", now, data.total_km)
+
+        # Libera a rota
+        self.route_repository.update(trip.route_id, {"status": "ativa"})
+
+        # Notifica
+        self.notification_service.notify_trip_finished(finished)
+
+        return TripResponse(
+            id=finished.id,
+            route_id=trip.route_id,
+            route_name=trip.route.name,
+            vehicle_id=finished.vehicle_id,
+            trip_date=finished.trip_date,
+            status=finished.status,
+            total_km=finished.total_km,
+            started_at=finished.started_at,
+            finished_at=finished.finished_at,
+            trip_passangers=[self._build_trip_passanger_response(tp) for tp in trip.trip_passangers],
+        )

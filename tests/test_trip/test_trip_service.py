@@ -634,7 +634,6 @@ def test_alight_passanger_rejects_if_not_presente() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US09-TK13")
 def test_finish_trip_finalizes_and_alights_presents() -> None:
     service, mocks = make_service()
     driver_id = uuid.uuid4()
@@ -659,7 +658,6 @@ def test_finish_trip_finalizes_and_alights_presents() -> None:
     mocks["notification"].notify_trip_finished.assert_called_once()
 
 
-@pytest.mark.skip(reason="US09-TK13")
 def test_finish_trip_raises_when_already_finished() -> None:
     service, mocks = make_service()
     driver_id = uuid.uuid4()
@@ -672,7 +670,6 @@ def test_finish_trip_raises_when_already_finished() -> None:
         service.finish_trip(trip.id, driver_id, FinishTripRequest())
 
 
-@pytest.mark.skip(reason="US09-TK13")
 def test_finish_trip_raises_when_wrong_owner() -> None:
     service, mocks = make_service()
     route = make_route_mock(driver_id=uuid.uuid4())
