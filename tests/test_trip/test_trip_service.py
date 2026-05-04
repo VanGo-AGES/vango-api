@@ -304,7 +304,6 @@ def test_get_current_trip_raises_when_wrong_owner() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US09-TK08")
 def test_get_next_stop_returns_first_pending() -> None:
     service, mocks = make_service()
     driver_id = uuid.uuid4()
@@ -322,7 +321,6 @@ def test_get_next_stop_returns_first_pending() -> None:
     assert result.trip_passanger_id == tp_pending.id
 
 
-@pytest.mark.skip(reason="US09-TK08")
 def test_get_next_stop_returns_none_when_no_pending() -> None:
     service, mocks = make_service()
     driver_id = uuid.uuid4()
@@ -335,7 +333,6 @@ def test_get_next_stop_returns_none_when_no_pending() -> None:
     assert service.get_next_stop(trip.id, driver_id) is None
 
 
-@pytest.mark.skip(reason="US09-TK08")
 def test_get_next_stop_raises_when_wrong_owner() -> None:
     service, mocks = make_service()
     route = make_route_mock(driver_id=uuid.uuid4())

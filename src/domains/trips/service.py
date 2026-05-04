@@ -185,7 +185,36 @@ class TripService:
         - Retorna o primeiro com status='pendente'. Se não houver, retorna None.
         - O DTO inclui passanger_phone (telefone pro deeplink US13).
         """
-        pass
+        trip = self.trip_repository.find_by_id(trip_id)
+        if trip is None:
+            raise TripNotFoundError()
+
+        if trip.route.driver_id != driver_id:
+            raise TripOwnershipError()
+
+        trip_passangers = self.trip_passanger_repository.find_by_trip(trip_id)
+
+        for tp in trip_passangers:
+            if tp.status == "pendente":
+                stop = self.stop_repository.find_by_route_passanger_id(tp.route_passanger_id)
+                if stop is None:
+                    continue
+
+                rp = tp.route_passanger
+                passanger_name = rp.dependent.name if rp.dependent_id else rp.user.name
+                passanger_phone = rp.user.phone
+
+                return TripNextStopResponse.model_construct(
+                    stop_id=stop.id,
+                    order_index=stop.order_index,
+                    address_label=rp.pickup_address.label,
+                    passanger_name=passanger_name,
+                    passanger_phone=passanger_phone,
+                    trip_passanger_id=tp.id,
+                    trip_passanger_status=tp.status,
+                )
+
+        return None
 
     # US09-TK09
     def board_passanger(self, trip_id: UUID, trip_passanger_id: UUID, driver_id: UUID) -> TripPassangerResponse:
