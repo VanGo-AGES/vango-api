@@ -911,10 +911,20 @@ def test_integration_list_passangers_route_not_found_returns_404(integration_cli
 PASSENGER_HEADERS = {"X-User-Id": str(uuid.uuid4()), "X-User-Role": "guardian"}
 
 
-def make_join_payload(dependent_id=None, days=("monday",), address_id=None):
-    address_id = address_id or str(uuid.uuid4())
-    schedules = [{"day_of_week": d, "address_id": address_id} for d in days]
-    payload: dict = {"schedules": schedules}
+_DEFAULT_ADDRESS_PAYLOAD = {
+    "label": "Casa",
+    "street": "Rua Teste",
+    "number": "123",
+    "neighborhood": "Centro",
+    "zip": "90000-000",
+    "city": "Porto Alegre",
+    "state": "RS",
+}
+
+
+def make_join_payload(dependent_id=None, days=("monday",)):
+    schedules = [{"day_of_week": d} for d in days]
+    payload: dict = {"schedules": schedules, "address": _DEFAULT_ADDRESS_PAYLOAD}
     if dependent_id is not None:
         payload["dependent_id"] = str(dependent_id)
     return payload
@@ -1028,32 +1038,15 @@ def test_join_route_invalid_payload_returns_422() -> None:
 # ---------------------------------------------------------------------------
 
 
-def make_integration_pickup_address(db_session, user_id):
-    addr = AddressModel(
-        user_id=user_id,
-        label="Casa",
-        street="Rua Teste",
-        number="123",
-        neighborhood="Centro",
-        zip="90000-000",
-        city="Porto Alegre",
-        state="RS",
-    )
-    db_session.add(addr)
-    db_session.flush()
-    return addr
-
-
 def test_integration_join_route_success(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session, "Integ Ana")
     route = make_integration_route(db_session, driver.id)
-    address = make_integration_pickup_address(db_session, passenger.id)
     headers = {"X-User-Id": str(passenger.id), "X-User-Role": "guardian"}
 
     response = integration_client.post(
         f"/routes/{route.id}/passangers",
-        json=make_join_payload(days=("monday",), address_id=str(address.id)),
+        json=make_join_payload(days=("monday",)),
         headers=headers,
     )
 
@@ -1067,12 +1060,11 @@ def test_integration_join_route_creates_schedules(integration_client, db_session
     driver, _ = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)
     route = make_integration_route(db_session, driver.id)
-    address = make_integration_pickup_address(db_session, passenger.id)
     headers = {"X-User-Id": str(passenger.id), "X-User-Role": "guardian"}
 
     response = integration_client.post(
         f"/routes/{route.id}/passangers",
-        json=make_join_payload(days=("monday", "wednesday"), address_id=str(address.id)),
+        json=make_join_payload(days=("monday", "wednesday")),
         headers=headers,
     )
 
@@ -1090,13 +1082,12 @@ def test_integration_join_route_duplicate_returns_409(integration_client, db_ses
     driver, _ = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)
     route = make_integration_route(db_session, driver.id)
-    address = make_integration_pickup_address(db_session, passenger.id)
     make_integration_rp(db_session, route.id, passenger.id, status="pending")
     headers = {"X-User-Id": str(passenger.id), "X-User-Role": "guardian"}
 
     response = integration_client.post(
         f"/routes/{route.id}/passangers",
-        json=make_join_payload(address_id=str(address.id)),
+        json=make_join_payload(),
         headers=headers,
     )
 
@@ -1107,12 +1098,11 @@ def test_integration_join_route_in_progress_returns_409(integration_client, db_s
     driver, _ = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)
     route = make_integration_route(db_session, driver.id, status="em_andamento")
-    address = make_integration_pickup_address(db_session, passenger.id)
     headers = {"X-User-Id": str(passenger.id), "X-User-Role": "guardian"}
 
     response = integration_client.post(
         f"/routes/{route.id}/passangers",
-        json=make_join_payload(address_id=str(address.id)),
+        json=make_join_payload(),
         headers=headers,
     )
 
@@ -1366,6 +1356,27 @@ def test_update_schedules_invalid_payload_returns_422() -> None:
 # ---------------------------------------------------------------------------
 # TK12 — PATCH /routes/{route_id}/passangers/me (integração)
 # ---------------------------------------------------------------------------
+
+
+def make_integration_pickup_address(db_session, user_id):
+    """Cria um endereço de embarque diretamente na DB para testes de update_schedules.
+
+    Necessário nesse contexto porque UpdateSchedulesRequest ainda recebe address_id
+    explícito (ao contrário de JoinRouteRequest que cria o endereço inline).
+    """
+    addr = AddressModel(
+        user_id=user_id,
+        label="Casa",
+        street="Rua Teste",
+        number="123",
+        neighborhood="Centro",
+        zip="90000-000",
+        city="Porto Alegre",
+        state="RS",
+    )
+    db_session.add(addr)
+    db_session.flush()
+    return addr
 
 
 def test_integration_update_schedules_success(integration_client, db_session) -> None:

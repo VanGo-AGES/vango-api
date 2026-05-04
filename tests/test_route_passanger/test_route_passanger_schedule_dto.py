@@ -32,6 +32,18 @@ def make_schedule_item(**kwargs) -> dict:
     return defaults
 
 
+def make_address() -> dict:
+    return {
+        "label": "Casa",
+        "street": "Rua X",
+        "number": "100",
+        "neighborhood": "Centro",
+        "zip": "90000-000",
+        "city": "Porto Alegre",
+        "state": "RS",
+    }
+
+
 # ---------------------------------------------------------------------------
 # RoutePassangerScheduleRequest
 # ---------------------------------------------------------------------------
@@ -139,7 +151,7 @@ def test_join_route_request_rejects_empty_schedules() -> None:
 def test_join_route_request_dependent_id_defaults_to_none() -> None:
     from src.domains.route_passangers.dtos import JoinRouteRequest
 
-    req = JoinRouteRequest(schedules=[make_schedule_item()])
+    req = JoinRouteRequest(address=make_address(), schedules=[make_schedule_item()])
     assert req.dependent_id is None
 
 
@@ -147,7 +159,7 @@ def test_join_route_request_accepts_dependent_id() -> None:
     from src.domains.route_passangers.dtos import JoinRouteRequest
 
     dep_id = uuid4()
-    req = JoinRouteRequest(dependent_id=dep_id, schedules=[make_schedule_item()])
+    req = JoinRouteRequest(address=make_address(), dependent_id=dep_id, schedules=[make_schedule_item()])
     assert req.dependent_id == dep_id
 
 
@@ -155,6 +167,7 @@ def test_join_route_request_accepts_multiple_schedules() -> None:
     from src.domains.route_passangers.dtos import JoinRouteRequest
 
     req = JoinRouteRequest(
+        address=make_address(),
         schedules=[
             make_schedule_item(day_of_week="monday"),
             make_schedule_item(day_of_week="wednesday"),
