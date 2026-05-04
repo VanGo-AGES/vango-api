@@ -113,6 +113,8 @@ def make_trip_mock(route_id=None, status: str = "iniciada") -> TripModel:
     trip = Mock(spec=TripModel)
     trip.id = uuid.uuid4()
     trip.route_id = route_id or uuid.uuid4()
+    trip.vehicle_id = uuid.uuid4()
+    trip.trip_date = datetime.now(timezone.utc)
     trip.status = status
     trip.started_at = datetime.now(timezone.utc)
     trip.finished_at = None
@@ -273,7 +275,6 @@ def test_start_trip_raises_when_no_accepted_passangers() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US09-TK07")
 def test_get_current_trip_returns_response() -> None:
     service, mocks = make_service()
     driver_id = uuid.uuid4()
@@ -289,7 +290,6 @@ def test_get_current_trip_returns_response() -> None:
     assert result.id == trip.id
 
 
-@pytest.mark.skip(reason="US09-TK07")
 def test_get_current_trip_raises_when_not_found() -> None:
     service, mocks = make_service()
     mocks["trip_repo"].find_by_id.return_value = None
@@ -297,7 +297,6 @@ def test_get_current_trip_raises_when_not_found() -> None:
         service.get_current_trip(uuid.uuid4(), uuid.uuid4())
 
 
-@pytest.mark.skip(reason="US09-TK07")
 def test_get_current_trip_raises_when_wrong_owner() -> None:
     service, mocks = make_service()
     route = make_route_mock(driver_id=uuid.uuid4())
