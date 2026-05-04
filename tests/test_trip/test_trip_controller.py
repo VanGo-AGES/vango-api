@@ -418,7 +418,6 @@ def test_board_passanger_invalid_status_returns_409() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US09-TK18")
 def test_mark_absent_success_returns_200() -> None:
     mock_service = Mock(spec=TripService)
     mock_service.mark_passanger_absent.return_value = make_trip_passanger_response(status="ausente")
@@ -433,7 +432,6 @@ def test_mark_absent_success_returns_200() -> None:
     assert response.json()["status"] == "ausente"
 
 
-@pytest.mark.skip(reason="US09-TK18")
 def test_mark_absent_trip_passanger_not_found_returns_404() -> None:
     from src.domains.trips.errors import TripPassangerNotFoundError
 
@@ -449,7 +447,6 @@ def test_mark_absent_trip_passanger_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US09-TK18")
 def test_mark_absent_wrong_owner_returns_403() -> None:
     from src.domains.trips.errors import TripOwnershipError
 
@@ -465,7 +462,6 @@ def test_mark_absent_wrong_owner_returns_403() -> None:
     assert response.status_code == 403
 
 
-@pytest.mark.skip(reason="US09-TK18")
 def test_mark_absent_trip_not_in_progress_returns_409() -> None:
     from src.domains.trips.errors import TripNotInProgressError
 
@@ -983,7 +979,6 @@ def test_integration_board_trip_finished_returns_409(integration_client, db_sess
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US09-TK18")
 def test_integration_mark_absent_success(integration_client, db_session) -> None:
     driver = make_driver(db_session)
     vehicle = make_vehicle(db_session, driver.id)
@@ -1002,7 +997,6 @@ def test_integration_mark_absent_success(integration_client, db_session) -> None
     assert response.json()["status"] == "ausente"
 
 
-@pytest.mark.skip(reason="US09-TK18")
 def test_integration_mark_absent_wrong_owner_returns_403(integration_client, db_session) -> None:
     driver = make_driver(db_session)
     other = make_driver(db_session, name="Outro")
