@@ -19,6 +19,10 @@ class StopRepositoryImpl(IStopRepository):
         self.session.refresh(stop)
         return stop
 
+    def find_by_id(self, stop_id: UUID) -> StopModel | None:
+        """Retorna a stop pelo id, ou None se não existir."""
+        return self.session.get(StopModel, stop_id)
+
     def find_by_route_id(self, route_id: UUID) -> list[StopModel]:
         """Retorna as stops de uma rota ordenadas por order_index."""
         return self.session.query(StopModel).filter(StopModel.route_id == route_id).order_by(StopModel.order_index).all()

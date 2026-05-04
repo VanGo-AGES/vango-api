@@ -455,7 +455,6 @@ def test_mark_absent_rejects_if_already_presente() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US09-TK11")
 def test_skip_stop_marks_passangers_of_stop_as_absent() -> None:
     service, mocks = make_service()
     driver_id = uuid.uuid4()
@@ -481,7 +480,6 @@ def test_skip_stop_marks_passangers_of_stop_as_absent() -> None:
     mocks["tp_repo"].update_status.assert_called_once()
 
 
-@pytest.mark.skip(reason="US09-TK11")
 def test_skip_stop_raises_when_stop_not_in_route() -> None:
     service, mocks = make_service()
     driver_id = uuid.uuid4()

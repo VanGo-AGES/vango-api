@@ -12,6 +12,10 @@ class IStopRepository(ABC):
         pass
 
     @abstractmethod
+    def find_by_id(self, stop_id: UUID) -> StopModel | None:
+        pass
+
+    @abstractmethod
     def find_by_route_id(self, route_id: UUID) -> list[StopModel]:
         pass
 
