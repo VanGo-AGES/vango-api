@@ -28,3 +28,7 @@ class IVehicleRepository(ABC):
     @abstractmethod
     def delete(self, vehicle_id: UUID) -> bool:
         pass
+
+    @abstractmethod
+    def find_by_id(self, vehicle_id: UUID) -> VehicleModel | None:
+        pass

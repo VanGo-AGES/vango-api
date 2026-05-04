@@ -87,9 +87,10 @@ def build_service(**overrides):
     notif = overrides.pop("notif", Mock())
     stop_repo = overrides.pop("stop_repo", Mock())
     schedule_repo = overrides.pop("schedule_repo", Mock())
+    address_repo = overrides.pop("address_repo", Mock())
     return (
         RoutePassangerService(
-            rp_repo, route_repo, user_repo, dep_repo, notif, stop_repo, schedule_repo
+            rp_repo, route_repo, user_repo, dep_repo, notif, stop_repo, schedule_repo, address_repo
         ),
         rp_repo,
         route_repo,
@@ -836,31 +837,33 @@ def test_list_by_status_resolves_dependent_and_guardian_names() -> None:
 # ===========================================================================
 
 
-def make_join_request(dependent_id=None, days=("monday",), address_id=None):
-    from src.domains.route_passangers.dtos import (
-        JoinRouteRequest,
-        RoutePassangerScheduleRequest,
-    )
+def make_join_request(dependent_id=None, days=("monday",)):
+    from src.domains.route_passangers.dtos import JoinRouteRequest, JoinRouteScheduleRequest
+    from src.domains.routes.dtos import AddressCreate
 
-    address_id = address_id or uuid.uuid4()
-    schedules = [
-        RoutePassangerScheduleRequest(day_of_week=day, address_id=address_id)
-        for day in days
-    ]
-    return JoinRouteRequest(dependent_id=dependent_id, schedules=schedules)
+    address = AddressCreate(
+        label="Casa",
+        street="Rua Teste",
+        number="123",
+        neighborhood="Centro",
+        zip="90000-000",
+        city="Porto Alegre",
+        state="RS",
+    )
+    schedules = [JoinRouteScheduleRequest(day_of_week=day) for day in days]
+    return JoinRouteRequest(dependent_id=dependent_id, address=address, schedules=schedules)
 
 
 def test_join_route_success_creates_pending_rp() -> None:
     route = make_route_mock(uuid.uuid4(), status="ativa", max_passengers=5)
     user_id = uuid.uuid4()
-    address_id = uuid.uuid4()
-    req = make_join_request(days=("monday", "wednesday"), address_id=address_id)
+    req = make_join_request(days=("monday", "wednesday"))
 
     service, rp_repo, route_repo, _, _, _, _, schedule_repo = build_service()
     route_repo.find_by_id.return_value = route
     rp_repo.find_active_by_user_and_route.return_value = None
     rp_repo.count_accepted_by_route.return_value = 0
-    created = make_rp_mock(route.id, user_id, status="pending", pickup_address_id=address_id)
+    created = make_rp_mock(route.id, user_id, status="pending")
     rp_repo.save.return_value = created
 
     service.join_route(route.id, user_id, req)
@@ -869,21 +872,22 @@ def test_join_route_success_creates_pending_rp() -> None:
     schedule_repo.save_many.assert_called_once()
 
 
-def test_join_route_pickup_address_equals_first_schedule() -> None:
+def test_join_route_pickup_address_equals_saved_address_id() -> None:
+    """pickup_address_id no RP deve ser o id do Address criado inline pelo service."""
     route = make_route_mock(uuid.uuid4(), status="ativa")
     user_id = uuid.uuid4()
-    address_id = uuid.uuid4()
-    req = make_join_request(days=("monday",), address_id=address_id)
+    expected_address_id = uuid.uuid4()
 
     service, rp_repo, route_repo, _, _, _, _, _ = build_service()
+    service.address_repository.save.return_value.id = expected_address_id
     route_repo.find_by_id.return_value = route
     rp_repo.find_active_by_user_and_route.return_value = None
     rp_repo.count_accepted_by_route.return_value = 0
 
-    service.join_route(route.id, user_id, req)
+    service.join_route(route.id, user_id, make_join_request())
 
     saved_rp = rp_repo.save.call_args.args[0]
-    assert saved_rp.pickup_address_id == address_id
+    assert saved_rp.pickup_address_id == expected_address_id
 
 
 def test_join_route_notifies_driver() -> None:
