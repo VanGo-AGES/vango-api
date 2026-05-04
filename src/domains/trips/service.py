@@ -199,7 +199,24 @@ class TripService:
         - Atualiza status='presente', boarded_at=now.
         - Retorna TripPassangerResponse do registro atualizado.
         """
-        pass
+        trip = self.trip_repository.find_by_id(trip_id)
+        if trip is None:
+            raise TripNotFoundError(f"Viagem {trip_id} não encontrada.")
+        if trip.route.driver_id != driver_id:
+            raise TripOwnershipError("Motorista não é dono desta viagem.")
+        if trip.status != "iniciada":
+            raise TripNotInProgressError("A viagem não está em andamento.")
+
+        tp = self.trip_passanger_repository.find_by_id(trip_passanger_id)
+        if tp is None or tp.trip_id != trip_id:
+            raise TripPassangerNotFoundError(f"Passageiro {trip_passanger_id} não encontrado na viagem.")
+
+        if tp.status != "pendente":
+            raise InvalidTripPassangerStatusError(f"Não é possível marcar presente um passageiro com status '{tp.status}'.")
+
+        now = datetime.now(UTC)
+        updated = self.trip_passanger_repository.update_status(trip_passanger_id, "presente", boarded_at=now)
+        return self._build_trip_passanger_response(updated)
 
     # US09-TK10
     def mark_passanger_absent(self, trip_id: UUID, trip_passanger_id: UUID, driver_id: UUID) -> TripPassangerResponse:
