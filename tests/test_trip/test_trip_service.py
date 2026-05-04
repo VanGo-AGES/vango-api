@@ -422,7 +422,6 @@ def test_board_passanger_raises_when_tp_not_found() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US09-TK10")
 def test_mark_absent_marks_status() -> None:
     service, mocks = make_service()
     driver_id = uuid.uuid4()
@@ -440,7 +439,6 @@ def test_mark_absent_marks_status() -> None:
     assert result.status == "ausente"
 
 
-@pytest.mark.skip(reason="US09-TK10")
 def test_mark_absent_rejects_if_already_presente() -> None:
     service, mocks = make_service()
     driver_id = uuid.uuid4()

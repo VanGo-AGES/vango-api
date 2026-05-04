@@ -30,10 +30,13 @@ from src.domains.trips.dtos import (
 )
 from src.domains.trips.entity import TripModel, TripPassangerModel
 from src.domains.trips.errors import (
+    InvalidTripPassangerStatusError,
     NoPassangersToStartError,
     TripAlreadyInProgressError,
     TripNotFoundError,
+    TripNotInProgressError,
     TripOwnershipError,
+    TripPassangerNotFoundError,
     VehicleNotOwnedError,
 )
 from src.domains.trips.repository import (
@@ -164,12 +167,12 @@ class TripService:
         return TripPassangerResponse(
             id=tp.id,
             route_passanger_id=tp.route_passanger_id,
-            passanger_name=passanger_name,
+            passanger_name=str(passanger_name),
             status=tp.status,
-            pickup_address_label=rp.pickup_address.label,
+            pickup_address_label=str(rp.pickup_address.label),
             boarded_at=tp.boarded_at,
             alighted_at=tp.alighted_at,
-            user_phone=rp.user.phone,
+            user_phone=str(rp.user.phone),
         )
 
     # US09-TK08
@@ -206,7 +209,23 @@ class TripService:
         - Só pode marcar ausente quem está 'pendente'.
         - Atualiza status='ausente' (boarded_at permanece None).
         """
-        pass
+        trip = self.trip_repository.find_by_id(trip_id)
+        if trip is None:
+            raise TripNotFoundError(f"Viagem {trip_id} não encontrada.")
+        if trip.route.driver_id != driver_id:
+            raise TripOwnershipError("Motorista não é dono desta viagem.")
+        if trip.status != "iniciada":
+            raise TripNotInProgressError("A viagem não está em andamento.")
+
+        tp = self.trip_passanger_repository.find_by_id(trip_passanger_id)
+        if tp is None or tp.trip_id != trip_id:
+            raise TripPassangerNotFoundError(f"Passageiro {trip_passanger_id} não encontrado na viagem.")
+
+        if tp.status != "pendente":
+            raise InvalidTripPassangerStatusError(f"Não é possível marcar ausente um passageiro com status '{tp.status}'.")
+
+        updated = self.trip_passanger_repository.update_status(trip_passanger_id, "ausente")
+        return self._build_trip_passanger_response(updated)
 
     # US09-TK11
     def skip_stop(self, trip_id: UUID, stop_id: UUID, driver_id: UUID) -> list[TripPassangerResponse]:
