@@ -45,3 +45,6 @@ class VehicleRepositoryImpl(IVehicleRepository):
         self.session.delete(vehicle)
         self.session.commit()
         return True
+
+    def find_by_id(self, vehicle_id: UUID) -> VehicleModel | None:
+        return self.get_by_id(vehicle_id)

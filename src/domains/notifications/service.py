@@ -108,7 +108,7 @@ class LoggingNotificationService(INotificationService):
     # US06-TK16
     def notify_passanger_route_cancelled(self, rp: RoutePassangerModel) -> None:
         logger.info(
-            "notify_passanger_route_cancelled: rota cancelada, passageiro notificado " "[rp_id=%s, user_id=%s, status=%s]",
+            "notify_passanger_route_cancelled: rota cancelada, passageiro notificado [rp_id=%s, user_id=%s, status=%s]",
             rp.id,
             rp.user_id,
             rp.status,
@@ -117,7 +117,7 @@ class LoggingNotificationService(INotificationService):
     # US06-TK19
     def notify_driver_passanger_absence_reported(self, rp: RoutePassangerModel) -> None:
         logger.info(
-            "notify_driver_passanger_absence_reported: ausência avisada ao motorista " "[rp_id=%s, user_id=%s]",
+            "notify_driver_passanger_absence_reported: ausência avisada ao motorista [rp_id=%s, user_id=%s]",
             rp.id,
             rp.user_id,
         )

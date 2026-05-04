@@ -14,6 +14,7 @@ IRouteRepository, IVehicleRepository (ou cheque equivalente), IStopRepository
 e INotificationService.
 """
 
+from datetime import UTC, datetime
 from uuid import UUID
 
 from src.domains.notifications.service import INotificationService
@@ -26,6 +27,14 @@ from src.domains.trips.dtos import (
     TripNextStopResponse,
     TripPassangerResponse,
     TripResponse,
+)
+from src.domains.trips.entity import TripModel, TripPassangerModel
+from src.domains.trips.errors import (
+    NoPassangersToStartError,
+    TripAlreadyInProgressError,
+    TripNotFoundError,
+    TripOwnershipError,
+    VehicleNotOwnedError,
 )
 from src.domains.trips.repository import (
     IAbsenceRepository,
@@ -58,24 +67,68 @@ class TripService:
 
     # US09-TK06
     def start_trip(self, route_id: UUID, driver_id: UUID, data: StartTripRequest) -> TripResponse:
-        """Inicia a execução de uma rota.
+        """Inicia a execução de uma rota."""
 
-        Fluxo:
-        - Valida rota (existe, é do driver, status != em_andamento).
-        - Valida vehicle (pertence ao driver).
-        - Garante que não há trip iniciada na rota.
-        - Cria TripModel (status='iniciada', started_at=now).
-        - Lista route_passangers com status='accepted' na rota; se vazio,
-          NoPassangersToStartError.
-        - Lê absences do dia (route+date).
-        - Pré-cria TripPassangerModel:
-            * status='ausente' para quem está em absences
-            * status='pendente' para o resto
-        - Atualiza status da rota para 'em_andamento'.
-        - Dispara notify_trip_started pra todos os passageiros da trip.
-        - Retorna TripResponse.
-        """
-        pass
+        route = self.route_repository.find_by_id(route_id)
+        if route is None:
+            raise TripNotFoundError(f"Rota {route_id} não encontrada.")
+
+        if route.driver_id != driver_id:
+            raise TripOwnershipError("Motorista não é dono desta rota.")
+
+        vehicle = self.vehicle_repository.find_by_id(data.vehicle_id)
+        if vehicle.driver_id != driver_id:
+            raise VehicleNotOwnedError("Veículo não pertence ao motorista.")
+
+        existing = self.trip_repository.find_in_progress_by_route(route_id)
+        if existing is not None:
+            raise TripAlreadyInProgressError("Já existe uma viagem iniciada para esta rota.")
+
+        accepted = self.route_passanger_repository.find_by_route_and_status(route_id, "accepted")
+        if not accepted:
+            raise NoPassangersToStartError("Nenhum passageiro aceito na rota.")
+
+        now = datetime.now(UTC)
+        trip_date = data.trip_date or now
+
+        trip = TripModel(
+            route_id=route_id,
+            vehicle_id=data.vehicle_id,
+            trip_date=trip_date,
+            status="iniciada",
+            started_at=now,
+        )
+        saved_trip = self.trip_repository.save(trip)
+
+        absences = self.absence_repository.find_by_route_and_date(route_id, trip_date)
+        absent_ids = {a.route_passanger_id for a in absences}
+
+        trip_passangers = [
+            TripPassangerModel(
+                trip_id=saved_trip.id,
+                route_passanger_id=rp.id,
+                status="ausente" if rp.id in absent_ids else "pendente",
+            )
+            for rp in accepted
+        ]
+        self.trip_passanger_repository.save_all(trip_passangers)
+
+        self.route_repository.update(route_id, {"status": "em_andamento"})
+
+        self.notification_service.notify_trip_started(saved_trip)
+
+        return TripResponse(
+            id=saved_trip.id,
+            route_id=route_id,
+            route_name=route.name,
+            vehicle_id=data.vehicle_id,
+            trip_date=trip_date,
+            status="iniciada",
+            started_at=now,
+            finished_at=None,
+            total_km=None,
+            trip_passangers=[],
+        )
 
     # US09-TK07
     def get_current_trip(self, trip_id: UUID, driver_id: UUID) -> TripResponse:
