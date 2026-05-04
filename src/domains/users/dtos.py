@@ -63,3 +63,9 @@ class UserUpdate(BaseModel):
                 if isinstance(value, str) and not value.strip():
                     raise ValueError(f"Campo '{field}' inválido (vazio).")
         return data
+
+
+# 4. Login (intermediário, sem JWT)
+class LoginRequest(BaseModel):
+    email: EmailStr = Field(..., example="john.doe@example.com")
+    password: str = Field(..., min_length=1, example="senha_segura123")

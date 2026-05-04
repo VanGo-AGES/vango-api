@@ -113,6 +113,8 @@ def make_trip_mock(route_id=None, status: str = "iniciada") -> TripModel:
     trip = Mock(spec=TripModel)
     trip.id = uuid.uuid4()
     trip.route_id = route_id or uuid.uuid4()
+    trip.vehicle_id = uuid.uuid4()
+    trip.trip_date = datetime.now(timezone.utc)
     trip.status = status
     trip.started_at = datetime.now(timezone.utc)
     trip.finished_at = None
@@ -136,7 +138,6 @@ def make_tp_mock(trip_id=None, status: str = "pendente") -> TripPassangerModel:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US09-TK06")
 def test_start_trip_happy_path_creates_trip_and_trip_passangers() -> None:
     service, mocks = make_service()
     driver_id = uuid.uuid4()
@@ -161,7 +162,6 @@ def test_start_trip_happy_path_creates_trip_and_trip_passangers() -> None:
     mocks["notification"].notify_trip_started.assert_called_once_with(saved_trip)
 
 
-@pytest.mark.skip(reason="US09-TK06")
 def test_start_trip_sets_absent_for_preannounced_absences() -> None:
     service, mocks = make_service()
     driver_id = uuid.uuid4()
@@ -187,7 +187,6 @@ def test_start_trip_sets_absent_for_preannounced_absences() -> None:
     assert by_rp[rp2.id] == "pendente"
 
 
-@pytest.mark.skip(reason="US09-TK06")
 def test_start_trip_updates_route_status_to_em_andamento() -> None:
     service, mocks = make_service()
     driver_id = uuid.uuid4()
@@ -209,7 +208,6 @@ def test_start_trip_updates_route_status_to_em_andamento() -> None:
     assert call.args[1].get("status") == "em_andamento"
 
 
-@pytest.mark.skip(reason="US09-TK06")
 def test_start_trip_raises_when_route_not_found() -> None:
     service, mocks = make_service()
     mocks["route_repo"].find_by_id.return_value = None
@@ -217,7 +215,6 @@ def test_start_trip_raises_when_route_not_found() -> None:
         service.start_trip(uuid.uuid4(), uuid.uuid4(), StartTripRequest(vehicle_id=uuid.uuid4()))
 
 
-@pytest.mark.skip(reason="US09-TK06")
 def test_start_trip_raises_when_driver_is_not_owner() -> None:
     service, mocks = make_service()
     route = make_route_mock(driver_id=uuid.uuid4())
@@ -226,7 +223,6 @@ def test_start_trip_raises_when_driver_is_not_owner() -> None:
         service.start_trip(route.id, uuid.uuid4(), StartTripRequest(vehicle_id=uuid.uuid4()))
 
 
-@pytest.mark.skip(reason="US09-TK06")
 def test_start_trip_raises_when_trip_already_in_progress() -> None:
     service, mocks = make_service()
     driver_id = uuid.uuid4()
@@ -240,7 +236,6 @@ def test_start_trip_raises_when_trip_already_in_progress() -> None:
         service.start_trip(route.id, driver_id, StartTripRequest(vehicle_id=vehicle.id))
 
 
-@pytest.mark.skip(reason="US09-TK06")
 def test_start_trip_raises_when_vehicle_not_owned() -> None:
     service, mocks = make_service()
     driver_id = uuid.uuid4()
@@ -253,7 +248,6 @@ def test_start_trip_raises_when_vehicle_not_owned() -> None:
         service.start_trip(route.id, driver_id, StartTripRequest(vehicle_id=vehicle.id))
 
 
-@pytest.mark.skip(reason="US09-TK06")
 def test_start_trip_raises_when_no_accepted_passangers() -> None:
     service, mocks = make_service()
     driver_id = uuid.uuid4()
@@ -273,7 +267,6 @@ def test_start_trip_raises_when_no_accepted_passangers() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US09-TK07")
 def test_get_current_trip_returns_response() -> None:
     service, mocks = make_service()
     driver_id = uuid.uuid4()
@@ -289,7 +282,6 @@ def test_get_current_trip_returns_response() -> None:
     assert result.id == trip.id
 
 
-@pytest.mark.skip(reason="US09-TK07")
 def test_get_current_trip_raises_when_not_found() -> None:
     service, mocks = make_service()
     mocks["trip_repo"].find_by_id.return_value = None
@@ -297,7 +289,6 @@ def test_get_current_trip_raises_when_not_found() -> None:
         service.get_current_trip(uuid.uuid4(), uuid.uuid4())
 
 
-@pytest.mark.skip(reason="US09-TK07")
 def test_get_current_trip_raises_when_wrong_owner() -> None:
     service, mocks = make_service()
     route = make_route_mock(driver_id=uuid.uuid4())

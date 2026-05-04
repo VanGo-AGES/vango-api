@@ -1112,7 +1112,6 @@ def make_update_request(days=("monday",), address_id=None):
     return UpdateSchedulesRequest(schedules=schedules)
 
 
-@pytest.mark.skip(reason="US08-TK11")
 def test_update_schedules_success_replaces_schedules() -> None:
     route = make_route_mock(uuid.uuid4(), status="ativa")
     user_id = uuid.uuid4()
@@ -1131,7 +1130,6 @@ def test_update_schedules_success_replaces_schedules() -> None:
     schedule_repo.replace.assert_called_once()
 
 
-@pytest.mark.skip(reason="US08-TK11")
 def test_update_schedules_notifies_driver() -> None:
     route = make_route_mock(uuid.uuid4(), status="ativa")
     user_id = uuid.uuid4()
@@ -1146,7 +1144,6 @@ def test_update_schedules_notifies_driver() -> None:
     notif.notify_driver_passanger_schedules_changed.assert_called_once()
 
 
-@pytest.mark.skip(reason="US08-TK11")
 def test_update_schedules_route_not_found_raises() -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
@@ -1157,7 +1154,6 @@ def test_update_schedules_route_not_found_raises() -> None:
         service.update_schedules(uuid.uuid4(), uuid.uuid4(), make_update_request())
 
 
-@pytest.mark.skip(reason="US08-TK11")
 def test_update_schedules_em_andamento_raises() -> None:
     from src.domains.routes.errors import RouteInProgressError
 
@@ -1169,7 +1165,6 @@ def test_update_schedules_em_andamento_raises() -> None:
         service.update_schedules(route.id, uuid.uuid4(), make_update_request())
 
 
-@pytest.mark.skip(reason="US08-TK11")
 def test_update_schedules_no_active_rp_raises() -> None:
     from src.domains.route_passangers.errors import RoutePassangerNotFoundError
 
@@ -1182,7 +1177,6 @@ def test_update_schedules_no_active_rp_raises() -> None:
         service.update_schedules(route.id, uuid.uuid4(), make_update_request())
 
 
-@pytest.mark.skip(reason="US08-TK11")
 def test_update_schedules_with_dependent_id_uses_dependent_scope() -> None:
     route = make_route_mock(uuid.uuid4(), status="ativa")
     guardian_id = uuid.uuid4()
@@ -1202,7 +1196,6 @@ def test_update_schedules_with_dependent_id_uses_dependent_scope() -> None:
     assert dep_id in call_args or call_kwargs.get("dependent_id") == dep_id
 
 
-@pytest.mark.skip(reason="US08-TK11")
 def test_update_schedules_returns_response_with_resolved_names() -> None:
     route = make_route_mock(uuid.uuid4(), status="ativa")
     user = make_user_mock("Passageiro X", phone="54988887777")

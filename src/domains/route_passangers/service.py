@@ -378,7 +378,29 @@ class RoutePassangerService:
         - Substitui schedules via schedule_repository.replace
         - Notifica motorista via notify_driver_passanger_schedules_changed
         """
-        pass
+        route = self.route_repository.find_by_id(route_id)
+        if route is None:
+            raise RouteNotFoundError()
+
+        if route.status == "em_andamento":
+            raise RouteInProgressError()
+
+        rp = self.route_passanger_repository.find_active_by_user_and_route(user_id, dependent_id, route_id)
+        if rp is None:
+            raise RoutePassangerNotFoundError()
+
+        new_schedules = [
+            RoutePassangerScheduleModel(
+                route_passanger_id=rp.id,
+                day_of_week=s.day_of_week,
+                address_id=s.address_id,
+            )
+            for s in data.schedules
+        ]
+        self.schedule_repository.replace(rp.id, new_schedules)
+
+        self.notification_service.notify_driver_passanger_schedules_changed(rp)
+        return self._to_response(rp)
 
     # US08-TK14
     def list_my_routes(self, user_id: UUID) -> list[PassangerRouteResponse]:

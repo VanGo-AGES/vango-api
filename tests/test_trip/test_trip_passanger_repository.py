@@ -27,7 +27,6 @@ from tests.test_trip._helpers import (
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US09-TK03")
 def test_save_all_persists_all_trip_passangers(db_session) -> None:
     driver = make_driver(db_session)
     vehicle = make_vehicle(db_session, driver.id)
@@ -54,7 +53,6 @@ def test_save_all_persists_all_trip_passangers(db_session) -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US09-TK03")
 def test_find_by_id_returns_model(db_session) -> None:
     driver = make_driver(db_session)
     vehicle = make_vehicle(db_session, driver.id)
@@ -68,13 +66,11 @@ def test_find_by_id_returns_model(db_session) -> None:
     assert repo.find_by_id(tp.id) is not None
 
 
-@pytest.mark.skip(reason="US09-TK03")
 def test_find_by_id_missing_returns_none(db_session) -> None:
     repo = TripPassangerRepositoryImpl(db_session)
     assert repo.find_by_id(uuid.uuid4()) is None
 
 
-@pytest.mark.skip(reason="US09-TK03")
 def test_find_by_trip_orders_by_stop_order_index(db_session) -> None:
     driver = make_driver(db_session)
     vehicle = make_vehicle(db_session, driver.id)
@@ -102,7 +98,6 @@ def test_find_by_trip_orders_by_stop_order_index(db_session) -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US09-TK03")
 def test_update_status_sets_boarded_at(db_session) -> None:
     driver = make_driver(db_session)
     vehicle = make_vehicle(db_session, driver.id)
@@ -122,7 +117,6 @@ def test_update_status_sets_boarded_at(db_session) -> None:
     assert updated.alighted_at is None
 
 
-@pytest.mark.skip(reason="US09-TK03")
 def test_update_status_sets_absent(db_session) -> None:
     driver = make_driver(db_session)
     vehicle = make_vehicle(db_session, driver.id)
@@ -140,7 +134,6 @@ def test_update_status_sets_absent(db_session) -> None:
     assert updated.boarded_at is None
 
 
-@pytest.mark.skip(reason="US09-TK03")
 def test_update_status_returns_none_when_missing(db_session) -> None:
     repo = TripPassangerRepositoryImpl(db_session)
     assert repo.update_status(uuid.uuid4(), "presente") is None
@@ -151,7 +144,6 @@ def test_update_status_returns_none_when_missing(db_session) -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US09-TK03")
 def test_bulk_alight_presents_fills_missing_alighted_at(db_session) -> None:
     driver = make_driver(db_session)
     vehicle = make_vehicle(db_session, driver.id)
@@ -176,12 +168,12 @@ def test_bulk_alight_presents_fills_missing_alighted_at(db_session) -> None:
     db_session.refresh(tp3)
 
     assert affected == 2
-    assert tp1.alighted_at == now
-    assert tp3.alighted_at == now
+    # SQLite strips tzinfo on storage; re-attach for comparison (PostgreSQL preserves it)
+    assert tp1.alighted_at.replace(tzinfo=timezone.utc) == now
+    assert tp3.alighted_at.replace(tzinfo=timezone.utc) == now
     assert tp2.alighted_at is None
 
 
-@pytest.mark.skip(reason="US09-TK03")
 def test_bulk_alight_presents_skips_already_alighted(db_session) -> None:
     driver = make_driver(db_session)
     vehicle = make_vehicle(db_session, driver.id)
@@ -200,4 +192,5 @@ def test_bulk_alight_presents_skips_already_alighted(db_session) -> None:
 
     db_session.refresh(tp)
     assert affected == 0
-    assert tp.alighted_at == earlier
+    # SQLite strips tzinfo on storage; re-attach for comparison (PostgreSQL preserves it)
+    assert tp.alighted_at.replace(tzinfo=timezone.utc) == earlier

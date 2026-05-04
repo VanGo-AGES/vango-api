@@ -255,7 +255,6 @@ def test_reject_request_already_processed_returns_409() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US06-TK13")
 def test_remove_passanger_success_returns_204() -> None:
     mock_service = Mock(spec=RoutePassangerService)
     mock_service.remove_passanger.return_value = None
@@ -269,7 +268,6 @@ def test_remove_passanger_success_returns_204() -> None:
     assert response.status_code == 204
 
 
-@pytest.mark.skip(reason="US06-TK13")
 def test_remove_passanger_not_found_returns_404() -> None:
     from src.domains.route_passangers.errors import RoutePassangerNotFoundError
 
@@ -285,7 +283,6 @@ def test_remove_passanger_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US06-TK13")
 def test_remove_passanger_route_not_found_returns_404() -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
@@ -301,7 +298,6 @@ def test_remove_passanger_route_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US06-TK13")
 def test_remove_passanger_wrong_owner_returns_403() -> None:
     from src.domains.routes.errors import RouteOwnershipError
 
@@ -317,7 +313,6 @@ def test_remove_passanger_wrong_owner_returns_403() -> None:
     assert response.status_code == 403
 
 
-@pytest.mark.skip(reason="US06-TK13")
 def test_remove_passanger_in_progress_returns_409() -> None:
     from src.domains.routes.errors import RouteInProgressError
 
@@ -746,7 +741,6 @@ def test_integration_reject_request_wrong_owner_returns_403(integration_client, 
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US06-TK13")
 def test_integration_remove_passanger_success(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)
@@ -761,7 +755,6 @@ def test_integration_remove_passanger_success(integration_client, db_session) ->
     assert response.status_code == 204
 
 
-@pytest.mark.skip(reason="US06-TK13")
 def test_integration_remove_passanger_in_progress_returns_409(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)
@@ -776,7 +769,6 @@ def test_integration_remove_passanger_in_progress_returns_409(integration_client
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US06-TK13")
 def test_integration_remove_passanger_wrong_owner_returns_403(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     other_driver, _ = make_integration_driver(db_session)
@@ -792,7 +784,6 @@ def test_integration_remove_passanger_wrong_owner_returns_403(integration_client
     assert response.status_code == 403
 
 
-@pytest.mark.skip(reason="US06-TK13")
 def test_integration_remove_passanger_deletes_stop_from_db(
     integration_client, db_session
 ) -> None:
@@ -1263,7 +1254,6 @@ def make_update_payload(days=("monday",), address_id=None):
     }
 
 
-@pytest.mark.skip(reason="US08-TK12")
 def test_update_schedules_success_returns_200() -> None:
     mock_service = Mock(spec=RoutePassangerService)
     mock_service.update_schedules.return_value = make_rp_response(status="pending")
@@ -1279,7 +1269,6 @@ def test_update_schedules_success_returns_200() -> None:
     assert response.status_code == 200
 
 
-@pytest.mark.skip(reason="US08-TK12")
 def test_update_schedules_with_dependent_id_query_forwarded() -> None:
     mock_service = Mock(spec=RoutePassangerService)
     mock_service.update_schedules.return_value = make_rp_response(status="pending", dependent=True)
@@ -1299,7 +1288,6 @@ def test_update_schedules_with_dependent_id_query_forwarded() -> None:
     assert dep_id in call_args or call_kwargs.get("dependent_id") == dep_id
 
 
-@pytest.mark.skip(reason="US08-TK12")
 def test_update_schedules_route_not_found_returns_404() -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
@@ -1317,7 +1305,6 @@ def test_update_schedules_route_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US08-TK12")
 def test_update_schedules_in_progress_returns_409() -> None:
     from src.domains.routes.errors import RouteInProgressError
 
@@ -1335,7 +1322,6 @@ def test_update_schedules_in_progress_returns_409() -> None:
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US08-TK12")
 def test_update_schedules_rp_not_found_returns_404() -> None:
     from src.domains.route_passangers.errors import RoutePassangerNotFoundError
 
@@ -1353,7 +1339,6 @@ def test_update_schedules_rp_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US08-TK12")
 def test_update_schedules_invalid_payload_returns_422() -> None:
     mock_service = Mock(spec=RoutePassangerService)
     app.dependency_overrides[get_route_passanger_service] = lambda: mock_service
@@ -1394,7 +1379,6 @@ def make_integration_pickup_address(db_session, user_id):
     return addr
 
 
-@pytest.mark.skip(reason="US08-TK12")
 def test_integration_update_schedules_success(integration_client, db_session) -> None:
     from src.domains.route_passangers.schedule_entity import RoutePassangerScheduleModel
 
@@ -1420,7 +1404,6 @@ def test_integration_update_schedules_success(integration_client, db_session) ->
     assert len(schedules) == 2
 
 
-@pytest.mark.skip(reason="US08-TK12")
 def test_integration_update_schedules_no_active_rp_returns_404(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)
@@ -1437,7 +1420,6 @@ def test_integration_update_schedules_no_active_rp_returns_404(integration_clien
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US08-TK12")
 def test_integration_update_schedules_in_progress_returns_409(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)

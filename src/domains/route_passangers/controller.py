@@ -155,7 +155,16 @@ def remove_passanger(
     service: Annotated[RoutePassangerService, Depends(get_route_passanger_service)],
     x_user_id: Annotated[str, Header(alias="X-User-Id")],
 ) -> None:
-    pass
+    driver_id = UUID(x_user_id)
+    try:
+        service.remove_passanger(route_id, rp_id, driver_id)
+        return None
+    except (NotRoutePassangerError, RouteNotFoundError, RoutePassangerNotFoundError) as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except RouteOwnershipError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+    except RouteInProgressError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
 
 # US06-TK15
@@ -235,7 +244,15 @@ def update_schedules(
     x_user_id: Annotated[str, Header(alias="X-User-Id")],
     dependent_id: Annotated[UUID | None, Query()] = None,
 ) -> RoutePassangerResponse:
-    pass
+    try:
+        user_id = UUID(x_user_id)
+        return service.update_schedules(route_id, user_id, body, dependent_id=dependent_id)
+    except RouteNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
+    except RouteInProgressError as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
+    except RoutePassangerNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
 
 
 # IMPORTANTE: este endpoint precisa ser resolvido ANTES de
