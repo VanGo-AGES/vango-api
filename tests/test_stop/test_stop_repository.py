@@ -130,6 +130,35 @@ def test_stop_repository_save_persists(db_session) -> None:
 
 
 # ---------------------------------------------------------------------------
+# find_by_id
+# ---------------------------------------------------------------------------
+
+
+def test_stop_repository_find_by_id_returns_stop(db_session) -> None:
+    driver = make_driver(db_session)
+    passenger = make_passenger(db_session)
+    origin = make_address(db_session, driver.id, "Casa")
+    dest = make_address(db_session, driver.id, "PUCRS")
+    route = make_route(db_session, driver.id, origin.id, dest.id)
+    pickup = make_address(db_session, passenger.id, "Parada")
+    rp = make_rp(db_session, route.id, passenger.id, pickup_address_id=pickup.id)
+
+    repo = StopRepositoryImpl(db_session)
+    stop = repo.save(StopModel(route_id=route.id, route_passanger_id=rp.id, address_id=pickup.id, order_index=1, type="embarque"))
+
+    found = repo.find_by_id(stop.id)
+
+    assert found is not None
+    assert found.id == stop.id
+    assert found.route_id == route.id
+
+
+def test_stop_repository_find_by_id_missing_returns_none(db_session) -> None:
+    repo = StopRepositoryImpl(db_session)
+    assert repo.find_by_id(uuid.uuid4()) is None
+
+
+# ---------------------------------------------------------------------------
 # find_by_route_id
 # ---------------------------------------------------------------------------
 

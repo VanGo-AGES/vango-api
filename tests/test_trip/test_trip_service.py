@@ -498,6 +498,103 @@ def test_skip_stop_raises_when_stop_not_in_route() -> None:
         service.skip_stop(trip.id, stop.id, driver_id)
 
 
+def test_skip_stop_raises_when_trip_not_found() -> None:
+    service, mocks = make_service()
+    mocks["trip_repo"].find_by_id.return_value = None
+
+    with pytest.raises(TripNotFoundError):
+        service.skip_stop(uuid.uuid4(), uuid.uuid4(), uuid.uuid4())
+
+
+def test_skip_stop_raises_when_wrong_owner() -> None:
+    service, mocks = make_service()
+    route = make_route_mock(driver_id=uuid.uuid4())
+    trip = make_trip_mock(route_id=route.id, status="iniciada")
+    trip.route = route
+    mocks["trip_repo"].find_by_id.return_value = trip
+
+    with pytest.raises(TripOwnershipError):
+        service.skip_stop(trip.id, uuid.uuid4(), uuid.uuid4())
+
+
+def test_skip_stop_raises_when_trip_not_in_progress() -> None:
+    service, mocks = make_service()
+    driver_id = uuid.uuid4()
+    route = make_route_mock(driver_id=driver_id)
+    trip = make_trip_mock(route_id=route.id, status="finalizada")
+    trip.route = route
+    mocks["trip_repo"].find_by_id.return_value = trip
+
+    with pytest.raises(TripNotInProgressError):
+        service.skip_stop(trip.id, uuid.uuid4(), driver_id)
+
+
+def test_skip_stop_raises_when_stop_not_found() -> None:
+    service, mocks = make_service()
+    driver_id = uuid.uuid4()
+    route = make_route_mock(driver_id=driver_id)
+    trip = make_trip_mock(route_id=route.id, status="iniciada")
+    trip.route = route
+    mocks["trip_repo"].find_by_id.return_value = trip
+    mocks["stop_repo"].find_by_id.return_value = None
+
+    with pytest.raises(TripStopNotFoundError):
+        service.skip_stop(trip.id, uuid.uuid4(), driver_id)
+
+
+def test_skip_stop_returns_empty_when_no_pending_passangers() -> None:
+    service, mocks = make_service()
+    driver_id = uuid.uuid4()
+    route = make_route_mock(driver_id=driver_id)
+    trip = make_trip_mock(route_id=route.id, status="iniciada")
+    trip.route = route
+
+    stop = Mock(spec=StopModel)
+    stop.id = uuid.uuid4()
+    stop.route_id = route.id
+    stop.route_passanger_id = uuid.uuid4()
+
+    tp = make_tp_mock(trip_id=trip.id, status="ausente")
+    tp.route_passanger_id = stop.route_passanger_id
+
+    mocks["trip_repo"].find_by_id.return_value = trip
+    mocks["stop_repo"].find_by_id.return_value = stop
+    mocks["tp_repo"].find_by_trip.return_value = [tp]
+
+    result = service.skip_stop(trip.id, stop.id, driver_id)
+
+    assert result == []
+    mocks["tp_repo"].update_status.assert_not_called()
+
+
+def test_skip_stop_only_updates_pending_passangers() -> None:
+    service, mocks = make_service()
+    driver_id = uuid.uuid4()
+    route = make_route_mock(driver_id=driver_id)
+    trip = make_trip_mock(route_id=route.id, status="iniciada")
+    trip.route = route
+
+    stop = Mock(spec=StopModel)
+    stop.id = uuid.uuid4()
+    stop.route_id = route.id
+    stop.route_passanger_id = uuid.uuid4()
+
+    tp_pendente = make_tp_mock(trip_id=trip.id, status="pendente")
+    tp_pendente.route_passanger_id = stop.route_passanger_id
+    tp_presente = make_tp_mock(trip_id=trip.id, status="presente")
+    tp_presente.route_passanger_id = stop.route_passanger_id
+
+    mocks["trip_repo"].find_by_id.return_value = trip
+    mocks["stop_repo"].find_by_id.return_value = stop
+    mocks["tp_repo"].find_by_trip.return_value = [tp_pendente, tp_presente]
+    mocks["tp_repo"].update_status.return_value = make_tp_mock(trip_id=trip.id, status="ausente")
+
+    result = service.skip_stop(trip.id, stop.id, driver_id)
+
+    assert len(result) == 1
+    mocks["tp_repo"].update_status.assert_called_once_with(tp_pendente.id, "ausente")
+
+
 # ===========================================================================
 # US09-TK12 — alight_passanger
 # ===========================================================================
