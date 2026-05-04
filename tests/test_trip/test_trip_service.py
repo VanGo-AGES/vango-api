@@ -348,7 +348,6 @@ def test_get_next_stop_raises_when_wrong_owner() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US09-TK09")
 def test_board_passanger_marks_presente_and_boarded_at() -> None:
     service, mocks = make_service()
     driver_id = uuid.uuid4()
@@ -372,7 +371,6 @@ def test_board_passanger_marks_presente_and_boarded_at() -> None:
     assert call.args[1] == "presente"
 
 
-@pytest.mark.skip(reason="US09-TK09")
 def test_board_passanger_rejects_if_already_absent() -> None:
     service, mocks = make_service()
     driver_id = uuid.uuid4()
@@ -387,7 +385,6 @@ def test_board_passanger_rejects_if_already_absent() -> None:
         service.board_passanger(trip.id, tp.id, driver_id)
 
 
-@pytest.mark.skip(reason="US09-TK09")
 def test_board_passanger_rejects_if_trip_not_in_progress() -> None:
     service, mocks = make_service()
     driver_id = uuid.uuid4()
@@ -400,7 +397,6 @@ def test_board_passanger_rejects_if_trip_not_in_progress() -> None:
         service.board_passanger(trip.id, uuid.uuid4(), driver_id)
 
 
-@pytest.mark.skip(reason="US09-TK09")
 def test_board_passanger_raises_when_tp_not_found() -> None:
     service, mocks = make_service()
     driver_id = uuid.uuid4()
