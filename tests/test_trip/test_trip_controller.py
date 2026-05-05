@@ -596,7 +596,6 @@ def test_alight_passanger_invalid_status_returns_409() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US09-TK21")
 def test_finish_trip_success_returns_200() -> None:
     mock_service = Mock(spec=TripService)
     mock_service.finish_trip.return_value = make_trip_response(status="finalizada")
@@ -611,7 +610,6 @@ def test_finish_trip_success_returns_200() -> None:
     assert response.json()["status"] == "finalizada"
 
 
-@pytest.mark.skip(reason="US09-TK21")
 def test_finish_trip_without_total_km_returns_200() -> None:
     """total_km é opcional."""
     mock_service = Mock(spec=TripService)
@@ -626,7 +624,6 @@ def test_finish_trip_without_total_km_returns_200() -> None:
     assert response.status_code == 200
 
 
-@pytest.mark.skip(reason="US09-TK21")
 def test_finish_trip_not_found_returns_404() -> None:
     from src.domains.trips.errors import TripNotFoundError
 
@@ -642,7 +639,6 @@ def test_finish_trip_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US09-TK21")
 def test_finish_trip_wrong_owner_returns_403() -> None:
     from src.domains.trips.errors import TripOwnershipError
 
@@ -658,7 +654,6 @@ def test_finish_trip_wrong_owner_returns_403() -> None:
     assert response.status_code == 403
 
 
-@pytest.mark.skip(reason="US09-TK21")
 def test_finish_trip_already_finished_returns_409() -> None:
     from src.domains.trips.errors import TripAlreadyFinishedError
 
@@ -1092,7 +1087,6 @@ def test_integration_alight_when_absent_returns_409(integration_client, db_sessi
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US09-TK21")
 def test_integration_finish_trip_success(integration_client, db_session) -> None:
     from src.domains.trips.entity import TripModel
 
@@ -1115,7 +1109,6 @@ def test_integration_finish_trip_success(integration_client, db_session) -> None
     assert refreshed.total_km == 12.5
 
 
-@pytest.mark.skip(reason="US09-TK21")
 def test_integration_finish_trip_auto_alights_presents(integration_client, db_session) -> None:
     """Ao finalizar, passageiros 'presente' sem alighted_at devem ser auto-desembarcados."""
     from src.domains.trips.entity import TripPassangerModel
@@ -1141,7 +1134,6 @@ def test_integration_finish_trip_auto_alights_presents(integration_client, db_se
     assert refreshed.alighted_at is not None
 
 
-@pytest.mark.skip(reason="US09-TK21")
 def test_integration_finish_trip_already_finished_returns_409(
     integration_client, db_session
 ) -> None:
@@ -1159,7 +1151,6 @@ def test_integration_finish_trip_already_finished_returns_409(
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US09-TK21")
 def test_integration_finish_trip_wrong_owner_returns_403(integration_client, db_session) -> None:
     driver = make_driver(db_session)
     other = make_driver(db_session, name="Outro")
