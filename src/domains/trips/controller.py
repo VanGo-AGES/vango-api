@@ -18,6 +18,7 @@ from src.domains.trips.errors import (
     TripNotInProgressError,
     TripOwnershipError,
     TripPassangerNotFoundError,
+    TripStopNotFoundError,
 )
 from src.domains.trips.service import TripService
 from src.infrastructure.dependencies.trip_dependencies import get_trip_service
@@ -131,7 +132,16 @@ def skip_stop(
     service: Annotated[TripService, Depends(get_trip_service)],
     x_user_id: Annotated[str, Header(alias="X-User-Id")],
 ) -> list[TripPassangerResponse]:
-    pass
+    try:
+        return service.skip_stop(trip_id, stop_id, UUID(x_user_id))
+    except TripNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except TripStopNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except TripOwnershipError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+    except TripNotInProgressError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
 
 # US09-TK20
