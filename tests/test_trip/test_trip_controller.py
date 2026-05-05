@@ -542,7 +542,6 @@ def test_skip_stop_trip_not_in_progress_returns_409() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US09-TK20")
 def test_alight_passanger_success_returns_200() -> None:
     mock_service = Mock(spec=TripService)
     response_dto = make_trip_passanger_response(status="presente")
@@ -559,7 +558,6 @@ def test_alight_passanger_success_returns_200() -> None:
     assert response.json()["alighted_at"] is not None
 
 
-@pytest.mark.skip(reason="US09-TK20")
 def test_alight_passanger_not_found_returns_404() -> None:
     from src.domains.trips.errors import TripPassangerNotFoundError
 
@@ -575,7 +573,6 @@ def test_alight_passanger_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US09-TK20")
 def test_alight_passanger_invalid_status_returns_409() -> None:
     from src.domains.trips.errors import InvalidTripPassangerStatusError
 
@@ -1045,7 +1042,6 @@ def test_integration_skip_stop_not_found_returns_404(integration_client, db_sess
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US09-TK20")
 def test_integration_alight_passanger_success(integration_client, db_session) -> None:
     from src.domains.trips.entity import TripPassangerModel
 
@@ -1069,7 +1065,6 @@ def test_integration_alight_passanger_success(integration_client, db_session) ->
     assert refreshed.alighted_at is not None
 
 
-@pytest.mark.skip(reason="US09-TK20")
 def test_integration_alight_when_absent_returns_409(integration_client, db_session) -> None:
     driver = make_driver(db_session)
     vehicle = make_vehicle(db_session, driver.id)
