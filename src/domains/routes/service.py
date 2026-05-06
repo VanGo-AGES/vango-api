@@ -279,11 +279,13 @@ class RouteService:
             raise RouteInProgressError()
 
         active_passengers: dict = {}
-        for status in ("pending", "accepted"):
-            for rp in self.route_passanger_repository.find_by_route_and_status(route_id, status):
-                active_passengers[rp.id] = rp
+        if self.route_passanger_repository is not None:
+            for status in ("pending", "accepted"):
+                for rp in self.route_passanger_repository.find_by_route_and_status(route_id, status):
+                    active_passengers[rp.id] = rp
 
-        for rp in active_passengers.values():
-            self.notification_service.notify_passanger_route_cancelled(rp)
+        if self.notification_service is not None:
+            for rp in active_passengers.values():
+                self.notification_service.notify_passanger_route_cancelled(rp)
 
         self.route_repository.delete(route_id)

@@ -24,6 +24,9 @@ class TripPassangerRepositoryImpl(ITripPassangerRepository):
         for tp in trip_passangers:
             self.session.add(tp)
         self.session.flush()
+        self.session.commit()
+        for tp in trip_passangers:
+            self.session.refresh(tp)
         return trip_passangers
 
     # US09-TK03
@@ -58,6 +61,8 @@ class TripPassangerRepositoryImpl(ITripPassangerRepository):
         if alighted_at is not None:
             tp.alighted_at = alighted_at
         self.session.flush()
+        self.session.commit()
+        self.session.refresh(tp)
         return tp
 
     # US09-TK03
@@ -74,4 +79,5 @@ class TripPassangerRepositoryImpl(ITripPassangerRepository):
         )
         result = self.session.execute(stmt)
         self.session.flush()
+        self.session.commit()
         return result.rowcount
