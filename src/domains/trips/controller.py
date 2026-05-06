@@ -5,16 +5,16 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 
+from src.domains.routes.errors import (
+    RouteNotFoundError,
+    RouteOwnershipError,
+)
 from src.domains.trips.dtos import (
     FinishTripRequest,
     StartTripRequest,
     TripNextStopResponse,
     TripPassangerResponse,
     TripResponse,
-)
-from src.domains.routes.errors import (
-    RouteNotFoundError,
-    RouteOwnershipError,
 )
 from src.domains.trips.errors import (
     InvalidTripPassangerStatusError,
