@@ -113,7 +113,7 @@ def test_update_status_sets_boarded_at(db_session) -> None:
 
     assert updated is not None
     assert updated.status == "presente"
-    assert updated.boarded_at == boarded_at
+    assert updated.boarded_at.replace(tzinfo=timezone.utc) == boarded_at
     assert updated.alighted_at is None
 
 
