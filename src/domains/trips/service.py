@@ -82,7 +82,7 @@ class TripService:
             raise TripOwnershipError("Motorista não é dono desta rota.")
 
         vehicle = self.vehicle_repository.find_by_id(data.vehicle_id)
-        if vehicle.driver_id != driver_id:
+        if vehicle is None or vehicle.driver_id != driver_id:
             raise VehicleNotOwnedError("Veículo não pertence ao motorista.")
 
         existing = self.trip_repository.find_in_progress_by_route(route_id)
@@ -339,7 +339,7 @@ class TripService:
         if tp.status != "presente":
             raise InvalidTripPassangerStatusError(f"Não é possível desembarcar um passageiro com status '{tp.status}'.")
 
-        updated = self.trip_passanger_repository.update_status(trip_passanger_id, tp.status, alighted_at=datetime.now(UTC))
+        updated = self.trip_passanger_repository.update_status(trip_passanger_id, "presente", alighted_at=datetime.now(UTC))
         return self._build_trip_passanger_response(updated)
 
     # US09-TK13

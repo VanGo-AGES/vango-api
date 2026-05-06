@@ -242,6 +242,7 @@ class RoutePassangerService:
             user_id=rp.user_id,
             user_name=user.name,
             user_phone=user.phone,
+            photo_url=user.photo_url,
             pickup_address_id=rp.pickup_address_id,
             joined_at=rp.joined_at,
             dependent_id=rp.dependent_id,
@@ -492,6 +493,8 @@ class RoutePassangerService:
             raise NotRoutePassangerError()
 
         driver = self.user_repository.find_by_id(route.driver_id)
+        if driver is None:
+            raise RouteNotFoundError()
 
         dependent_name: str | None = None
         if dependent_id is not None:

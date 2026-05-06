@@ -21,6 +21,7 @@ class RoutePassangerResponse(BaseModel):
     user_phone: str
     pickup_address_id: UUID
 
+    photo_url: str | None = None
     joined_at: datetime | None = None
     dependent_id: UUID | None = None
     dependent_name: str | None = None

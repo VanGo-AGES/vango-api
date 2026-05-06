@@ -16,6 +16,7 @@ class StopRepositoryImpl(IStopRepository):
         """Persiste uma stop nova ou atualizada e retorna a instância persistida."""
         self.session.add(stop)
         self.session.flush()
+        self.session.commit()
         self.session.refresh(stop)
         return stop
 
@@ -38,4 +39,5 @@ class StopRepositoryImpl(IStopRepository):
             return False
         self.session.delete(stop)
         self.session.flush()
+        self.session.commit()
         return True
