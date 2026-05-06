@@ -1,5 +1,5 @@
-from src.infrastructure.utils.photo_uploader import FirebasePhotoUploader, IPhotoUploader
+from src.infrastructure.utils.photo_uploader import IPhotoUploader, S3PhotoUploader
 
 
 def get_photo_uploader() -> IPhotoUploader:
-    return FirebasePhotoUploader()
+    return S3PhotoUploader()
