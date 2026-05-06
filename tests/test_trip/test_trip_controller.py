@@ -470,7 +470,6 @@ def test_mark_absent_trip_not_in_progress_returns_409() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US09-TK19")
 def test_skip_stop_success_returns_200_with_list() -> None:
     mock_service = Mock(spec=TripService)
     mock_service.skip_stop.return_value = [
@@ -489,7 +488,6 @@ def test_skip_stop_success_returns_200_with_list() -> None:
     assert body[0]["status"] == "ausente"
 
 
-@pytest.mark.skip(reason="US09-TK19")
 def test_skip_stop_stop_not_found_returns_404() -> None:
     from src.domains.trips.errors import TripStopNotFoundError
 
@@ -505,7 +503,6 @@ def test_skip_stop_stop_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US09-TK19")
 def test_skip_stop_wrong_owner_returns_403() -> None:
     from src.domains.trips.errors import TripOwnershipError
 
@@ -521,7 +518,6 @@ def test_skip_stop_wrong_owner_returns_403() -> None:
     assert response.status_code == 403
 
 
-@pytest.mark.skip(reason="US09-TK19")
 def test_skip_stop_trip_not_in_progress_returns_409() -> None:
     from src.domains.trips.errors import TripNotInProgressError
 
@@ -993,7 +989,6 @@ def test_integration_mark_absent_wrong_owner_returns_403(integration_client, db_
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US09-TK19")
 def test_integration_skip_stop_marks_passangers_absent(integration_client, db_session) -> None:
     driver = make_driver(db_session)
     vehicle = make_vehicle(db_session, driver.id)
@@ -1017,7 +1012,6 @@ def test_integration_skip_stop_marks_passangers_absent(integration_client, db_se
     assert body[0]["status"] == "ausente"
 
 
-@pytest.mark.skip(reason="US09-TK19")
 def test_integration_skip_stop_not_found_returns_404(integration_client, db_session) -> None:
     driver = make_driver(db_session)
     vehicle = make_vehicle(db_session, driver.id)
