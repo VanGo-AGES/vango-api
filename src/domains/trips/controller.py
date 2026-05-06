@@ -12,14 +12,21 @@ from src.domains.trips.dtos import (
     TripPassangerResponse,
     TripResponse,
 )
+from src.domains.routes.errors import (
+    RouteNotFoundError,
+    RouteOwnershipError,
+)
 from src.domains.trips.errors import (
     InvalidTripPassangerStatusError,
+    NoPassangersToStartError,
     TripAlreadyFinishedError,
+    TripAlreadyInProgressError,
     TripNotFoundError,
     TripNotInProgressError,
     TripOwnershipError,
     TripPassangerNotFoundError,
     TripStopNotFoundError,
+    VehicleNotOwnedError,
 )
 from src.domains.trips.service import TripService
 from src.infrastructure.dependencies.trip_dependencies import get_trip_service
@@ -40,7 +47,18 @@ def start_trip(
     service: Annotated[TripService, Depends(get_trip_service)],
     x_user_id: Annotated[str, Header(alias="X-User-Id")],
 ) -> TripResponse:
-    pass
+    try:
+        return service.start_trip(route_id, UUID(x_user_id), data)
+    except RouteNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
+    except (RouteOwnershipError, TripOwnershipError) as error:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error)) from error
+    except VehicleNotOwnedError as error:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error)) from error
+    except TripAlreadyInProgressError as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
+    except NoPassangersToStartError as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
 
 
 # US09-TK15
