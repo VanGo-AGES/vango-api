@@ -52,7 +52,6 @@ def make_response_payload(**kwargs) -> dict:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US06-TK05")
 def test_route_passanger_response_requires_id() -> None:
     from pydantic import ValidationError
 
@@ -64,7 +63,6 @@ def test_route_passanger_response_requires_id() -> None:
         RoutePassangerResponse(**payload)
 
 
-@pytest.mark.skip(reason="US06-TK05")
 def test_route_passanger_response_requires_route_id() -> None:
     from pydantic import ValidationError
 
@@ -76,7 +74,6 @@ def test_route_passanger_response_requires_route_id() -> None:
         RoutePassangerResponse(**payload)
 
 
-@pytest.mark.skip(reason="US06-TK05")
 def test_route_passanger_response_requires_status() -> None:
     from pydantic import ValidationError
 
@@ -88,7 +85,6 @@ def test_route_passanger_response_requires_status() -> None:
         RoutePassangerResponse(**payload)
 
 
-@pytest.mark.skip(reason="US06-TK05")
 def test_route_passanger_response_requires_requested_at() -> None:
     from pydantic import ValidationError
 
@@ -100,7 +96,6 @@ def test_route_passanger_response_requires_requested_at() -> None:
         RoutePassangerResponse(**payload)
 
 
-@pytest.mark.skip(reason="US06-TK05")
 def test_route_passanger_response_requires_user_id() -> None:
     from pydantic import ValidationError
 
@@ -112,7 +107,6 @@ def test_route_passanger_response_requires_user_id() -> None:
         RoutePassangerResponse(**payload)
 
 
-@pytest.mark.skip(reason="US06-TK05")
 def test_route_passanger_response_requires_user_name() -> None:
     from pydantic import ValidationError
 
@@ -124,7 +118,6 @@ def test_route_passanger_response_requires_user_name() -> None:
         RoutePassangerResponse(**payload)
 
 
-@pytest.mark.skip(reason="US06-TK05")
 def test_route_passanger_response_requires_pickup_address_id() -> None:
     from pydantic import ValidationError
 
@@ -136,7 +129,6 @@ def test_route_passanger_response_requires_pickup_address_id() -> None:
         RoutePassangerResponse(**payload)
 
 
-@pytest.mark.skip(reason="US06-TK05")
 def test_route_passanger_response_requires_user_phone() -> None:
     """US13 — driver precisa do phone do passageiro pro deeplink de contato."""
     from pydantic import ValidationError
@@ -149,7 +141,6 @@ def test_route_passanger_response_requires_user_phone() -> None:
         RoutePassangerResponse(**payload)
 
 
-@pytest.mark.skip(reason="US06-TK05")
 def test_route_passanger_response_exposes_user_phone() -> None:
     from src.domains.route_passangers.dtos import RoutePassangerResponse
 
@@ -163,7 +154,6 @@ def test_route_passanger_response_exposes_user_phone() -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US06-TK05")
 def test_route_passanger_response_joined_at_defaults_to_none() -> None:
     from src.domains.route_passangers.dtos import RoutePassangerResponse
 
@@ -173,7 +163,6 @@ def test_route_passanger_response_joined_at_defaults_to_none() -> None:
     assert response.joined_at is None
 
 
-@pytest.mark.skip(reason="US06-TK05")
 def test_route_passanger_response_dependent_id_defaults_to_none() -> None:
     from src.domains.route_passangers.dtos import RoutePassangerResponse
 
@@ -183,7 +172,6 @@ def test_route_passanger_response_dependent_id_defaults_to_none() -> None:
     assert response.dependent_id is None
 
 
-@pytest.mark.skip(reason="US06-TK05")
 def test_route_passanger_response_dependent_name_defaults_to_none() -> None:
     from src.domains.route_passangers.dtos import RoutePassangerResponse
 
@@ -193,7 +181,6 @@ def test_route_passanger_response_dependent_name_defaults_to_none() -> None:
     assert response.dependent_name is None
 
 
-@pytest.mark.skip(reason="US06-TK05")
 def test_route_passanger_response_guardian_name_defaults_to_none() -> None:
     from src.domains.route_passangers.dtos import RoutePassangerResponse
 
@@ -203,7 +190,6 @@ def test_route_passanger_response_guardian_name_defaults_to_none() -> None:
     assert response.guardian_name is None
 
 
-@pytest.mark.skip(reason="US06-TK05")
 def test_route_passanger_response_accepts_explicit_none_on_optionals() -> None:
     from src.domains.route_passangers.dtos import RoutePassangerResponse
 
@@ -225,7 +211,6 @@ def test_route_passanger_response_accepts_explicit_none_on_optionals() -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US06-TK05")
 def test_route_passanger_response_rejects_invalid_uuid() -> None:
     from pydantic import ValidationError
 
@@ -236,7 +221,6 @@ def test_route_passanger_response_rejects_invalid_uuid() -> None:
         RoutePassangerResponse(**payload)
 
 
-@pytest.mark.skip(reason="US06-TK05")
 def test_route_passanger_response_rejects_invalid_requested_at() -> None:
     from pydantic import ValidationError
 
@@ -247,7 +231,6 @@ def test_route_passanger_response_rejects_invalid_requested_at() -> None:
         RoutePassangerResponse(**payload)
 
 
-@pytest.mark.skip(reason="US06-TK05")
 def test_route_passanger_response_accepts_uuid_from_string() -> None:
     from src.domains.route_passangers.dtos import RoutePassangerResponse
 
@@ -257,7 +240,6 @@ def test_route_passanger_response_accepts_uuid_from_string() -> None:
     assert response.id == UUID(id_str)
 
 
-@pytest.mark.skip(reason="US06-TK05")
 def test_route_passanger_response_accepts_datetime_from_iso_string() -> None:
     from src.domains.route_passangers.dtos import RoutePassangerResponse
 
@@ -272,7 +254,6 @@ def test_route_passanger_response_accepts_datetime_from_iso_string() -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US06-TK05")
 def test_route_passanger_response_accepts_valid_payload_without_dependent() -> None:
     from src.domains.route_passangers.dtos import RoutePassangerResponse
 
@@ -285,7 +266,6 @@ def test_route_passanger_response_accepts_valid_payload_without_dependent() -> N
     assert response.guardian_name is None
 
 
-@pytest.mark.skip(reason="US06-TK05")
 def test_route_passanger_response_accepts_valid_payload_with_dependent() -> None:
     from src.domains.route_passangers.dtos import RoutePassangerResponse
 
@@ -301,7 +281,6 @@ def test_route_passanger_response_accepts_valid_payload_with_dependent() -> None
     assert response.guardian_name == "João Silva"
 
 
-@pytest.mark.skip(reason="US06-TK05")
 def test_route_passanger_response_accepts_joined_at_datetime() -> None:
     from src.domains.route_passangers.dtos import RoutePassangerResponse
 
@@ -311,7 +290,6 @@ def test_route_passanger_response_accepts_joined_at_datetime() -> None:
     assert response.joined_at == joined
 
 
-@pytest.mark.skip(reason="US06-TK05")
 def test_route_passanger_response_status_preserves_string_value() -> None:
     from src.domains.route_passangers.dtos import RoutePassangerResponse
 
@@ -326,7 +304,6 @@ def test_route_passanger_response_status_preserves_string_value() -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US06-TK05")
 def test_route_passanger_response_builds_from_orm_like_object() -> None:
     from src.domains.route_passangers.dtos import RoutePassangerResponse
 
@@ -360,14 +337,12 @@ def test_route_passanger_response_builds_from_orm_like_object() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US06-TK05")
 def test_route_passanger_not_found_error_inherits_from_exception() -> None:
     from src.domains.route_passangers.errors import RoutePassangerNotFoundError
 
     assert issubclass(RoutePassangerNotFoundError, Exception)
 
 
-@pytest.mark.skip(reason="US06-TK05")
 def test_route_passanger_not_found_error_has_default_message() -> None:
     from src.domains.route_passangers.errors import RoutePassangerNotFoundError
 
@@ -375,7 +350,6 @@ def test_route_passanger_not_found_error_has_default_message() -> None:
     assert str(err) != ""
 
 
-@pytest.mark.skip(reason="US06-TK05")
 def test_route_passanger_not_found_error_accepts_custom_message() -> None:
     from src.domains.route_passangers.errors import RoutePassangerNotFoundError
 
@@ -383,14 +357,12 @@ def test_route_passanger_not_found_error_accepts_custom_message() -> None:
     assert str(err) == "mensagem customizada"
 
 
-@pytest.mark.skip(reason="US06-TK05")
 def test_route_capacity_exceeded_error_inherits_from_exception() -> None:
     from src.domains.route_passangers.errors import RouteCapacityExceededError
 
     assert issubclass(RouteCapacityExceededError, Exception)
 
 
-@pytest.mark.skip(reason="US06-TK05")
 def test_route_capacity_exceeded_error_has_default_message() -> None:
     from src.domains.route_passangers.errors import RouteCapacityExceededError
 
@@ -398,7 +370,6 @@ def test_route_capacity_exceeded_error_has_default_message() -> None:
     assert str(err) != ""
 
 
-@pytest.mark.skip(reason="US06-TK05")
 def test_route_capacity_exceeded_error_accepts_custom_message() -> None:
     from src.domains.route_passangers.errors import RouteCapacityExceededError
 
@@ -406,14 +377,12 @@ def test_route_capacity_exceeded_error_accepts_custom_message() -> None:
     assert str(err) == "capacidade cheia"
 
 
-@pytest.mark.skip(reason="US06-TK05")
 def test_route_passanger_already_processed_error_inherits_from_exception() -> None:
     from src.domains.route_passangers.errors import RoutePassangerAlreadyProcessedError
 
     assert issubclass(RoutePassangerAlreadyProcessedError, Exception)
 
 
-@pytest.mark.skip(reason="US06-TK05")
 def test_route_passanger_already_processed_error_has_default_message() -> None:
     from src.domains.route_passangers.errors import RoutePassangerAlreadyProcessedError
 
@@ -421,7 +390,6 @@ def test_route_passanger_already_processed_error_has_default_message() -> None:
     assert str(err) != ""
 
 
-@pytest.mark.skip(reason="US06-TK05")
 def test_route_passanger_already_processed_error_accepts_custom_message() -> None:
     from src.domains.route_passangers.errors import RoutePassangerAlreadyProcessedError
 
@@ -467,7 +435,6 @@ def make_passanger_route_payload(**kwargs) -> dict:
     return defaults
 
 
-@pytest.mark.skip(reason="US08-TK13")
 def test_passanger_route_response_requires_route_id() -> None:
     from pydantic import ValidationError
 
@@ -479,7 +446,6 @@ def test_passanger_route_response_requires_route_id() -> None:
         PassangerRouteResponse(**payload)
 
 
-@pytest.mark.skip(reason="US08-TK13")
 def test_passanger_route_response_requires_membership_status() -> None:
     from pydantic import ValidationError
 
@@ -491,7 +457,6 @@ def test_passanger_route_response_requires_membership_status() -> None:
         PassangerRouteResponse(**payload)
 
 
-@pytest.mark.skip(reason="US08-TK13")
 def test_passanger_route_response_requires_joined_at() -> None:
     from pydantic import ValidationError
 
@@ -503,7 +468,6 @@ def test_passanger_route_response_requires_joined_at() -> None:
         PassangerRouteResponse(**payload)
 
 
-@pytest.mark.skip(reason="US08-TK13")
 def test_passanger_route_response_requires_driver_phone() -> None:
     """US13 — passageiro precisa do phone do motorista pro deeplink."""
     from pydantic import ValidationError
@@ -516,7 +480,6 @@ def test_passanger_route_response_requires_driver_phone() -> None:
         PassangerRouteResponse(**payload)
 
 
-@pytest.mark.skip(reason="US08-TK13")
 def test_passanger_route_response_exposes_driver_phone() -> None:
     from src.domains.route_passangers.dtos import PassangerRouteResponse
 
@@ -525,7 +488,6 @@ def test_passanger_route_response_exposes_driver_phone() -> None:
     assert response.driver_phone == "54988887777"
 
 
-@pytest.mark.skip(reason="US08-TK13")
 def test_passanger_route_response_dependent_name_defaults_to_none() -> None:
     from src.domains.route_passangers.dtos import PassangerRouteResponse
 
@@ -535,7 +497,6 @@ def test_passanger_route_response_dependent_name_defaults_to_none() -> None:
     assert response.dependent_name is None
 
 
-@pytest.mark.skip(reason="US08-TK13")
 def test_passanger_route_response_accepts_valid_self_payload() -> None:
     from src.domains.route_passangers.dtos import PassangerRouteResponse
 
@@ -547,7 +508,6 @@ def test_passanger_route_response_accepts_valid_self_payload() -> None:
     assert response.dependent_name is None
 
 
-@pytest.mark.skip(reason="US08-TK13")
 def test_passanger_route_response_accepts_dependent_payload() -> None:
     from src.domains.route_passangers.dtos import PassangerRouteResponse
 
@@ -556,7 +516,6 @@ def test_passanger_route_response_accepts_dependent_payload() -> None:
     assert response.dependent_name == "Maria Silva"
 
 
-@pytest.mark.skip(reason="US08-TK13")
 def test_passanger_route_response_membership_status_preserves_values() -> None:
     from src.domains.route_passangers.dtos import PassangerRouteResponse
 
@@ -566,7 +525,6 @@ def test_passanger_route_response_membership_status_preserves_values() -> None:
         assert response.membership_status == status_value
 
 
-@pytest.mark.skip(reason="US08-TK13")
 def test_passanger_route_response_builds_from_orm_like_object() -> None:
     from src.domains.route_passangers.dtos import PassangerRouteResponse
 

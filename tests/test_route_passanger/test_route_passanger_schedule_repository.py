@@ -86,7 +86,7 @@ def make_route(session, driver_id, origin_id, destination_id, **kwargs):
         "max_passengers": 5,
         "expected_time": time(8, 0),
         "status": "inativa",
-        "invite_code": "A1B2C",
+        "invite_code": uuid.uuid4().hex[:8],
     }
     defaults.update(kwargs)
     route = RouteModel(**defaults)
@@ -149,7 +149,6 @@ def setup_rp(db_session):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US08-TK02")
 def test_schedule_repository_save_many_persists_schedules(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_schedule_repository import (
         RoutePassangerScheduleRepositoryImpl,
@@ -167,7 +166,6 @@ def test_schedule_repository_save_many_persists_schedules(db_session) -> None:
     assert {s.day_of_week for s in saved} == {"monday", "wednesday"}
 
 
-@pytest.mark.skip(reason="US08-TK02")
 def test_schedule_repository_save_many_empty_list_returns_empty(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_schedule_repository import (
         RoutePassangerScheduleRepositoryImpl,
@@ -182,7 +180,6 @@ def test_schedule_repository_save_many_empty_list_returns_empty(db_session) -> N
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US08-TK02")
 def test_schedule_repository_find_by_rp_returns_only_rp_schedules(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_schedule_repository import (
         RoutePassangerScheduleRepositoryImpl,
@@ -200,7 +197,6 @@ def test_schedule_repository_find_by_rp_returns_only_rp_schedules(db_session) ->
     assert {s.day_of_week for s in result} == {"monday", "tuesday"}
 
 
-@pytest.mark.skip(reason="US08-TK02")
 def test_schedule_repository_find_by_rp_empty_returns_empty_list(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_schedule_repository import (
         RoutePassangerScheduleRepositoryImpl,
@@ -210,7 +206,6 @@ def test_schedule_repository_find_by_rp_empty_returns_empty_list(db_session) -> 
     assert repo.find_by_route_passanger_id(uuid.uuid4()) == []
 
 
-@pytest.mark.skip(reason="US08-TK02")
 def test_schedule_repository_find_by_rp_filters_by_rp(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_schedule_repository import (
         RoutePassangerScheduleRepositoryImpl,
@@ -233,7 +228,6 @@ def test_schedule_repository_find_by_rp_filters_by_rp(db_session) -> None:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US08-TK02")
 def test_schedule_repository_delete_by_rp_removes_all(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_schedule_repository import (
         RoutePassangerScheduleRepositoryImpl,
@@ -253,7 +247,6 @@ def test_schedule_repository_delete_by_rp_removes_all(db_session) -> None:
     assert repo.find_by_route_passanger_id(rp.id) == []
 
 
-@pytest.mark.skip(reason="US08-TK02")
 def test_schedule_repository_delete_by_rp_not_found_returns_zero(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_schedule_repository import (
         RoutePassangerScheduleRepositoryImpl,
@@ -263,7 +256,6 @@ def test_schedule_repository_delete_by_rp_not_found_returns_zero(db_session) -> 
     assert repo.delete_by_route_passanger_id(uuid.uuid4()) == 0
 
 
-@pytest.mark.skip(reason="US08-TK02")
 def test_schedule_repository_delete_by_rp_does_not_touch_other_rps(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_schedule_repository import (
         RoutePassangerScheduleRepositoryImpl,
@@ -288,7 +280,6 @@ def test_schedule_repository_delete_by_rp_does_not_touch_other_rps(db_session) -
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US08-TK02")
 def test_schedule_repository_replace_swaps_schedules(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_schedule_repository import (
         RoutePassangerScheduleRepositoryImpl,
@@ -312,7 +303,6 @@ def test_schedule_repository_replace_swaps_schedules(db_session) -> None:
     assert {s.day_of_week for s in persisted} == {"wednesday", "friday"}
 
 
-@pytest.mark.skip(reason="US08-TK02")
 def test_schedule_repository_replace_when_none_existed(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_schedule_repository import (
         RoutePassangerScheduleRepositoryImpl,
@@ -329,7 +319,6 @@ def test_schedule_repository_replace_when_none_existed(db_session) -> None:
     assert persisted[0].day_of_week == "thursday"
 
 
-@pytest.mark.skip(reason="US08-TK02")
 def test_schedule_repository_replace_does_not_touch_other_rps(db_session) -> None:
     from src.infrastructure.repositories.route_passanger_schedule_repository import (
         RoutePassangerScheduleRepositoryImpl,

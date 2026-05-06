@@ -1,3 +1,8 @@
+class VehiclePlateAlreadyExistsError(Exception):
+    def __init__(self, message: str = "Já existe um veículo com esta placa."):
+        super().__init__(message)
+
+
 class VehicleAccessDeniedError(Exception):
     def __init__(self, message: str = "Apenas motoristas podem adicionar veículos."):
         super().__init__(message)

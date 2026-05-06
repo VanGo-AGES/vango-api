@@ -6,11 +6,15 @@ Endpoints:
 """
 
 from typing import Annotated
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, status
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 
 from src.domains.absences.dtos import AbsenceResponse, CreateAbsenceRequest
+from src.domains.absences.errors import AbsenceAlreadyReportedError, AbsenceDateNotAllowedError
 from src.domains.absences.service import AbsenceService
+from src.domains.route_passangers.errors import NotRoutePassangerError
+from src.domains.routes.errors import RouteNotFoundError
 from src.infrastructure.dependencies.absence_dependencies import get_absence_service
 
 router = APIRouter(prefix="/absences", tags=["Absences"])
@@ -33,4 +37,15 @@ def create_absence(
     service: Annotated[AbsenceService, Depends(get_absence_service)],
     x_user_id: Annotated[str, Header(alias="X-User-Id")],
 ) -> AbsenceResponse:
-    pass
+    try:
+        return service.create_absence(user_id=UUID(x_user_id), data=body)
+    except RouteNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
+    except NotRoutePassangerError as error:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error)) from error
+    except AbsenceAlreadyReportedError as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
+    except AbsenceDateNotAllowedError as error:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
+    except ValueError as error:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error)) from error

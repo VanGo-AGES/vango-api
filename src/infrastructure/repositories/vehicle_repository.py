@@ -19,6 +19,9 @@ class VehicleRepositoryImpl(IVehicleRepository):
     def get_by_id(self, vehicle_id: UUID) -> VehicleModel | None:
         return self.session.query(VehicleModel).filter(VehicleModel.id == vehicle_id).first()
 
+    def get_by_plate(self, plate: str) -> VehicleModel | None:
+        return self.session.query(VehicleModel).filter(VehicleModel.plate == plate).first()
+
     def get_by_driver_id(self, driver_id: UUID) -> list[VehicleModel]:
         return self.session.query(VehicleModel).filter(VehicleModel.driver_id == driver_id).all()
 
@@ -42,3 +45,6 @@ class VehicleRepositoryImpl(IVehicleRepository):
         self.session.delete(vehicle)
         self.session.commit()
         return True
+
+    def find_by_id(self, vehicle_id: UUID) -> VehicleModel | None:
+        return self.get_by_id(vehicle_id)

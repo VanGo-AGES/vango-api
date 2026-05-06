@@ -1,5 +1,6 @@
 import random
 import string
+from datetime import datetime
 from uuid import UUID
 
 from src.domains.addresses.entity import AddressModel
@@ -13,10 +14,12 @@ from src.domains.routes.dtos import (
 from src.domains.routes.entity import RouteModel
 from src.domains.routes.errors import (
     NoVehicleError,
+    RouteInProgressError,
     RouteNotFoundError,
     RouteOwnershipError,
 )
 from src.domains.routes.repository import IAddressRepository, IRouteRepository
+from src.domains.trips.repository import IAbsenceRepository
 from src.domains.vehicles.repository import IVehicleRepository
 
 
@@ -28,6 +31,7 @@ class RouteService:
         vehicle_repository: IVehicleRepository,
         route_passanger_repository: IRoutePassangerRepository | None = None,
         notification_service: INotificationService | None = None,
+        absence_repository: IAbsenceRepository | None = None,
     ):
         self.route_repository = route_repository
         self.address_repository = address_repository
@@ -37,6 +41,8 @@ class RouteService:
         self.route_passanger_repository = route_passanger_repository
         # Usado pela US06-TK18 (delete_route). Opcional pelo mesmo motivo.
         self.notification_service = notification_service
+        # Usado pelo GET /routes/{route_id}/absences (view do motorista).
+        self.absence_repository = absence_repository
 
     # US05 - TK03
     def create_route(self, driver_id: UUID, data: RouteCreate) -> RouteModel:
@@ -105,17 +111,56 @@ class RouteService:
 
     # US06-TK03
     def update_route(self, route_id: UUID, driver_id: UUID, data: RouteUpdate) -> RouteModel:
-        """
-        Atualiza uma rota existente.
+        route = self.route_repository.find_by_id(route_id)
+        if route is None:
+            raise RouteNotFoundError()
 
-        Regras:
-        - 404 se não existir
-        - 403 se driver não for dono
-        - 409 (RouteInProgressError) se status == 'em_andamento'
-        - Se origin/destination presentes, cria novos AddressModel via address_repository.save
-        - Envia para route_repository.update apenas campos != None
-        """
-        pass
+        if route.driver_id != driver_id:
+            raise RouteOwnershipError()
+
+        if route.status == "em_andamento":
+            raise RouteInProgressError()
+
+        update_data = data.model_dump(exclude_none=True)
+
+        if not update_data:
+            return route
+
+        if "origin" in update_data:
+            _origin_data = update_data.pop("origin")
+            origin = AddressModel(
+                user_id=driver_id,
+                label=_origin_data["label"],
+                street=_origin_data["street"],
+                number=_origin_data["number"],
+                neighborhood=_origin_data["neighborhood"],
+                zip=_origin_data["zip"],
+                city=_origin_data["city"],
+                state=_origin_data["state"],
+            )
+            saved_origin = self.address_repository.save(origin)
+            update_data["origin_address_id"] = saved_origin.id
+
+        if "destination" in update_data:
+            _destination_data = update_data.pop("destination")
+            destination = AddressModel(
+                user_id=driver_id,
+                label=_destination_data["label"],
+                street=_destination_data["street"],
+                number=_destination_data["number"],
+                neighborhood=_destination_data["neighborhood"],
+                zip=_destination_data["zip"],
+                city=_destination_data["city"],
+                state=_destination_data["state"],
+            )
+            saved_destination = self.address_repository.save(destination)
+            update_data["destination_address_id"] = saved_destination.id
+
+        updated_route = self.route_repository.update(route_id, update_data)
+        if updated_route is None:
+            raise RouteNotFoundError()
+
+        return updated_route
 
     # US08-TK05
     def get_by_invite_code(self, invite_code: str) -> RouteModel:
@@ -123,7 +168,10 @@ class RouteService:
 
         - 404 RouteNotFoundError se não existir rota com esse invite_code.
         """
-        pass
+        route = self.route_repository.find_by_invite_code(invite_code)
+        if route is None:
+            raise RouteNotFoundError()
+        return route
 
     # US08-TK05
     def get_invite_summary(self, invite_code: str) -> RouteInviteSummaryResponse:
@@ -133,7 +181,19 @@ class RouteService:
         - 404 RouteNotFoundError se não existir.
         - accepted_count vem de route_passanger_repository.count_accepted_by_route.
         """
-        pass
+        route = self.get_by_invite_code(invite_code)
+        accepted_count = self.route_passanger_repository.count_accepted_by_route(route.id)
+        return RouteInviteSummaryResponse.model_construct(
+            id=route.id,
+            name=route.name,
+            route_type=route.route_type,
+            recurrence=route.recurrence,
+            expected_time=route.expected_time,
+            max_passengers=route.max_passengers,
+            accepted_count=accepted_count,
+            origin_address=route.origin_address,
+            destination_address=route.destination_address,
+        )
 
     def get_route(self, route_id: UUID, driver_id: UUID) -> RouteModel:
         """
@@ -148,6 +208,50 @@ class RouteService:
         if route.driver_id != driver_id:
             raise RouteOwnershipError()
         return route
+
+    def get_accepted_count(self, route_id: UUID) -> int:
+        """Retorna a quantidade de passageiros com status='accepted' na rota."""
+        if self.route_passanger_repository is None:
+            return 0
+        return self.route_passanger_repository.count_accepted_by_route(route_id)
+
+    def get_route_absences(self, route_id: UUID, caller_id: UUID, absence_date: datetime) -> list:
+        """Retorna ausências avisadas para a rota numa data específica.
+
+        - 404 RouteNotFoundError se rota não existir
+        - 403 RouteOwnershipError se o caller não for dono nem passageiro ativo
+        Acessível tanto pelo motorista quanto por passageiros (pending/accepted).
+        Cada item inclui user_name e dependent_name para exibição direta pelo frontend.
+        """
+        from src.domains.absences.dtos import RouteAbsenceResponse
+
+        route = self.route_repository.find_by_id(route_id)
+        if route is None:
+            raise RouteNotFoundError()
+
+        is_driver = route.driver_id == caller_id
+        is_passanger = False
+        if not is_driver and self.route_passanger_repository is not None:
+            rps = self.route_passanger_repository.find_by_user_and_route_id(caller_id, route_id)
+            is_passanger = any(rp.status in ("pending", "accepted") for rp in rps)
+
+        if not is_driver and not is_passanger:
+            raise RouteOwnershipError()
+
+        absences = self.absence_repository.find_by_route_and_date_with_passangers(route_id, absence_date)
+
+        return [
+            RouteAbsenceResponse.model_construct(
+                route_passanger_id=a.route_passanger_id,
+                user_id=a.route_passanger.user_id,
+                user_name=a.route_passanger.user.name,
+                dependent_id=a.route_passanger.dependent_id,
+                dependent_name=a.route_passanger.dependent.name if a.route_passanger.dependent else None,
+                absence_date=a.absence_date,
+                reason=a.reason,
+            )
+            for a in absences
+        ]
 
     # US06-TK18
     def delete_route(self, route_id: UUID, driver_id: UUID) -> None:
@@ -166,4 +270,22 @@ class RouteService:
           schedules e stops associadas.
         - Retorna None.
         """
-        pass
+        route = self.route_repository.find_by_id(route_id)
+        if route is None:
+            raise RouteNotFoundError()
+        if route.driver_id != driver_id:
+            raise RouteOwnershipError()
+        if route.status == "em_andamento":
+            raise RouteInProgressError()
+
+        active_passengers: dict = {}
+        if self.route_passanger_repository is not None:
+            for status in ("pending", "accepted"):
+                for rp in self.route_passanger_repository.find_by_route_and_status(route_id, status):
+                    active_passengers[rp.id] = rp
+
+        if self.notification_service is not None:
+            for rp in active_passengers.values():
+                self.notification_service.notify_passanger_route_cancelled(rp)
+
+        self.route_repository.delete(route_id)

@@ -1,9 +1,10 @@
 from uuid import UUID
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from src.domains.routes.entity import RouteModel
 from src.domains.routes.repository import IRouteRepository
+from src.domains.stops.entity import StopModel
 
 
 class RouteRepositoryImpl(IRouteRepository):
@@ -17,11 +18,20 @@ class RouteRepositoryImpl(IRouteRepository):
         return route
 
     def find_by_id(self, route_id: UUID) -> RouteModel | None:
-        return self.session.query(RouteModel).filter(RouteModel.id == route_id).first()
+        return (
+            self.session.query(RouteModel)
+            .options(selectinload(RouteModel.stops).selectinload(StopModel.address))
+            .filter(RouteModel.id == route_id)
+            .first()
+        )
 
     def find_all_by_driver_id(self, driver_id: UUID) -> list[RouteModel]:
-        routes = self.session.query(RouteModel).filter(RouteModel.driver_id == driver_id).all()
-        return routes
+        return (
+            self.session.query(RouteModel)
+            .options(selectinload(RouteModel.stops).selectinload(StopModel.address))
+            .filter(RouteModel.driver_id == driver_id)
+            .all()
+        )
 
     def update_invite_code(self, route_id: UUID, new_code: str) -> RouteModel | None:
         route = self.session.query(RouteModel).filter(RouteModel.id == route_id).first()
@@ -36,12 +46,33 @@ class RouteRepositoryImpl(IRouteRepository):
 
     # US06-TK02
     def update(self, route_id: UUID, data: dict) -> RouteModel | None:
-        pass
+        route = self.session.query(RouteModel).filter(RouteModel.id == route_id).first()
+
+        if route is None:
+            return None
+
+        if not data:
+            return route
+
+        for key, value in data.items():
+            if hasattr(route, key):
+                setattr(route, key, value)
+
+        self.session.commit()
+        self.session.refresh(route)
+        return route
 
     # US08-TK05
     def find_by_invite_code(self, invite_code: str) -> RouteModel | None:
-        pass
+        return self.session.query(RouteModel).filter(RouteModel.invite_code == invite_code).first()
 
     # US06-TK17
     def delete(self, route_id: UUID) -> bool:
-        pass
+        route = self.find_by_id(route_id)
+
+        if route is None:
+            return False
+
+        self.session.delete(route)
+        self.session.commit()
+        return True

@@ -289,7 +289,6 @@ def test_route_repository_find_all_by_driver_id_only_own(db_session) -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US06-TK02")
 def test_route_repository_update_returns_updated_route(db_session) -> None:
     from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
 
@@ -305,7 +304,6 @@ def test_route_repository_update_returns_updated_route(db_session) -> None:
     assert updated.name == "Nova Rota"
 
 
-@pytest.mark.skip(reason="US06-TK02")
 def test_route_repository_update_changes_name(db_session) -> None:
     from src.domains.routes.entity import RouteModel
     from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
@@ -323,7 +321,6 @@ def test_route_repository_update_changes_name(db_session) -> None:
     assert found.name == "Escola Manhã"
 
 
-@pytest.mark.skip(reason="US06-TK02")
 def test_route_repository_update_changes_origin_address_id(db_session) -> None:
     from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
 
@@ -339,7 +336,6 @@ def test_route_repository_update_changes_origin_address_id(db_session) -> None:
     assert updated.origin_address_id == new_origin.id
 
 
-@pytest.mark.skip(reason="US06-TK02")
 def test_route_repository_update_not_found_returns_none(db_session) -> None:
     import uuid as _uuid
 
@@ -350,7 +346,6 @@ def test_route_repository_update_not_found_returns_none(db_session) -> None:
     assert result is None
 
 
-@pytest.mark.skip(reason="US06-TK02")
 def test_route_repository_update_preserves_unchanged_fields(db_session) -> None:
     from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
 
@@ -369,7 +364,6 @@ def test_route_repository_update_preserves_unchanged_fields(db_session) -> None:
     assert updated.invite_code == "A1B2C"
 
 
-@pytest.mark.skip(reason="US06-TK02")
 def test_route_repository_update_empty_dict_is_noop(db_session) -> None:
     from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
 
@@ -390,7 +384,6 @@ def test_route_repository_update_empty_dict_is_noop(db_session) -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US08-TK05")
 def test_route_repository_find_by_invite_code_returns_route(db_session) -> None:
     from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
 
@@ -406,7 +399,6 @@ def test_route_repository_find_by_invite_code_returns_route(db_session) -> None:
     assert found.id == route.id
 
 
-@pytest.mark.skip(reason="US08-TK05")
 def test_route_repository_find_by_invite_code_not_found_returns_none(db_session) -> None:
     from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
 
@@ -414,7 +406,6 @@ def test_route_repository_find_by_invite_code_not_found_returns_none(db_session)
     assert repo.find_by_invite_code("Z9Z9Z") is None
 
 
-@pytest.mark.skip(reason="US08-TK05")
 def test_route_repository_find_by_invite_code_is_exact_match(db_session) -> None:
     """Não faz match parcial nem case-insensitive."""
     from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
@@ -435,7 +426,6 @@ def test_route_repository_find_by_invite_code_is_exact_match(db_session) -> None
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US06-TK17")
 def test_route_repository_delete_returns_true_when_existing(db_session) -> None:
     from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
 
@@ -450,7 +440,6 @@ def test_route_repository_delete_returns_true_when_existing(db_session) -> None:
     assert result is True
 
 
-@pytest.mark.skip(reason="US06-TK17")
 def test_route_repository_delete_removes_route_from_db(db_session) -> None:
     from src.domains.routes.entity import RouteModel
     from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
@@ -468,7 +457,6 @@ def test_route_repository_delete_removes_route_from_db(db_session) -> None:
     assert found is None
 
 
-@pytest.mark.skip(reason="US06-TK17")
 def test_route_repository_delete_not_found_returns_false(db_session) -> None:
     from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
 
@@ -477,7 +465,6 @@ def test_route_repository_delete_not_found_returns_false(db_session) -> None:
     assert result is False
 
 
-@pytest.mark.skip(reason="US06-TK17")
 def test_route_repository_delete_cascades_passengers(db_session) -> None:
     """Ao deletar a rota, route_passangers associados também devem sumir via cascade."""
     from src.domains.route_passangers.entity import RoutePassangerModel
@@ -518,7 +505,6 @@ def test_route_repository_delete_cascades_passengers(db_session) -> None:
     assert remaining is None
 
 
-@pytest.mark.skip(reason="US06-TK17")
 def test_route_repository_delete_cascades_stops(db_session) -> None:
     """Ao deletar a rota, stops associadas também devem sumir via cascade."""
     from src.domains.route_passangers.entity import RoutePassangerModel

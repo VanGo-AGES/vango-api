@@ -7,7 +7,8 @@ Todos os métodos começam com pass (stub). As TKs correspondentes cobrem:
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from src.domains.trips.entity import TripModel
 from src.domains.trips.repository import ITripRepository
@@ -19,15 +20,43 @@ class TripRepositoryImpl(ITripRepository):
 
     # US09-TK02
     def save(self, trip: TripModel) -> TripModel:
-        pass
+        self.session.add(trip)
+        self.session.commit()
+        self.session.refresh(trip)
+        return trip
 
     # US09-TK02
     def find_by_id(self, trip_id: UUID) -> TripModel | None:
-        pass
+        stmt = (
+            select(TripModel)
+            .options(
+                joinedload(TripModel.route),
+                joinedload(TripModel.vehicle),
+                selectinload(TripModel.trip_passangers),
+                selectinload(TripModel.absences),
+            )
+            .where(TripModel.id == trip_id)
+        )
+
+        return self.session.execute(stmt).unique().scalar_one_or_none()
 
     # US09-TK02
     def find_in_progress_by_route(self, route_id: UUID) -> TripModel | None:
-        pass
+        stmt = (
+            select(TripModel)
+            .options(
+                joinedload(TripModel.route),
+                joinedload(TripModel.vehicle),
+                selectinload(TripModel.trip_passangers),
+                selectinload(TripModel.absences),
+            )
+            .where(
+                TripModel.route_id == route_id,
+                TripModel.status == "iniciada",
+            )
+        )
+
+        return self.session.execute(stmt).unique().scalar_one_or_none()
 
     # US09-TK02
     def update_status(
@@ -37,4 +66,17 @@ class TripRepositoryImpl(ITripRepository):
         finished_at: datetime | None,
         total_km: float | None,
     ) -> TripModel | None:
-        pass
+        trip = self.find_by_id(trip_id)
+
+        if trip is None:
+            return None
+
+        trip.status = status
+        trip.finished_at = finished_at
+        trip.total_km = total_km
+
+        self.session.commit()
+
+        self.session.refresh(trip)
+
+        return trip

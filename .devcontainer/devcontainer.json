@@ -48,7 +48,7 @@
   },
   "remoteUser": "root",
   // Safe directory permite outros usuarios rodarem o codigo
-  "postCreateCommand": "git config --global --add safe.directory '*' && pip install pre-commit && pre-commit install && pre-commit install --hook-type commit-msg",
+  "postCreateCommand": "pip install -r requirements.txt && git config --global --add safe.directory '*' && pip install pre-commit && pre-commit install && pre-commit install --hook-type commit-msg",
   "forwardPorts": [
     8000
   ]

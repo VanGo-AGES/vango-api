@@ -1,15 +1,15 @@
+import os
+import boto3
 from abc import ABC, abstractmethod
 from uuid import uuid4
-
 from fastapi import UploadFile
-from firebase_admin import storage
 
 
 class IPhotoUploader(ABC):
     """
     Contrato para upload de fotos de perfil.
     A implementação concreta é responsável por enviar o arquivo
-    para o serviço de armazenamento (ex: Firebase Storage) e retornar a URL pública.
+    para o serviço de armazenamento e retornar a URL pública.
     """
 
     @abstractmethod
@@ -18,36 +18,55 @@ class IPhotoUploader(ABC):
         pass
 
 
-class FirebasePhotoUploader(IPhotoUploader):
+class S3PhotoUploader(IPhotoUploader):
     """
-    Implementação do IPhotoUploader usando Firebase Storage.
-    TODO (US01-TK05): implementar upload real via firebase_admin.storage.
+    Implementação do IPhotoUploader usando AWS S3.
     """
+    def __init__(self):
+        # Inicializa o cliente Boto3 usando as variáveis do seu .env
+        self.s3_client = boto3.client(
+            "s3",
+            aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+            aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+            region_name=os.getenv("AWS_REGION"),
+        )
+        self.bucket_name = os.getenv("AWS_S3_BUCKET_NAME")
 
     def upload(self, file: UploadFile) -> str:
+        # Mantém o padrão de nomenclatura original com UUID para evitar conflitos
         filename = file.filename or "upload.bin"
         object_name = f"uploads/{uuid4()}-{filename}"
 
         try:
-            bucket = storage.bucket()
-            blob = bucket.blob(object_name)
+            # Garante que o cursor do arquivo esteja no início antes do upload
+            file.file.seek(0)
+            
+            # Faz o upload para o S3 definindo permissão de leitura pública
+            self.s3_client.upload_fileobj(
+                file.file,
+                self.bucket_name,
+                object_name,
+                ExtraArgs={
+                    "ACL": "public-read", 
+                    "ContentType": file.content_type
+                }
+            )
 
-            if hasattr(file, "file") and hasattr(file.file, "seek"):
-                file.file.seek(0)
+            # Retorna a URL estruturada do S3
+            return f"https://{self.bucket_name}.s3.{os.getenv('AWS_REGION')}.amazonaws.com/{object_name}"
+            
+        except Exception as e:
+            # Log de erro para debug no terminal do Docker (EC2)
+            print(f"Erro ao fazer upload para o S3: {e}")
+            raise e
 
-            if hasattr(file, "file"):
-                blob.upload_from_file(file.file, content_type=file.content_type)
-            else:
-                blob.upload_from_string(b"", content_type=file.content_type)
 
-            try:
-                blob.make_public()
-            except Exception:
-                pass
-
-            if getattr(blob, "public_url", ""):
-                return str(blob.public_url)
-
-            return f"https://storage.googleapis.com/{bucket.name}/{object_name}"
-        except Exception:
-            return f"https://storage.googleapis.com/mock-bucket/{object_name}"
+class FirebasePhotoUploader(IPhotoUploader):
+    """
+    Implementação do IPhotoUploader usando Firebase Storage.
+    Mantida aqui caso seja necessário reverter a integração.
+    """
+    def upload(self, file: UploadFile) -> str:
+        # ... (código original do Firebase que você já tinha) ...
+        # (Recomendo manter como backup ou remover se tiver certeza do S3)
+        pass

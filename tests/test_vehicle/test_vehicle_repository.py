@@ -159,6 +159,32 @@ def make_vehicle(db_session, driver, plate: str = "ABC1D23", capacity: int = 4) 
 
 
 # ---------------------------------------------------------------------------
+# get_by_plate
+# ---------------------------------------------------------------------------
+
+
+def test_get_by_plate_found(db_session):
+    """get_by_plate deve retornar o veículo quando a placa existe."""
+    driver = make_driver(db_session)
+    repo = VehicleRepositoryImpl(db_session)
+    repo.create(VehicleModel(driver_id=driver.id, plate="PLT0001", capacity=4))
+
+    result = repo.get_by_plate("PLT0001")
+
+    assert result is not None
+    assert result.plate == "PLT0001"
+
+
+def test_get_by_plate_not_found(db_session):
+    """get_by_plate deve retornar None quando a placa não existe."""
+    repo = VehicleRepositoryImpl(db_session)
+
+    result = repo.get_by_plate("INEXISTENTE")
+
+    assert result is None
+
+
+# ---------------------------------------------------------------------------
 # get_by_id
 # ---------------------------------------------------------------------------
 

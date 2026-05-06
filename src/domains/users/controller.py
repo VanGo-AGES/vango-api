@@ -4,8 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from src.infrastructure.dependencies.user_dependencies import get_user_service
 
-from .dtos import UserCreate, UserResponse, UserUpdate
-from .errors import DuplicateEmailError, UserNotFoundError
+from .dtos import LoginRequest, UserCreate, UserResponse, UserUpdate
+from .errors import DuplicateEmailError, InvalidCredentialsError, UserNotFoundError
 from .service import UserService
 
 router = APIRouter(prefix="/users", tags=["Users"])
@@ -26,6 +26,29 @@ def register_user(body: UserCreate, service: Annotated[UserService, Depends(get_
         return service.create_user(body)
     except DuplicateEmailError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+
+@router.post(
+    "/login",
+    response_model=UserResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Login intermediário (email + senha)",
+    description=(
+        "Valida e-mail e senha. Retorna o UserResponse em sucesso. "
+        "404 quando o e-mail não está cadastrado, 401 quando a senha está incorreta. "
+        "Sem emissão de token — autenticação completa será adicionada em US futura."
+    ),
+)
+def login_user(
+    body: LoginRequest,
+    service: Annotated[UserService, Depends(get_user_service)],
+) -> UserResponse:
+    try:
+        return service.login(body.email, body.password)
+    except UserNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except InvalidCredentialsError as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
 
 
 @router.get(

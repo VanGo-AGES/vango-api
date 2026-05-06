@@ -234,6 +234,7 @@ def test_get_route_success_returns_200() -> None:
     route_id = uuid.uuid4()
     mock_service = Mock(spec=RouteService)
     mock_service.get_route.return_value = make_route_response_mock()
+    mock_service.get_accepted_count.return_value = 0
     app.dependency_overrides[get_route_service] = lambda: mock_service
 
     response = client.get(f"/routes/{route_id}", headers=DRIVER_HEADERS)
@@ -243,6 +244,7 @@ def test_get_route_success_returns_200() -> None:
     body = response.json()
     assert "origin_address" in body
     assert "destination_address" in body
+    assert "accepted_count" in body
 
 
 def test_get_route_not_found_returns_404() -> None:
@@ -542,7 +544,6 @@ def test_integration_get_route_wrong_owner_returns_403(integration_client, db_se
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US06-TK04")
 def test_update_route_success_returns_200() -> None:
     """PUT /routes/{id} com payload válido deve retornar 200 e a rota atualizada."""
     route_id = uuid.uuid4()
@@ -556,7 +557,6 @@ def test_update_route_success_returns_200() -> None:
     assert response.status_code == 200
 
 
-@pytest.mark.skip(reason="US06-TK04")
 def test_update_route_not_found_returns_404() -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
@@ -570,7 +570,6 @@ def test_update_route_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US06-TK04")
 def test_update_route_wrong_owner_returns_403() -> None:
     from src.domains.routes.errors import RouteOwnershipError
 
@@ -584,7 +583,6 @@ def test_update_route_wrong_owner_returns_403() -> None:
     assert response.status_code == 403
 
 
-@pytest.mark.skip(reason="US06-TK04")
 def test_update_route_in_progress_returns_409() -> None:
     from src.domains.routes.errors import RouteInProgressError
 
@@ -598,7 +596,6 @@ def test_update_route_in_progress_returns_409() -> None:
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US06-TK04")
 def test_update_route_invalid_recurrence_returns_422() -> None:
     response = client.put(
         f"/routes/{uuid.uuid4()}",
@@ -608,7 +605,6 @@ def test_update_route_invalid_recurrence_returns_422() -> None:
     assert response.status_code == 422
 
 
-@pytest.mark.skip(reason="US06-TK04")
 def test_update_route_invalid_route_type_returns_422() -> None:
     response = client.put(
         f"/routes/{uuid.uuid4()}", json={"route_type": "ambos"}, headers=DRIVER_HEADERS
@@ -619,7 +615,6 @@ def test_update_route_invalid_route_type_returns_422() -> None:
 # --- Integração ---
 
 
-@pytest.mark.skip(reason="US06-TK04")
 def test_integration_update_route_success_updates_name(integration_client, db_session) -> None:
     driver, _ = make_driver_with_vehicle(db_session)
     headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
@@ -633,7 +628,6 @@ def test_integration_update_route_success_updates_name(integration_client, db_se
     assert response.json()["name"] == "Rota Editada"
 
 
-@pytest.mark.skip(reason="US06-TK04")
 def test_integration_update_route_replaces_origin_address(integration_client, db_session) -> None:
     driver, _ = make_driver_with_vehicle(db_session)
     headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
@@ -657,7 +651,6 @@ def test_integration_update_route_replaces_origin_address(integration_client, db
     assert response.json()["origin_address"]["id"] != old_origin_id
 
 
-@pytest.mark.skip(reason="US06-TK04")
 def test_integration_update_route_in_progress_returns_409(integration_client, db_session) -> None:
     from src.domains.routes.entity import RouteModel
 
@@ -677,7 +670,6 @@ def test_integration_update_route_in_progress_returns_409(integration_client, db
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US06-TK04")
 def test_integration_update_route_wrong_owner_returns_403(integration_client, db_session) -> None:
     driver1, _ = make_driver_with_vehicle(db_session)
     driver2, _ = make_driver_with_vehicle(db_session)
@@ -696,7 +688,6 @@ def test_integration_update_route_wrong_owner_returns_403(integration_client, db
     assert response.status_code == 403
 
 
-@pytest.mark.skip(reason="US06-TK04")
 def test_integration_update_route_partial_preserves_unchanged_fields(integration_client, db_session) -> None:
     driver, _ = make_driver_with_vehicle(db_session)
     headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
@@ -723,6 +714,7 @@ def test_get_route_response_has_stops_field() -> None:
     route_id = uuid.uuid4()
     mock_service = Mock(spec=RouteService)
     mock_service.get_route.return_value = make_route_response_mock()
+    mock_service.get_accepted_count.return_value = 0
     app.dependency_overrides[get_route_service] = lambda: mock_service
 
     response = client.get(f"/routes/{route_id}", headers=DRIVER_HEADERS)
@@ -732,6 +724,62 @@ def test_get_route_response_has_stops_field() -> None:
     body = response.json()
     assert "stops" in body
     assert isinstance(body["stops"], list)
+
+
+def test_integration_get_route_returns_accepted_count_zero_when_no_passangers(integration_client, db_session) -> None:
+    """[Integração] GET /routes/{id} sem passageiros aceitos deve retornar accepted_count=0."""
+    driver, _ = make_driver_with_vehicle(db_session)
+    headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+
+    create_response = integration_client.post("/routes/", json=route_payload(), headers=headers)
+    route_id = create_response.json()["id"]
+
+    response = integration_client.get(f"/routes/{route_id}", headers=headers)
+
+    assert response.status_code == 200
+    assert response.json()["accepted_count"] == 0
+
+
+def test_integration_get_route_returns_correct_accepted_count(integration_client, db_session) -> None:
+    """[Integração] GET /routes/{id} deve retornar accepted_count igual ao nº de passageiros aceitos."""
+    from src.domains.addresses.entity import AddressModel
+    from src.domains.route_passangers.entity import RoutePassangerModel
+    from src.domains.users.entity import UserModel
+
+    driver, _ = make_driver_with_vehicle(db_session)
+    headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+
+    create_response = integration_client.post("/routes/", json=route_payload(), headers=headers)
+    route_id = uuid.UUID(create_response.json()["id"])
+
+    for i, status_val in enumerate(["accepted", "accepted", "pending"]):
+        passenger = UserModel(
+            name=f"Passageiro {i}",
+            email=f"pass_{uuid.uuid4().hex[:6]}@test.com",
+            phone="11988880000",
+            password_hash="h",
+            role="passanger",
+        )
+        db_session.add(passenger)
+        db_session.flush()
+        pickup = AddressModel(
+            user_id=passenger.id, label="Casa", street="R.1", number="1",
+            neighborhood="N", zip="00000-000", city="POA", state="RS",
+        )
+        db_session.add(pickup)
+        db_session.flush()
+        db_session.add(RoutePassangerModel(
+            route_id=route_id,
+            user_id=passenger.id,
+            pickup_address_id=pickup.id,
+            status=status_val,
+        ))
+    db_session.commit()
+
+    response = integration_client.get(f"/routes/{route_id}", headers=headers)
+
+    assert response.status_code == 200
+    assert response.json()["accepted_count"] == 2
 
 
 def test_integration_get_route_without_passangers_returns_empty_stops(integration_client, db_session) -> None:
@@ -825,7 +873,6 @@ def test_integration_list_routes_include_stops_field(integration_client, db_sess
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US08-TK06")
 def test_get_by_invite_code_unit_returns_summary() -> None:
     """[Unit] Controller chama service.get_invite_summary e retorna o DTO."""
     from src.domains.routes.dtos import RouteInviteSummaryResponse
@@ -880,7 +927,6 @@ def test_get_by_invite_code_unit_returns_summary() -> None:
     assert "stops" not in body
 
 
-@pytest.mark.skip(reason="US08-TK06")
 def test_get_by_invite_code_unit_not_found_returns_404() -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
@@ -896,7 +942,6 @@ def test_get_by_invite_code_unit_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US08-TK06")
 def test_integration_get_by_invite_code_success(integration_client, db_session) -> None:
     """[Integração] Criar rota, fazer GET /routes/invite/{code} e validar payload."""
     driver, _ = make_driver_with_vehicle(db_session)
@@ -917,7 +962,6 @@ def test_integration_get_by_invite_code_success(integration_client, db_session) 
     assert "stops" not in body
 
 
-@pytest.mark.skip(reason="US08-TK06")
 def test_integration_get_by_invite_code_not_found_returns_404(integration_client, db_session) -> None:
     driver, _ = make_driver_with_vehicle(db_session)
     headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
@@ -926,7 +970,6 @@ def test_integration_get_by_invite_code_not_found_returns_404(integration_client
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US08-TK06")
 def test_integration_get_by_invite_code_counts_accepted_passangers(integration_client, db_session) -> None:
     """Cria rota + dois RPs aceitos + um pending → accepted_count = 2."""
     from src.domains.route_passangers.entity import RoutePassangerModel
@@ -966,7 +1009,6 @@ def test_integration_get_by_invite_code_counts_accepted_passangers(integration_c
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US06-TK19")
 def test_delete_route_success_returns_204() -> None:
     mock_service = Mock(spec=RouteService)
     mock_service.delete_route.return_value = None
@@ -979,7 +1021,6 @@ def test_delete_route_success_returns_204() -> None:
     mock_service.delete_route.assert_called_once()
 
 
-@pytest.mark.skip(reason="US06-TK19")
 def test_delete_route_not_found_returns_404() -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
@@ -993,7 +1034,6 @@ def test_delete_route_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US06-TK19")
 def test_delete_route_wrong_owner_returns_403() -> None:
     from src.domains.routes.errors import RouteOwnershipError
 
@@ -1007,7 +1047,6 @@ def test_delete_route_wrong_owner_returns_403() -> None:
     assert response.status_code == 403
 
 
-@pytest.mark.skip(reason="US06-TK19")
 def test_delete_route_in_progress_returns_409() -> None:
     from src.domains.routes.errors import RouteInProgressError
 
@@ -1024,7 +1063,6 @@ def test_delete_route_in_progress_returns_409() -> None:
 # --- Integração ---
 
 
-@pytest.mark.skip(reason="US06-TK19")
 def test_integration_delete_route_success(integration_client, db_session) -> None:
     from src.domains.routes.entity import RouteModel
 
@@ -1040,7 +1078,6 @@ def test_integration_delete_route_success(integration_client, db_session) -> Non
     assert remaining is None
 
 
-@pytest.mark.skip(reason="US06-TK19")
 def test_integration_delete_route_not_found_returns_404(integration_client, db_session) -> None:
     driver, _ = make_driver_with_vehicle(db_session)
     headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
@@ -1050,7 +1087,6 @@ def test_integration_delete_route_not_found_returns_404(integration_client, db_s
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US06-TK19")
 def test_integration_delete_route_wrong_owner_returns_403(integration_client, db_session) -> None:
     driver1, _ = make_driver_with_vehicle(db_session)
     driver2, _ = make_driver_with_vehicle(db_session)
@@ -1069,7 +1105,6 @@ def test_integration_delete_route_wrong_owner_returns_403(integration_client, db
     assert response.status_code == 403
 
 
-@pytest.mark.skip(reason="US06-TK19")
 def test_integration_delete_route_in_progress_returns_409(integration_client, db_session) -> None:
     from src.domains.routes.entity import RouteModel
 
@@ -1087,7 +1122,6 @@ def test_integration_delete_route_in_progress_returns_409(integration_client, db
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US06-TK19")
 def test_integration_delete_route_cascades_passangers(integration_client, db_session) -> None:
     """Ao deletar rota, route_passangers e stops associadas são removidos via cascade."""
     from src.domains.route_passangers.entity import RoutePassangerModel
@@ -1131,3 +1165,177 @@ def test_integration_delete_route_cascades_passangers(integration_client, db_ses
     assert response.status_code == 204
     assert db_session.query(RoutePassangerModel).filter_by(route_id=route_id).first() is None
     assert db_session.query(StopModel).filter_by(route_id=route_id).first() is None
+
+
+# ===========================================================================
+# GET /routes/{route_id}/absences — list_route_absences
+# Arquivo:     src/domains/routes/controller.py
+# Critérios:   motorista (dono) → 200 com lista
+#              passageiro ativo → 200 com lista (acesso liberado)
+#              forasteiro → 403
+#              rota não encontrada → 404
+# ===========================================================================
+
+
+# --- unit (mocked service) ---
+
+
+def test_list_route_absences_driver_returns_200() -> None:
+    from src.domains.absences.dtos import RouteAbsenceResponse
+    import uuid as _uuid
+    from datetime import datetime, timezone
+
+    absence = RouteAbsenceResponse(
+        route_passanger_id=_uuid.uuid4(),
+        user_id=_uuid.uuid4(),
+        user_name="Passageiro",
+        dependent_id=None,
+        dependent_name=None,
+        absence_date=datetime(2026, 5, 5, 0, 0, tzinfo=timezone.utc),
+        reason=None,
+    )
+    mock_service = Mock(spec=RouteService)
+    mock_service.get_route_absences.return_value = [absence]
+    app.dependency_overrides[get_route_service] = lambda: mock_service
+
+    response = client.get(f"/routes/{uuid.uuid4()}/absences", headers=DRIVER_HEADERS)
+
+    app.dependency_overrides.clear()
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+
+
+def test_list_route_absences_not_found_returns_404() -> None:
+    from src.domains.routes.errors import RouteNotFoundError
+
+    mock_service = Mock(spec=RouteService)
+    mock_service.get_route_absences.side_effect = RouteNotFoundError()
+    app.dependency_overrides[get_route_service] = lambda: mock_service
+
+    response = client.get(f"/routes/{uuid.uuid4()}/absences", headers=DRIVER_HEADERS)
+
+    app.dependency_overrides.clear()
+    assert response.status_code == 404
+
+
+def test_list_route_absences_forbidden_returns_403() -> None:
+    from src.domains.routes.errors import RouteOwnershipError
+
+    mock_service = Mock(spec=RouteService)
+    mock_service.get_route_absences.side_effect = RouteOwnershipError()
+    app.dependency_overrides[get_route_service] = lambda: mock_service
+
+    response = client.get(f"/routes/{uuid.uuid4()}/absences", headers=DRIVER_HEADERS)
+
+    app.dependency_overrides.clear()
+    assert response.status_code == 403
+
+
+def test_list_route_absences_forwards_caller_id_from_header() -> None:
+    """O controller deve encaminhar o X-User-Id como caller_id para o service."""
+    mock_service = Mock(spec=RouteService)
+    mock_service.get_route_absences.return_value = []
+    app.dependency_overrides[get_route_service] = lambda: mock_service
+
+    caller_id = uuid.uuid4()
+    headers = {"X-User-Id": str(caller_id), "X-User-Role": "guardian"}
+    client.get(f"/routes/{uuid.uuid4()}/absences", headers=headers)
+
+    app.dependency_overrides.clear()
+    call_args = mock_service.get_route_absences.call_args
+    assert caller_id in call_args.args or call_args.kwargs.get("caller_id") == caller_id
+
+
+# --- integração (stack real) ---
+
+
+def _make_passenger(db_session, name: str = "Passageiro"):
+    from src.domains.users.entity import UserModel as _UserModel
+    from src.domains.addresses.entity import AddressModel as _AddressModel
+
+    user = _UserModel(
+        name=name,
+        email=f"pass_{uuid.uuid4()}@test.com",
+        phone="11999999999",
+        password_hash="hashed",
+        role="guardian",
+    )
+    db_session.add(user)
+    db_session.flush()
+    return user
+
+
+def _make_rp_for_absences(db_session, route_id, user_id, status: str = "accepted"):
+    from src.domains.addresses.entity import AddressModel as _AddressModel
+    from src.domains.route_passangers.entity import RoutePassangerModel as _RPModel
+
+    pickup = _AddressModel(
+        user_id=user_id,
+        label="Casa Passageiro",
+        street="R. X",
+        number="100",
+        neighborhood="C",
+        zip="90000-000",
+        city="Porto Alegre",
+        state="RS",
+    )
+    db_session.add(pickup)
+    db_session.flush()
+
+    rp = _RPModel(
+        route_id=route_id,
+        user_id=user_id,
+        status=status,
+        pickup_address_id=pickup.id,
+    )
+    db_session.add(rp)
+    db_session.flush()
+    return rp
+
+
+def test_integration_list_absences_driver_returns_200(integration_client, db_session) -> None:
+    driver, _ = make_driver_with_vehicle(db_session)
+    headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+    create_resp = integration_client.post("/routes/", json=route_payload(), headers=headers)
+    route_id = create_resp.json()["id"]
+
+    response = integration_client.get(f"/routes/{route_id}/absences", headers=headers)
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_integration_list_absences_accepted_passanger_returns_200(
+    integration_client, db_session
+) -> None:
+    """Passageiro com status 'accepted' consegue acessar as ausências da rota."""
+    driver, _ = make_driver_with_vehicle(db_session)
+    driver_headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+    create_resp = integration_client.post("/routes/", json=route_payload(), headers=driver_headers)
+    route_id = uuid.UUID(create_resp.json()["id"])
+
+    passenger = _make_passenger(db_session)
+    _make_rp_for_absences(db_session, route_id, passenger.id, status="accepted")
+    db_session.commit()
+
+    passanger_headers = {"X-User-Id": str(passenger.id), "X-User-Role": "guardian"}
+    response = integration_client.get(f"/routes/{route_id}/absences", headers=passanger_headers)
+
+    assert response.status_code == 200
+
+
+def test_integration_list_absences_outsider_returns_403(
+    integration_client, db_session
+) -> None:
+    """Usuário sem vínculo com a rota recebe 403."""
+    driver, _ = make_driver_with_vehicle(db_session)
+    driver_headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+    create_resp = integration_client.post("/routes/", json=route_payload(), headers=driver_headers)
+    route_id = create_resp.json()["id"]
+
+    outsider = _make_passenger(db_session, "Forasteiro")
+    outsider_headers = {"X-User-Id": str(outsider.id), "X-User-Role": "guardian"}
+
+    response = integration_client.get(f"/routes/{route_id}/absences", headers=outsider_headers)
+
+    assert response.status_code == 403

@@ -3,6 +3,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from src.domains.addresses.dtos import AddressResponse
 from src.domains.stops.dtos import StopResponse
 
 VALID_RECURRENCE_DAYS = {"seg", "ter", "qua", "qui", "sex", "sab", "dom"}
@@ -26,21 +27,6 @@ class AddressCreate(BaseModel):
     @classmethod
     def normalize_state_to_uppercase(cls, v: str) -> str:
         return v.upper()
-
-
-class AddressResponse(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    id: UUID
-    label: str
-    street: str
-    number: str
-    neighborhood: str
-    zip: str
-    city: str
-    state: str
-    latitude: float | None = None
-    longitude: float | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -89,6 +75,7 @@ class RouteResponse(BaseModel):
     expected_time: time
     invite_code: str
     max_passengers: int
+    accepted_count: int = Field(default=0, description="Quantidade de passageiros aceitos na rota")
     origin_address: AddressResponse
     destination_address: AddressResponse
     # US07-TK-S05 — paradas da rota (geradas a partir de passageiros aceitos)
@@ -104,7 +91,17 @@ class RouteInviteSummaryResponse(BaseModel):
     Não expõe lista de passageiros nem stops.
     """
 
-    pass
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    name: str
+    route_type: str
+    recurrence: str
+    expected_time: time
+    max_passengers: int
+    accepted_count: int = Field(..., description="Contagem de passageiros aceitos (injetado pelo service)")
+    origin_address: AddressResponse
+    destination_address: AddressResponse
 
 
 # ---------------------------------------------------------------------------
@@ -131,8 +128,28 @@ class RouteUpdate(BaseModel):
     @field_validator("recurrence")
     @classmethod
     def validate_recurrence(cls, v: str | None) -> str | None:
-        pass
+        if v is None:
+            return None
+        days = [d.strip() for d in v.split(",")]
+        if not days or days == [""]:
+            raise ValueError("Recorrência deve ter pelo menos um dia.")
+        seen = set()
+        duplicate = []
+        for day in days:
+            if day not in VALID_RECURRENCE_DAYS:
+                raise ValueError(f"Dia inválido: {day}. Use: seg, ter, qua, qui, sex, sab, dom")
+            if day in seen:
+                duplicate.append(day)
+            seen.add(day)
+        if duplicate:
+            raise ValueError(f"Dias duplicados: {duplicate}. Recorrência não pode ter dias repetidos.")
+        return ",".join(days)
 
     @model_validator(mode="after")
     def validate_origin_differs_from_destination(self) -> "RouteUpdate":
-        pass
+        origin = self.origin
+        destination = self.destination
+        if origin is not None and destination is not None:
+            if origin.street == destination.street and origin.number == destination.number and origin.zip == destination.zip:
+                raise ValueError("Origem e destino não podem ter o mesmo endereço.")
+        return self

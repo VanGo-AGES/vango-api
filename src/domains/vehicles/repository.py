@@ -14,6 +14,10 @@ class IVehicleRepository(ABC):
         pass
 
     @abstractmethod
+    def get_by_plate(self, plate: str) -> VehicleModel | None:
+        pass
+
+    @abstractmethod
     def get_by_driver_id(self, driver_id: UUID) -> list[VehicleModel]:
         pass
 
@@ -23,4 +27,8 @@ class IVehicleRepository(ABC):
 
     @abstractmethod
     def delete(self, vehicle_id: UUID) -> bool:
+        pass
+
+    @abstractmethod
+    def find_by_id(self, vehicle_id: UUID) -> VehicleModel | None:
         pass

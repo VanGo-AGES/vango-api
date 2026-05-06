@@ -6,7 +6,7 @@ Cobre:
 """
 
 import uuid
-from datetime import date, datetime, time, timezone
+from datetime import date, datetime, time, timezone, timedelta
 from unittest.mock import Mock
 
 import pytest
@@ -24,6 +24,15 @@ from src.main import app
 client = TestClient(app, raise_server_exceptions=False)
 
 PASSENGER_HEADERS = {"X-User-Id": str(uuid.uuid4()), "X-User-Role": "guardian"}
+
+
+def future_weekday_iso():
+    target = date.today() + timedelta(days=5)
+
+    while target.weekday() > 4:  # seg-sex
+        target += timedelta(days=1)
+
+    return target.isoformat()
 
 
 def make_absence_response(reason: str | None = "Consulta"):
@@ -52,7 +61,6 @@ def valid_payload(**overrides) -> dict:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US06-TK20")
 def test_create_absence_success_returns_201() -> None:
     mock_service = Mock(spec=AbsenceService)
     mock_service.create_absence.return_value = make_absence_response()
@@ -65,7 +73,6 @@ def test_create_absence_success_returns_201() -> None:
     assert response.json()["reason"] == "Consulta"
 
 
-@pytest.mark.skip(reason="US06-TK20")
 def test_create_absence_route_not_found_returns_404() -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
@@ -79,7 +86,6 @@ def test_create_absence_route_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US06-TK20")
 def test_create_absence_not_passanger_returns_403() -> None:
     from src.domains.route_passangers.errors import NotRoutePassangerError
 
@@ -93,7 +99,6 @@ def test_create_absence_not_passanger_returns_403() -> None:
     assert response.status_code == 403
 
 
-@pytest.mark.skip(reason="US06-TK20")
 def test_create_absence_duplicate_returns_409() -> None:
     from src.domains.absences.errors import AbsenceAlreadyReportedError
 
@@ -107,7 +112,6 @@ def test_create_absence_duplicate_returns_409() -> None:
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US06-TK20")
 def test_create_absence_invalid_date_returns_409() -> None:
     from src.domains.absences.errors import AbsenceDateNotAllowedError
 
@@ -121,7 +125,6 @@ def test_create_absence_invalid_date_returns_409() -> None:
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US06-TK20")
 def test_create_absence_missing_body_fields_returns_422() -> None:
     mock_service = Mock(spec=AbsenceService)
     app.dependency_overrides[get_absence_service] = lambda: mock_service
@@ -132,7 +135,6 @@ def test_create_absence_missing_body_fields_returns_422() -> None:
     assert response.status_code == 422
 
 
-@pytest.mark.skip(reason="US06-TK20")
 def test_create_absence_forwards_user_id_from_header() -> None:
     mock_service = Mock(spec=AbsenceService)
     mock_service.create_absence.return_value = make_absence_response()
@@ -253,7 +255,6 @@ def make_integration_rp(db_session, route_id, user_id, status: str = "accepted")
     return rp
 
 
-@pytest.mark.skip(reason="US06-TK20")
 def test_integration_create_absence_success(integration_client, db_session) -> None:
     driver = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)
@@ -265,7 +266,7 @@ def test_integration_create_absence_success(integration_client, db_session) -> N
         "/absences",
         json={
             "route_id": str(route.id),
-            "absence_date": "2026-04-27",
+            "absence_date": future_weekday_iso(),
             "reason": "Consulta",
         },
         headers=headers,
@@ -276,7 +277,6 @@ def test_integration_create_absence_success(integration_client, db_session) -> N
     assert body["reason"] == "Consulta"
 
 
-@pytest.mark.skip(reason="US06-TK20")
 def test_integration_create_absence_route_not_found_returns_404(
     integration_client, db_session
 ) -> None:
@@ -285,14 +285,13 @@ def test_integration_create_absence_route_not_found_returns_404(
 
     response = integration_client.post(
         "/absences",
-        json={"route_id": str(uuid.uuid4()), "absence_date": "2026-04-27"},
+        json={"route_id": str(uuid.uuid4()), "absence_date": future_weekday_iso()},
         headers=headers,
     )
 
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US06-TK20")
 def test_integration_create_absence_outsider_returns_403(
     integration_client, db_session
 ) -> None:
@@ -303,14 +302,13 @@ def test_integration_create_absence_outsider_returns_403(
     headers = {"X-User-Id": str(outsider.id), "X-User-Role": "guardian"}
     response = integration_client.post(
         "/absences",
-        json={"route_id": str(route.id), "absence_date": "2026-04-27"},
+        json={"route_id": str(route.id), "absence_date": future_weekday_iso()},
         headers=headers,
     )
 
     assert response.status_code == 403
 
 
-@pytest.mark.skip(reason="US06-TK20")
 def test_integration_create_absence_duplicate_returns_409(
     integration_client, db_session
 ) -> None:
@@ -320,7 +318,7 @@ def test_integration_create_absence_duplicate_returns_409(
     make_integration_rp(db_session, route.id, passenger.id, status="accepted")
 
     headers = {"X-User-Id": str(passenger.id), "X-User-Role": "guardian"}
-    payload = {"route_id": str(route.id), "absence_date": "2026-04-27"}
+    payload = {"route_id": str(route.id), "absence_date": future_weekday_iso()}
 
     first = integration_client.post("/absences", json=payload, headers=headers)
     assert first.status_code == 201
@@ -329,7 +327,6 @@ def test_integration_create_absence_duplicate_returns_409(
     assert second.status_code == 409
 
 
-@pytest.mark.skip(reason="US06-TK20")
 def test_integration_create_absence_persists_in_db(
     integration_client, db_session
 ) -> None:
@@ -343,7 +340,7 @@ def test_integration_create_absence_persists_in_db(
     headers = {"X-User-Id": str(passenger.id), "X-User-Role": "guardian"}
     integration_client.post(
         "/absences",
-        json={"route_id": str(route.id), "absence_date": "2026-04-27"},
+        json={"route_id": str(route.id), "absence_date": future_weekday_iso()},
         headers=headers,
     )
 
@@ -351,7 +348,6 @@ def test_integration_create_absence_persists_in_db(
     assert len(stored) == 1
 
 
-@pytest.mark.skip(reason="US06-TK20")
 def test_integration_create_absence_invalid_recurrence_returns_409(
     integration_client, db_session
 ) -> None:

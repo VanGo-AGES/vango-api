@@ -16,8 +16,13 @@ class StopRepositoryImpl(IStopRepository):
         """Persiste uma stop nova ou atualizada e retorna a instância persistida."""
         self.session.add(stop)
         self.session.flush()
+        self.session.commit()
         self.session.refresh(stop)
         return stop
+
+    def find_by_id(self, stop_id: UUID) -> StopModel | None:
+        """Retorna a stop pelo id, ou None se não existir."""
+        return self.session.get(StopModel, stop_id)
 
     def find_by_route_id(self, route_id: UUID) -> list[StopModel]:
         """Retorna as stops de uma rota ordenadas por order_index."""
@@ -34,4 +39,5 @@ class StopRepositoryImpl(IStopRepository):
             return False
         self.session.delete(stop)
         self.session.flush()
+        self.session.commit()
         return True

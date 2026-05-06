@@ -15,17 +15,25 @@ class RoutePassangerScheduleRepositoryImpl(IRoutePassangerScheduleRepository):
         self.session = session
 
     def save_many(self, schedules: list[RoutePassangerScheduleModel]) -> list[RoutePassangerScheduleModel]:
-        pass
+        if not schedules:
+            return []
+
+        self.session.add_all(schedules)
+        self.session.flush()
+        self.session.commit()
+        return schedules
 
     def find_by_route_passanger_id(self, rp_id: UUID) -> list[RoutePassangerScheduleModel]:
-        pass
+        return self.session.query(RoutePassangerScheduleModel).filter(RoutePassangerScheduleModel.route_passanger_id == rp_id).all()
 
     def delete_by_route_passanger_id(self, rp_id: UUID) -> int:
-        pass
+        count = self.session.query(RoutePassangerScheduleModel).filter(RoutePassangerScheduleModel.route_passanger_id == rp_id).delete()
+        return count
 
     def replace(
         self,
         rp_id: UUID,
         new_schedules: list[RoutePassangerScheduleModel],
     ) -> list[RoutePassangerScheduleModel]:
-        pass
+        self.delete_by_route_passanger_id(rp_id)
+        return self.save_many(new_schedules)
