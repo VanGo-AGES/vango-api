@@ -152,7 +152,14 @@ def alight_passanger(
     service: Annotated[TripService, Depends(get_trip_service)],
     x_user_id: Annotated[str, Header(alias="X-User-Id")],
 ) -> TripPassangerResponse:
-    pass
+    try:
+        return service.alight_passanger(trip_id, trip_passanger_id, UUID(x_user_id))
+    except (TripNotFoundError, TripPassangerNotFoundError) as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except TripOwnershipError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+    except (TripNotInProgressError, InvalidTripPassangerStatusError) as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
 
 # US09-TK21
