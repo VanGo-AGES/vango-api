@@ -18,6 +18,7 @@ class RoutePassangerRepositoryImpl(IRoutePassangerRepository):
     def save(self, rp: RoutePassangerModel) -> RoutePassangerModel:
         self.session.add(rp)
         self.session.flush()
+        self.session.commit()
         self.session.refresh(rp)
         return rp
 
