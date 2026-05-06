@@ -5,6 +5,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from src.domains.addresses.dtos import AddressResponse
+from src.domains.routes.dtos import AddressCreate
 from src.domains.stops.dtos import StopResponse
 
 
@@ -27,12 +28,27 @@ class RoutePassangerResponse(BaseModel):
 
 
 class RoutePassangerScheduleRequest(BaseModel):
-    """Item de agendamento enviado pelo passageiro: dia + endereço de embarque."""
+    """Item de agendamento enviado pelo passageiro: dia + endereço de embarque.
+
+    Usado pelo UpdateSchedulesRequest (PATCH schedules).
+    """
 
     day_of_week: Literal["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"] = Field(
         ..., description="Dia da semana em inglês"
     )
     address_id: UUID = Field(..., description="Endereço de embarque neste dia")
+
+
+class JoinRouteScheduleRequest(BaseModel):
+    """Item de agendamento no payload de entrada na rota.
+
+    O endereço de embarque é informado uma única vez em JoinRouteRequest.address
+    e é reutilizado em todos os dias — por isso este DTO não carrega address_id.
+    """
+
+    day_of_week: Literal["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"] = Field(
+        ..., description="Dia da semana em inglês"
+    )
 
 
 class RoutePassangerScheduleResponse(BaseModel):
@@ -46,10 +62,16 @@ class RoutePassangerScheduleResponse(BaseModel):
 
 
 class JoinRouteRequest(BaseModel):
-    """Payload para um passageiro solicitar entrada em uma rota."""
+    """Payload para um passageiro solicitar entrada em uma rota.
+
+    O campo `address` define o endereço de embarque que será criado inline pelo
+    backend — o frontend não precisa fazer um POST /addresses separado.
+    O mesmo endereço é usado como pickup_address em todos os dias da recorrência.
+    """
 
     dependent_id: UUID | None = Field(default=None, description="UUID do dependente, se guardian solicita em seu nome")
-    schedules: list[RoutePassangerScheduleRequest] = Field(..., min_length=1, description="Pelo menos um dia de agendamento")
+    address: AddressCreate = Field(..., description="Endereço de embarque do passageiro (criado inline)")
+    schedules: list[JoinRouteScheduleRequest] = Field(..., min_length=1, description="Pelo menos um dia de agendamento")
 
     @model_validator(mode="after")
     def no_duplicate_days(self) -> "JoinRouteRequest":

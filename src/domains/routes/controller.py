@@ -131,7 +131,10 @@ def get_route_by_invite_code(
     service: Annotated[RouteService, Depends(get_route_service)],
     x_user_id: Annotated[str, Header(alias="X-User-Id")],
 ) -> RouteInviteSummaryResponse:
-    pass
+    try:
+        return service.get_invite_summary(invite_code)
+    except RouteNotFoundError as error:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
 
 
 @router.get(

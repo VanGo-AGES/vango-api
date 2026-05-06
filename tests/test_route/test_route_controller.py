@@ -873,7 +873,6 @@ def test_integration_list_routes_include_stops_field(integration_client, db_sess
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US08-TK06")
 def test_get_by_invite_code_unit_returns_summary() -> None:
     """[Unit] Controller chama service.get_invite_summary e retorna o DTO."""
     from src.domains.routes.dtos import RouteInviteSummaryResponse
@@ -928,7 +927,6 @@ def test_get_by_invite_code_unit_returns_summary() -> None:
     assert "stops" not in body
 
 
-@pytest.mark.skip(reason="US08-TK06")
 def test_get_by_invite_code_unit_not_found_returns_404() -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
@@ -944,7 +942,6 @@ def test_get_by_invite_code_unit_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US08-TK06")
 def test_integration_get_by_invite_code_success(integration_client, db_session) -> None:
     """[Integração] Criar rota, fazer GET /routes/invite/{code} e validar payload."""
     driver, _ = make_driver_with_vehicle(db_session)
@@ -965,7 +962,6 @@ def test_integration_get_by_invite_code_success(integration_client, db_session) 
     assert "stops" not in body
 
 
-@pytest.mark.skip(reason="US08-TK06")
 def test_integration_get_by_invite_code_not_found_returns_404(integration_client, db_session) -> None:
     driver, _ = make_driver_with_vehicle(db_session)
     headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
@@ -974,7 +970,6 @@ def test_integration_get_by_invite_code_not_found_returns_404(integration_client
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US08-TK06")
 def test_integration_get_by_invite_code_counts_accepted_passangers(integration_client, db_session) -> None:
     """Cria rota + dois RPs aceitos + um pending → accepted_count = 2."""
     from src.domains.route_passangers.entity import RoutePassangerModel

@@ -12,13 +12,13 @@ from src.domains.route_passangers.schedule_repository import (
     IRoutePassangerScheduleRepository,
 )
 from src.domains.route_passangers.service import RoutePassangerService
-from src.domains.routes.repository import IRouteRepository
+from src.domains.routes.repository import IAddressRepository, IRouteRepository
 from src.domains.stops.repository import IStopRepository
 from src.domains.users.repository import IUserRepository
 from src.infrastructure.database import get_db
 from src.infrastructure.dependencies.dependent_dependencies import get_dependent_repository
 from src.infrastructure.dependencies.notification_dependencies import get_notification_service
-from src.infrastructure.dependencies.route_dependencies import get_route_repository
+from src.infrastructure.dependencies.route_dependencies import get_address_repository, get_route_repository
 from src.infrastructure.dependencies.route_passanger_schedule_dependencies import (
     get_route_passanger_schedule_repository,
 )
@@ -44,6 +44,7 @@ def get_route_passanger_service(
         IRoutePassangerScheduleRepository,
         Depends(get_route_passanger_schedule_repository),
     ],
+    address_repo: Annotated[IAddressRepository, Depends(get_address_repository)],
 ) -> RoutePassangerService:
     return RoutePassangerService(
         rp_repo,
@@ -53,4 +54,5 @@ def get_route_passanger_service(
         notification_service,
         stop_repo,
         schedule_repo,
+        address_repo,
     )
