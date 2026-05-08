@@ -1,0 +1,6 @@
+services:
+  api:
+    image: vango-api:${IMAGE_TAG:-latest}
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000
+    restart: always
+    volumes: []
