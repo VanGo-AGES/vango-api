@@ -1,0 +1,47 @@
+stages:
+  - test
+  - build
+  - deploy
+
+before_script:
+  - echo "Recriando o arquivo .env a partir das variáveis do GitLab..."
+  - rm -f .env
+  - touch .env
+  - echo "FIREBASE_CREDENTIALS_PATH=$FIREBASE_CREDENTIALS_PATH" >> .env
+  - echo "DB_USER=$DB_USER" >> .env
+  - echo "DB_PASSWORD=$DB_PASSWORD" >> .env
+  - echo "DB_NAME=$DB_NAME" >> .env
+  - echo "DATABASE_URL=$DATABASE_URL" >> .env
+  - echo "DB_PORT_EXTERNAL=$DB_PORT_EXTERNAL" >> .env
+  - echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" >> .env
+  - echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" >> .env
+  - echo "AWS_S3_BUCKET_NAME=$AWS_S3_BUCKET_NAME" >> .env
+  - echo "AWS_REGION=$AWS_REGION" >> .env
+
+run_tests:
+  stage: test
+  tags:
+    - vango-ec2
+  script:
+    - docker compose up -d db
+    - docker compose run --rm api pytest -p no:cacheprovider
+    - docker compose down
+
+build_prod_image:
+  stage: build
+  tags:
+    - vango-ec2
+  script:
+    - docker build -t vango-api:$CI_COMMIT_SHA .
+  only:
+    - main
+
+deploy_to_ec2:
+  stage: deploy
+  tags:
+    - vango-ec2
+  script:
+    - export IMAGE_TAG=$CI_COMMIT_SHA
+    - docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+  only:
+    - main
