@@ -32,7 +32,7 @@ build_prod_image:
   tags:
     - vango-ec2
   script:
-    - docker build -t vango-api:$CI_COMMIT_SHA .
+    - docker build -t vango-api:$CI_COMMIT_SHA -t vango-api:latest .
   only:
     - main
 
