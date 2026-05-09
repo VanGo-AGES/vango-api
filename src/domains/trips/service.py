@@ -22,6 +22,7 @@ from src.domains.route_passangers.repository import IRoutePassangerRepository
 from src.domains.routes.repository import IRouteRepository
 from src.domains.stops.repository import IStopRepository
 from src.domains.trips.dtos import (
+    CurrentTripResponse,
     FinishTripRequest,
     StartTripRequest,
     TripNextStopResponse,
@@ -247,6 +248,8 @@ class TripService:
 
         now = datetime.now(UTC)
         updated = self.trip_passanger_repository.update_status(trip_passanger_id, "presente", boarded_at=now)
+        # US11-TK05
+        # self.notification_service.notify_passanger_boarded(updated)
         return self._build_trip_passanger_response(updated)
 
     # US09-TK10
@@ -273,6 +276,8 @@ class TripService:
             raise InvalidTripPassangerStatusError(f"Não é possível marcar ausente um passageiro com status '{tp.status}'.")
 
         updated = self.trip_passanger_repository.update_status(trip_passanger_id, "ausente")
+        # US11-TK05
+        # self.notification_service.notify_passanger_absent(updated)
         return self._build_trip_passanger_response(updated)
 
     # US09-TK11
@@ -377,8 +382,11 @@ class TripService:
         # Libera a rota
         self.route_repository.update(trip.route_id, {"status": "ativa"})
 
-        # Notifica
+        # Notifica push
         self.notification_service.notify_trip_finished(finished)
+
+        # US11-TK04 — emitir evento Socket.IO trip_finished para followers
+        # await emit_trip_finished(str(trip_id))  # wiring completo em US11-TK04
 
         return TripResponse(
             id=finished.id,
@@ -392,3 +400,21 @@ class TripService:
             finished_at=finished.finished_at,
             trip_passangers=[self._build_trip_passanger_response(tp) for tp in trip.trip_passangers],
         )
+
+    # US11-TK01 — viagem atual para o passageiro
+    def get_current_trip_for_passanger(
+        self,
+        route_id: UUID,
+        user_id: UUID,
+        dependent_id: UUID | None = None,
+    ) -> CurrentTripResponse | None:
+        """Retorna a viagem em andamento da rota para um passageiro autenticado.
+
+        - 404 RouteNotFoundError se a rota não existir.
+        - 403 NotRoutePassangerError se o usuário não tiver vínculo ativo (pending
+          ou accepted) na rota — inclui guardian atuando por dependente.
+        - Retorna None quando nenhuma viagem está em andamento na rota.
+        - Não valida ownership do motorista — qualquer passageiro da rota pode
+          consultar.
+        """
+        pass

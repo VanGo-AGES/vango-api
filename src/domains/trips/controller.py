@@ -3,9 +3,10 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 
 from src.domains.trips.dtos import (
+    CurrentTripResponse,
     FinishTripRequest,
     StartTripRequest,
     TripNextStopResponse,
@@ -192,3 +193,26 @@ def finish_trip(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
     except TripAlreadyFinishedError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+
+
+# US11-TK01 — viagem atual para o passageiro
+@router.get(
+    "/routes/{route_id}/trips/current",
+    response_model=CurrentTripResponse | None,
+    status_code=status.HTTP_200_OK,
+    summary="Passageiro consulta viagem em andamento da sua rota",
+    description=(
+        "Retorna o trip_id e status da viagem iniciada na rota, se existir. "
+        "Qualquer usuário com vínculo ativo (pending ou accepted) pode consultar — "
+        "não é restrito ao motorista. Aceita dependent_id opcional para guardian "
+        "consultando em nome do dependente. Retorna null quando não há viagem "
+        "em andamento. 404 se a rota não existir. 403 se o usuário não tiver vínculo ativo."
+    ),
+)
+def get_current_trip_for_passanger(
+    route_id: UUID,
+    service: Annotated[TripService, Depends(get_trip_service)],
+    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    dependent_id: Annotated[UUID | None, Query()] = None,
+) -> CurrentTripResponse | None:
+    pass

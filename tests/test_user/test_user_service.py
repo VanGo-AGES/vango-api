@@ -393,3 +393,51 @@ def test_login_invalid_password():
         service.login("john@email.com", "senha_errada")
 
     hasher.verify.assert_called_once()
+
+
+# ===========================================================================
+# US12-TK02 — UserService.register_push_token
+# Arquivo: src/domains/users/service.py
+# ===========================================================================
+
+
+@pytest.mark.skip(reason="US12-TK02")
+def test_register_push_token_success():
+    """register_push_token deve chamar update_push_token e retornar o UserModel."""
+    from src.domains.users.dtos import RegisterPushTokenRequest
+
+    repo = Mock()
+    hasher = Mock()
+    user_id = str(uuid4())
+
+    expected = UserModel(
+        name="Alice",
+        email="alice@email.com",
+        phone="54999999999",
+        password_hash="hash",
+        role="guardian",
+        push_token="fcm-token-abc",
+    )
+    repo.find_by_id.return_value = expected
+    repo.update_push_token.return_value = expected
+
+    service = UserService(repo, hasher)
+    result = service.register_push_token(user_id, RegisterPushTokenRequest(token="fcm-token-abc"))
+
+    repo.update_push_token.assert_called_once()
+    assert result.push_token == "fcm-token-abc"
+
+
+@pytest.mark.skip(reason="US12-TK02")
+def test_register_push_token_user_not_found_raises():
+    """register_push_token deve levantar UserNotFoundError se o usuário não existir."""
+    from src.domains.users.dtos import RegisterPushTokenRequest
+
+    repo = Mock()
+    hasher = Mock()
+    repo.find_by_id.return_value = None
+
+    service = UserService(repo, hasher)
+
+    with pytest.raises(UserNotFoundError):
+        service.register_push_token(str(uuid4()), RegisterPushTokenRequest(token="any"))

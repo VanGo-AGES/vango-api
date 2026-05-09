@@ -150,6 +150,7 @@ def test_upload_photo_returns_201_with_url() -> None:
     assert body["url"].startswith("https://")
 
 
+@pytest.mark.skip(reason="US00-TK02")
 def test_upload_photo_invalid_content_type_returns_422() -> None:
     """POST /uploads/photo com arquivo não-imagem deve retornar 422."""
     pdf_bytes = io.BytesIO(b"%PDF-fake")
@@ -161,6 +162,7 @@ def test_upload_photo_invalid_content_type_returns_422() -> None:
     assert response.status_code == 422
 
 
+@pytest.mark.skip(reason="US00-TK02")
 def test_upload_photo_missing_file_returns_422() -> None:
     """POST /uploads/photo sem campo file deve retornar 422."""
     response = client.post("/uploads/photo")

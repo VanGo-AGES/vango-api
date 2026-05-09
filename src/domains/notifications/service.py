@@ -82,6 +82,20 @@ class INotificationService(ABC):
         """Notifica passageiros/guardians que a viagem foi finalizada."""
         pass
 
+    # -----------------------------------------------------------------
+    # US12-TK05 — confirmação de embarque / ausência durante a viagem
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def notify_passanger_boarded(self, trip_passanger: TripPassangerModel) -> None:
+        """Notifica guardian/passageiro que o embarque foi confirmado pelo motorista."""
+        pass
+
+    @abstractmethod
+    def notify_passanger_absent(self, trip_passanger: TripPassangerModel) -> None:
+        """Notifica guardian/passageiro que o passageiro foi marcado ausente."""
+        pass
+
 
 class LoggingNotificationService(INotificationService):
     """Implementação stub que apenas registra as notificações em log."""
@@ -121,6 +135,13 @@ class LoggingNotificationService(INotificationService):
             rp.id,
             rp.user_id,
         )
+
+    # US12-TK05
+    def notify_passanger_boarded(self, trip_passanger: TripPassangerModel) -> None:
+        pass
+
+    def notify_passanger_absent(self, trip_passanger: TripPassangerModel) -> None:
+        pass
 
     # US09-TK05
     def notify_trip_started(self, trip: TripModel) -> None:

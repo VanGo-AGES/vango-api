@@ -236,3 +236,60 @@ def test_user_repository_find_all_empty(db_session):
     result = repo.find_all()
 
     assert isinstance(result, list)
+
+
+# ===========================================================================
+# US12-TK01 — update_push_token
+# Arquivo: src/infrastructure/repositories/user_repository.py
+# ===========================================================================
+
+
+@pytest.mark.skip(reason="US12-TK01")
+def test_update_push_token_persists_token(db_session):
+    """update_push_token deve salvar o token no campo push_token do usuário."""
+    repo = UserRepositoryImpl(db_session)
+
+    user = repo.save(UserModel(
+        name="Alice",
+        email="alice.pushtoken@email.com",
+        phone="54999999999",
+        password_hash="hash",
+        role="guardian",
+    ))
+
+    updated = repo.update_push_token(user.id, "fcm-token-xyz")
+
+    assert updated is not None
+    assert updated.push_token == "fcm-token-xyz"
+
+    reloaded = repo.find_by_id(user.id)
+    assert reloaded.push_token == "fcm-token-xyz"
+
+
+@pytest.mark.skip(reason="US12-TK01")
+def test_update_push_token_overwrites_existing_token(db_session):
+    """update_push_token deve substituir token previamente registrado."""
+    repo = UserRepositoryImpl(db_session)
+
+    user = repo.save(UserModel(
+        name="Bob",
+        email="bob.pushtoken@email.com",
+        phone="54988888888",
+        password_hash="hash",
+        role="driver",
+    ))
+
+    repo.update_push_token(user.id, "old-token")
+    updated = repo.update_push_token(user.id, "new-token")
+
+    assert updated.push_token == "new-token"
+
+
+@pytest.mark.skip(reason="US12-TK01")
+def test_update_push_token_user_not_found_returns_none(db_session):
+    """update_push_token com user_id inexistente deve retornar None."""
+    repo = UserRepositoryImpl(db_session)
+
+    result = repo.update_push_token(uuid4(), "any-token")
+
+    assert result is None

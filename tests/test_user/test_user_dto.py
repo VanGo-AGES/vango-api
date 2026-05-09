@@ -247,3 +247,36 @@ def test_user_update_empty_phone():
             phone=" ",
             password="nova_senha_123"
         )
+
+
+# ===========================================================================
+# US12-TK01 — RegisterPushTokenRequest
+# Arquivo: src/domains/users/dtos.py
+# ===========================================================================
+
+
+@pytest.mark.skip(reason="US12-TK01")
+def test_register_push_token_request_valid():
+    """RegisterPushTokenRequest com token válido deve ser aceito."""
+    from src.domains.users.dtos import RegisterPushTokenRequest
+
+    req = RegisterPushTokenRequest(token="fcm-token-abc123")
+    assert req.token == "fcm-token-abc123"
+
+
+@pytest.mark.skip(reason="US12-TK01")
+def test_register_push_token_request_token_required():
+    """RegisterPushTokenRequest sem token deve levantar ValidationError."""
+    from src.domains.users.dtos import RegisterPushTokenRequest
+
+    with pytest.raises(ValidationError):
+        RegisterPushTokenRequest()  # type: ignore[call-arg]
+
+
+@pytest.mark.skip(reason="US12-TK01")
+def test_register_push_token_request_empty_token_rejected():
+    """RegisterPushTokenRequest com token vazio deve levantar ValidationError."""
+    from src.domains.users.dtos import RegisterPushTokenRequest
+
+    with pytest.raises(ValidationError):
+        RegisterPushTokenRequest(token="")
