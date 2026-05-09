@@ -15,7 +15,7 @@ class StopRepositoryImpl(IStopRepository):
     def save(self, stop: StopModel) -> StopModel:
         """Persiste uma stop nova ou atualizada e retorna a instância persistida."""
         self.session.add(stop)
-        self.session.flush()
+        self.session.commit()
         self.session.refresh(stop)
         return stop
 
@@ -37,5 +37,5 @@ class StopRepositoryImpl(IStopRepository):
         if stop is None:
             return False
         self.session.delete(stop)
-        self.session.flush()
+        self.session.commit()
         return True

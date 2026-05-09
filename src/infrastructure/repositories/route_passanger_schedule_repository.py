@@ -19,7 +19,7 @@ class RoutePassangerScheduleRepositoryImpl(IRoutePassangerScheduleRepository):
             return []
 
         self.session.add_all(schedules)
-        self.session.flush()
+        self.session.commit()
         return schedules
 
     def find_by_route_passanger_id(self, rp_id: UUID) -> list[RoutePassangerScheduleModel]:
@@ -27,6 +27,7 @@ class RoutePassangerScheduleRepositoryImpl(IRoutePassangerScheduleRepository):
 
     def delete_by_route_passanger_id(self, rp_id: UUID) -> int:
         count = self.session.query(RoutePassangerScheduleModel).filter(RoutePassangerScheduleModel.route_passanger_id == rp_id).delete()
+        self.session.commit()
         return count
 
     def replace(
