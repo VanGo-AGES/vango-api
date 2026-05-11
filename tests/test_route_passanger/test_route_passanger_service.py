@@ -1461,9 +1461,14 @@ def make_full_route_mock(
     route.stops = [stop_a, stop_b]
 
     if include_trip:
+        from src.domains.vehicles.entity import VehicleModel
+
+        vehicle = Mock(spec=VehicleModel)
+        vehicle.plate = "ABC-1234"
         trip = Mock(spec=TripModel)
         trip.id = uuid.uuid4()
         trip.status = "iniciada"
+        trip.vehicle = vehicle
         route.trips = [trip]
     else:
         route.trips = []
@@ -1641,6 +1646,40 @@ def test_get_my_route_detail_current_trip_id_none_when_route_not_in_progress() -
     result = service.get_my_route_detail(route.id, user_id)
 
     assert result.current_trip_id is None
+
+
+def test_get_my_route_detail_driver_plate_populated_when_trip_in_progress() -> None:
+    """driver_plate deve vir da trip ativa quando route.status == 'em_andamento'."""
+    user_id = uuid.uuid4()
+    driver = make_user_mock()
+    route = make_full_route_mock(driver.id, status="em_andamento", include_trip=True)
+    rp = make_rp_with_pickup_mock(route.id, user_id, status="accepted")
+
+    service, rp_repo, route_repo, user_repo, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_by_user_and_route.return_value = rp
+    user_repo.find_by_id.return_value = driver
+
+    result = service.get_my_route_detail(route.id, user_id)
+
+    assert result.driver_plate == "ABC-1234"
+
+
+def test_get_my_route_detail_driver_plate_none_when_no_active_trip() -> None:
+    """driver_plate deve ser None quando não há viagem em andamento."""
+    user_id = uuid.uuid4()
+    driver = make_user_mock()
+    route = make_full_route_mock(driver.id, status="ativa")
+    rp = make_rp_with_pickup_mock(route.id, user_id, status="accepted")
+
+    service, rp_repo, route_repo, user_repo, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_by_user_and_route.return_value = rp
+    user_repo.find_by_id.return_value = driver
+
+    result = service.get_my_route_detail(route.id, user_id)
+
+    assert result.driver_plate is None
 
 
 def test_get_my_route_detail_resolves_driver_from_route_driver_id() -> None:

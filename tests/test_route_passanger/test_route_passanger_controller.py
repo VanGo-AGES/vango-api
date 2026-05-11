@@ -1644,6 +1644,7 @@ def make_detail_response(
         stops=[],
         driver_name="Carlos Motorista",
         driver_phone="51988887777",
+        driver_plate="ABC-1234",
         membership_status=membership_status,
         dependent_id=dependent_id,
         dependent_name=dependent_name,

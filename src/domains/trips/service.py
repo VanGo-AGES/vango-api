@@ -248,7 +248,7 @@ class TripService:
 
         now = datetime.now(UTC)
         updated = self.trip_passanger_repository.update_status(trip_passanger_id, "presente", boarded_at=now)
-        # US11-TK05
+        # US12-TK05
         # self.notification_service.notify_passanger_boarded(updated)
         return self._build_trip_passanger_response(updated)
 
@@ -276,7 +276,7 @@ class TripService:
             raise InvalidTripPassangerStatusError(f"Não é possível marcar ausente um passageiro com status '{tp.status}'.")
 
         updated = self.trip_passanger_repository.update_status(trip_passanger_id, "ausente")
-        # US11-TK05
+        # US12-TK05
         # self.notification_service.notify_passanger_absent(updated)
         return self._build_trip_passanger_response(updated)
 

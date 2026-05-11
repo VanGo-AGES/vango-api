@@ -500,11 +500,13 @@ class RoutePassangerService:
                 dependent_name = dep.name
 
         current_trip_id: UUID | None = None
+        driver_plate: str | None = None
         if route.status == "em_andamento":
             trips = list(getattr(route, "trips", []) or [])
             started = [t for t in trips if getattr(t, "status", None) == "iniciada"]
             if started:
                 current_trip_id = started[0].id
+                driver_plate = getattr(getattr(started[0], "vehicle", None), "plate", None)
 
         recurrence = route.recurrence
         recurrence_list = [d.strip() for d in recurrence.split(",")] if isinstance(recurrence, str) else list(recurrence)
@@ -544,6 +546,7 @@ class RoutePassangerService:
             stops=stops_list,
             driver_name=driver.name,
             driver_phone=driver.phone,
+            driver_plate=driver_plate,
             membership_status=rp.status,
             dependent_id=dependent_id,
             dependent_name=dependent_name,
