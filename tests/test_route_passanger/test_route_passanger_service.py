@@ -1712,3 +1712,59 @@ def test_get_my_route_detail_my_pickup_address_comes_from_rp() -> None:
     result = service.get_my_route_detail(route.id, user_id)
 
     assert result.my_pickup_address.id == rp.pickup_address.id
+
+
+# ===========================================================================
+# US10-TK08 — optimize_stop_order wiring em accept_request e remove_passanger
+# ===========================================================================
+
+
+@pytest.mark.skip(reason="US10-TK08")
+def test_accept_request_calls_optimize_stop_order() -> None:
+    """accept_request deve chamar routing_service.optimize_stop_order após salvar a stop."""
+    from src.domains.routing.service import IRoutingService
+
+    driver_id = uuid.uuid4()
+    route = make_route_mock(driver_id, status="ativa", max_passengers=5)
+    rp = make_rp_mock(route.id, uuid.uuid4(), status="pending")
+
+    routing_mock = Mock(spec=IRoutingService)
+    routing_mock.optimize_stop_order.return_value = [0]
+
+    service, rp_repo, route_repo, user_repo, _, _, stop_repo, _ = build_service()
+    service.routing_service = routing_mock
+
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_by_id.return_value = rp
+    rp_repo.count_accepted_by_route.return_value = 0
+    rp_repo.update_status.return_value = make_rp_mock(route.id, rp.user_id, status="accepted")
+    user_repo.find_by_id.return_value = make_user_mock()
+    stop_repo.find_by_route_id.return_value = []
+
+    service.accept_request(route.id, rp.id, driver_id)
+
+    routing_mock.optimize_stop_order.assert_called_once()
+
+
+@pytest.mark.skip(reason="US10-TK08")
+def test_remove_passanger_calls_optimize_stop_order() -> None:
+    """remove_passanger deve chamar routing_service.optimize_stop_order após remover a stop."""
+    from src.domains.routing.service import IRoutingService
+
+    driver_id = uuid.uuid4()
+    route = make_route_mock(driver_id, status="ativa")
+    rp = make_rp_mock(route.id, uuid.uuid4(), status="accepted")
+
+    routing_mock = Mock(spec=IRoutingService)
+    routing_mock.optimize_stop_order.return_value = []
+
+    service, rp_repo, route_repo, user_repo, _, _, stop_repo, _ = build_service()
+    service.routing_service = routing_mock
+
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_by_id.return_value = rp
+    stop_repo.find_by_route_id.return_value = []
+
+    service.remove_passanger(route.id, rp.id, driver_id)
+
+    routing_mock.optimize_stop_order.assert_called_once()

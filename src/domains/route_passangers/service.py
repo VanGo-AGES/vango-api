@@ -43,6 +43,7 @@ from src.domains.route_passangers.schedule_repository import (
 from src.domains.routes.dtos import AddressResponse
 from src.domains.routes.errors import RouteInProgressError, RouteNotFoundError, RouteOwnershipError
 from src.domains.routes.repository import IAddressRepository, IRouteRepository
+from src.domains.routing.service import IRoutingService
 from src.domains.stops.dtos import StopResponse
 from src.domains.stops.entity import StopModel
 from src.domains.stops.repository import IStopRepository
@@ -60,6 +61,7 @@ class RoutePassangerService:
         stop_repository: IStopRepository,
         schedule_repository: IRoutePassangerScheduleRepository,
         address_repository: IAddressRepository | None = None,
+        routing_service: IRoutingService | None = None,
     ):
         self.route_passanger_repository = route_passanger_repository
         self.route_repository = route_repository
@@ -71,6 +73,8 @@ class RoutePassangerService:
         # Usado por join_route para criar o endereço de embarque inline.
         # Opcional para não quebrar instanciações pré-inline que não passam esse repo.
         self.address_repository = address_repository
+        # US10-TK08: usado para reordenar paradas após add/remove.
+        self.routing_service = routing_service
 
     # US06-TK08
     def accept_request(self, route_id: UUID, rp_id: UUID, driver_id: UUID) -> RoutePassangerResponse:
@@ -125,6 +129,7 @@ class RoutePassangerService:
             type=stop_type,
         )
         self.stop_repository.save(stop)
+        self._trigger_route_optimization(route.id)  # US10-TK08
 
         self.notification_service.notify_passanger_accepted(updated)
         return self._to_response(updated)
@@ -191,6 +196,7 @@ class RoutePassangerService:
 
         self.notification_service.notify_passanger_removed(rp)
         self.stop_repository.delete_by_route_passanger_id(rp.id)
+        self._trigger_route_optimization(route.id)  # US10-TK08
         self.route_passanger_repository.delete(rp.id)
 
     # US06-TK14
@@ -216,6 +222,18 @@ class RoutePassangerService:
 
         rps = self.route_passanger_repository.find_by_route_and_status(route_id, status)
         return [self._to_response(rp) for rp in rps]
+
+    # US10-TK08
+    def _trigger_route_optimization(self, route_id: UUID) -> None:
+        """Reordena as paradas da rota via IRoutingService.optimize_stop_order.
+
+        Busca as paradas da rota (stop_repository.find_by_route_id), monta a lista
+        de coordenadas {id, lat, lng} a partir dos endereços e chama
+        routing_service.optimize_stop_order. Em seguida atualiza order_index de
+        cada stop de acordo com a nova ordem.
+        Silenciosamente ignorado se routing_service for None.
+        """
+        pass
 
     # Helper interno (sem @abstractmethod — não está na interface)
     def _to_response(self, rp: RoutePassangerModel) -> RoutePassangerResponse:

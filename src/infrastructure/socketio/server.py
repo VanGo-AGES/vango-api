@@ -65,7 +65,37 @@ async def join_session(sid: str, data: dict) -> None:  # type: ignore[empty-body
     pass
 
 
-# US10-TK04
+# US10-TK04 / US10-TK08
 @sio.event
 async def location_update(sid: str, data: dict) -> None:  # type: ignore[empty-body]
     pass
+
+
+# US11-TK04
+async def emit_trip_finished(trip_id: str) -> None:
+    """Emite trip_finished para todos no room da sessão e remove o estado em memória.
+
+    Chamado pelo TripService após finalizar a viagem.
+    Silenciosamente ignorado se não houver sessão ativa para o trip_id.
+    """
+    pass
+
+
+# US10-TK08
+async def _calculate_eta_for_follower(
+    driver_lat: float,
+    driver_lng: float,
+    follower_sid: str,
+) -> dict | None:
+    """Calcula eta_minutes e distance_km para um follower específico.
+
+    Usa IRoutingService.get_route_info com:
+      origin      = {"lat": driver_lat, "lng": driver_lng}
+      waypoints   = []
+      destination = stop coords armazenados em sid_meta[follower_sid]
+                    (chaves "stop_lat" e "stop_lng" — populadas em join_session)
+
+    Retorna {"eta_minutes": int, "distance_km": float} ou None se routing
+    service não estiver disponível ou se stop não estiver configurada.
+    """
+    pass  # type: ignore[return-value]
