@@ -78,6 +78,11 @@ class INotificationService(ABC):
         pass
 
     @abstractmethod
+    def notify_trip_arrived_at_stop(self, trip_passanger: TripPassangerModel) -> None:
+        """Notifica o passageiro da próxima parada que a van chegou."""
+        pass
+
+    @abstractmethod
     def notify_trip_finished(self, trip: TripModel) -> None:
         """Notifica passageiros/guardians que a viagem foi finalizada."""
         pass
