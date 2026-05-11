@@ -1165,3 +1165,177 @@ def test_integration_delete_route_cascades_passangers(integration_client, db_ses
     assert response.status_code == 204
     assert db_session.query(RoutePassangerModel).filter_by(route_id=route_id).first() is None
     assert db_session.query(StopModel).filter_by(route_id=route_id).first() is None
+
+
+# ===========================================================================
+# GET /routes/{route_id}/absences — list_route_absences
+# Arquivo:     src/domains/routes/controller.py
+# Critérios:   motorista (dono) → 200 com lista
+#              passageiro ativo → 200 com lista (acesso liberado)
+#              forasteiro → 403
+#              rota não encontrada → 404
+# ===========================================================================
+
+
+# --- unit (mocked service) ---
+
+
+def test_list_route_absences_driver_returns_200() -> None:
+    from src.domains.absences.dtos import RouteAbsenceResponse
+    import uuid as _uuid
+    from datetime import datetime, timezone
+
+    absence = RouteAbsenceResponse(
+        route_passanger_id=_uuid.uuid4(),
+        user_id=_uuid.uuid4(),
+        user_name="Passageiro",
+        dependent_id=None,
+        dependent_name=None,
+        absence_date=datetime(2026, 5, 5, 0, 0, tzinfo=timezone.utc),
+        reason=None,
+    )
+    mock_service = Mock(spec=RouteService)
+    mock_service.get_route_absences.return_value = [absence]
+    app.dependency_overrides[get_route_service] = lambda: mock_service
+
+    response = client.get(f"/routes/{uuid.uuid4()}/absences", headers=DRIVER_HEADERS)
+
+    app.dependency_overrides.clear()
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+
+
+def test_list_route_absences_not_found_returns_404() -> None:
+    from src.domains.routes.errors import RouteNotFoundError
+
+    mock_service = Mock(spec=RouteService)
+    mock_service.get_route_absences.side_effect = RouteNotFoundError()
+    app.dependency_overrides[get_route_service] = lambda: mock_service
+
+    response = client.get(f"/routes/{uuid.uuid4()}/absences", headers=DRIVER_HEADERS)
+
+    app.dependency_overrides.clear()
+    assert response.status_code == 404
+
+
+def test_list_route_absences_forbidden_returns_403() -> None:
+    from src.domains.routes.errors import RouteOwnershipError
+
+    mock_service = Mock(spec=RouteService)
+    mock_service.get_route_absences.side_effect = RouteOwnershipError()
+    app.dependency_overrides[get_route_service] = lambda: mock_service
+
+    response = client.get(f"/routes/{uuid.uuid4()}/absences", headers=DRIVER_HEADERS)
+
+    app.dependency_overrides.clear()
+    assert response.status_code == 403
+
+
+def test_list_route_absences_forwards_caller_id_from_header() -> None:
+    """O controller deve encaminhar o X-User-Id como caller_id para o service."""
+    mock_service = Mock(spec=RouteService)
+    mock_service.get_route_absences.return_value = []
+    app.dependency_overrides[get_route_service] = lambda: mock_service
+
+    caller_id = uuid.uuid4()
+    headers = {"X-User-Id": str(caller_id), "X-User-Role": "guardian"}
+    client.get(f"/routes/{uuid.uuid4()}/absences", headers=headers)
+
+    app.dependency_overrides.clear()
+    call_args = mock_service.get_route_absences.call_args
+    assert caller_id in call_args.args or call_args.kwargs.get("caller_id") == caller_id
+
+
+# --- integração (stack real) ---
+
+
+def _make_passenger(db_session, name: str = "Passageiro"):
+    from src.domains.users.entity import UserModel as _UserModel
+    from src.domains.addresses.entity import AddressModel as _AddressModel
+
+    user = _UserModel(
+        name=name,
+        email=f"pass_{uuid.uuid4()}@test.com",
+        phone="11999999999",
+        password_hash="hashed",
+        role="guardian",
+    )
+    db_session.add(user)
+    db_session.flush()
+    return user
+
+
+def _make_rp_for_absences(db_session, route_id, user_id, status: str = "accepted"):
+    from src.domains.addresses.entity import AddressModel as _AddressModel
+    from src.domains.route_passangers.entity import RoutePassangerModel as _RPModel
+
+    pickup = _AddressModel(
+        user_id=user_id,
+        label="Casa Passageiro",
+        street="R. X",
+        number="100",
+        neighborhood="C",
+        zip="90000-000",
+        city="Porto Alegre",
+        state="RS",
+    )
+    db_session.add(pickup)
+    db_session.flush()
+
+    rp = _RPModel(
+        route_id=route_id,
+        user_id=user_id,
+        status=status,
+        pickup_address_id=pickup.id,
+    )
+    db_session.add(rp)
+    db_session.flush()
+    return rp
+
+
+def test_integration_list_absences_driver_returns_200(integration_client, db_session) -> None:
+    driver, _ = make_driver_with_vehicle(db_session)
+    headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+    create_resp = integration_client.post("/routes/", json=route_payload(), headers=headers)
+    route_id = create_resp.json()["id"]
+
+    response = integration_client.get(f"/routes/{route_id}/absences", headers=headers)
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_integration_list_absences_accepted_passanger_returns_200(
+    integration_client, db_session
+) -> None:
+    """Passageiro com status 'accepted' consegue acessar as ausências da rota."""
+    driver, _ = make_driver_with_vehicle(db_session)
+    driver_headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+    create_resp = integration_client.post("/routes/", json=route_payload(), headers=driver_headers)
+    route_id = uuid.UUID(create_resp.json()["id"])
+
+    passenger = _make_passenger(db_session)
+    _make_rp_for_absences(db_session, route_id, passenger.id, status="accepted")
+    db_session.commit()
+
+    passanger_headers = {"X-User-Id": str(passenger.id), "X-User-Role": "guardian"}
+    response = integration_client.get(f"/routes/{route_id}/absences", headers=passanger_headers)
+
+    assert response.status_code == 200
+
+
+def test_integration_list_absences_outsider_returns_403(
+    integration_client, db_session
+) -> None:
+    """Usuário sem vínculo com a rota recebe 403."""
+    driver, _ = make_driver_with_vehicle(db_session)
+    driver_headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+    create_resp = integration_client.post("/routes/", json=route_payload(), headers=driver_headers)
+    route_id = create_resp.json()["id"]
+
+    outsider = _make_passenger(db_session, "Forasteiro")
+    outsider_headers = {"X-User-Id": str(outsider.id), "X-User-Role": "guardian"}
+
+    response = integration_client.get(f"/routes/{route_id}/absences", headers=outsider_headers)
+
+    assert response.status_code == 403

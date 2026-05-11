@@ -215,11 +215,12 @@ class RouteService:
             return 0
         return self.route_passanger_repository.count_accepted_by_route(route_id)
 
-    def get_route_absences(self, route_id: UUID, driver_id: UUID, absence_date: datetime) -> list:
+    def get_route_absences(self, route_id: UUID, caller_id: UUID, absence_date: datetime) -> list:
         """Retorna ausências avisadas para a rota numa data específica.
 
         - 404 RouteNotFoundError se rota não existir
-        - 403 RouteOwnershipError se driver não for dono
+        - 403 RouteOwnershipError se o caller não for dono nem passageiro ativo
+        Acessível tanto pelo motorista quanto por passageiros (pending/accepted).
         Cada item inclui user_name e dependent_name para exibição direta pelo frontend.
         """
         from src.domains.absences.dtos import RouteAbsenceResponse
@@ -227,7 +228,14 @@ class RouteService:
         route = self.route_repository.find_by_id(route_id)
         if route is None:
             raise RouteNotFoundError()
-        if route.driver_id != driver_id:
+
+        is_driver = route.driver_id == caller_id
+        is_passanger = False
+        if not is_driver and self.route_passanger_repository is not None:
+            rps = self.route_passanger_repository.find_by_user_and_route_id(caller_id, route_id)
+            is_passanger = any(rp.status in ("pending", "accepted") for rp in rps)
+
+        if not is_driver and not is_passanger:
             raise RouteOwnershipError()
 
         absences = self.absence_repository.find_by_route_and_date_with_passangers(route_id, absence_date)
@@ -271,11 +279,13 @@ class RouteService:
             raise RouteInProgressError()
 
         active_passengers: dict = {}
-        for status in ("pending", "accepted"):
-            for rp in self.route_passanger_repository.find_by_route_and_status(route_id, status):
-                active_passengers[rp.id] = rp
+        if self.route_passanger_repository is not None:
+            for status in ("pending", "accepted"):
+                for rp in self.route_passanger_repository.find_by_route_and_status(route_id, status):
+                    active_passengers[rp.id] = rp
 
-        for rp in active_passengers.values():
-            self.notification_service.notify_passanger_route_cancelled(rp)
+        if self.notification_service is not None:
+            for rp in active_passengers.values():
+                self.notification_service.notify_passanger_route_cancelled(rp)
 
         self.route_repository.delete(route_id)

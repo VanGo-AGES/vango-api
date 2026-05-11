@@ -155,10 +155,10 @@ def list_route_absences(
     x_user_id: Annotated[str, Header(alias="X-User-Id")],
     date: Annotated[date, Query()] = None,
 ) -> list[RouteAbsenceResponse]:
-    driver_id = UUID(x_user_id)
+    caller_id = UUID(x_user_id)
     absence_date = datetime.combine(date or datetime.now(UTC).date(), datetime.min.time())
     try:
-        return service.get_route_absences(route_id, driver_id, absence_date)
+        return service.get_route_absences(route_id, caller_id, absence_date)
     except RouteNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except RouteOwnershipError as exc:

@@ -802,3 +802,179 @@ def test_delete_route_notifies_before_delete() -> None:
 
     call_names = [c[0] for c in manager.mock_calls]
     assert call_names.index("notify") < call_names.index("delete_route")
+
+
+# ===========================================================================
+# GET /routes/{route_id}/absences — RouteService.get_route_absences
+# Arquivo:     src/domains/routes/service.py
+# Critérios:   motorista (dono) acessa → retorna lista de ausências
+#              passageiro ativo (accepted/pending) acessa → retorna lista
+#              passageiro rejeitado / forasteiro → RouteOwnershipError
+#              rota não encontrada → RouteNotFoundError
+# ===========================================================================
+
+
+def make_absence_mock(route_passanger_id: uuid.UUID):
+    from src.domains.trips.entity import AbsenceModel
+    from src.domains.route_passangers.entity import RoutePassangerModel
+    from src.domains.users.entity import UserModel
+
+    absence = Mock(spec=AbsenceModel)
+    absence.route_passanger_id = route_passanger_id
+    absence.absence_date = __import__("datetime").datetime(2026, 5, 5, 0, 0)
+    absence.reason = None
+
+    rp = Mock(spec=RoutePassangerModel)
+    rp.user_id = uuid.uuid4()
+    rp.dependent_id = None
+
+    user = Mock(spec=UserModel)
+    user.name = "Passageiro"
+    rp.user = user
+    rp.dependent = None
+    absence.route_passanger = rp
+    return absence
+
+
+def build_route_service_for_absences(**overrides):
+    from src.domains.routes.repository import IRouteRepository, IAddressRepository
+    from src.domains.vehicles.repository import IVehicleRepository
+    from src.domains.route_passangers.repository import IRoutePassangerRepository
+    from src.domains.trips.repository import IAbsenceRepository
+    from src.domains.routes.service import RouteService
+
+    deps = {
+        "route_repository": Mock(spec=IRouteRepository),
+        "address_repository": Mock(spec=IAddressRepository),
+        "vehicle_repository": Mock(spec=IVehicleRepository),
+        "route_passanger_repository": Mock(spec=IRoutePassangerRepository),
+        "absence_repository": Mock(spec=IAbsenceRepository),
+    }
+    deps.update(overrides)
+    service = RouteService(
+        deps["route_repository"],
+        deps["address_repository"],
+        deps["vehicle_repository"],
+        deps["route_passanger_repository"],
+        None,
+        deps["absence_repository"],
+    )
+    return service, deps
+
+
+def test_get_route_absences_driver_returns_list() -> None:
+    """Motorista (dono da rota) obtém lista de ausências sem erro."""
+    import datetime
+
+    driver_id = uuid.uuid4()
+    route = make_route_mock(driver_id)
+    absence_date = datetime.datetime(2026, 5, 5, 0, 0)
+
+    service, deps = build_route_service_for_absences()
+    deps["route_repository"].find_by_id.return_value = route
+    absence = make_absence_mock(uuid.uuid4())
+    deps["absence_repository"].find_by_route_and_date_with_passangers.return_value = [absence]
+
+    result = service.get_route_absences(route.id, driver_id, absence_date)
+
+    assert isinstance(result, list)
+    assert len(result) == 1
+
+
+def test_get_route_absences_accepted_passanger_returns_list() -> None:
+    """Passageiro com status 'accepted' consegue ver ausências da rota."""
+    import datetime
+    from src.domains.route_passangers.entity import RoutePassangerModel
+
+    driver_id = uuid.uuid4()
+    passanger_id = uuid.uuid4()
+    route = make_route_mock(driver_id)
+    absence_date = datetime.datetime(2026, 5, 5, 0, 0)
+
+    rp = Mock(spec=RoutePassangerModel)
+    rp.status = "accepted"
+
+    service, deps = build_route_service_for_absences()
+    deps["route_repository"].find_by_id.return_value = route
+    deps["route_passanger_repository"].find_by_user_and_route_id.return_value = [rp]
+    deps["absence_repository"].find_by_route_and_date_with_passangers.return_value = []
+
+    result = service.get_route_absences(route.id, passanger_id, absence_date)
+
+    assert isinstance(result, list)
+    deps["route_passanger_repository"].find_by_user_and_route_id.assert_called_once_with(passanger_id, route.id)
+
+
+def test_get_route_absences_pending_passanger_returns_list() -> None:
+    """Passageiro com status 'pending' também consegue ver ausências."""
+    import datetime
+    from src.domains.route_passangers.entity import RoutePassangerModel
+
+    driver_id = uuid.uuid4()
+    passanger_id = uuid.uuid4()
+    route = make_route_mock(driver_id)
+    absence_date = datetime.datetime(2026, 5, 5, 0, 0)
+
+    rp = Mock(spec=RoutePassangerModel)
+    rp.status = "pending"
+
+    service, deps = build_route_service_for_absences()
+    deps["route_repository"].find_by_id.return_value = route
+    deps["route_passanger_repository"].find_by_user_and_route_id.return_value = [rp]
+    deps["absence_repository"].find_by_route_and_date_with_passangers.return_value = []
+
+    result = service.get_route_absences(route.id, passanger_id, absence_date)
+
+    assert isinstance(result, list)
+
+
+def test_get_route_absences_outsider_raises_ownership_error() -> None:
+    """Usuário que não é dono nem passageiro ativo levanta RouteOwnershipError."""
+    import datetime
+    from src.domains.routes.errors import RouteOwnershipError
+
+    driver_id = uuid.uuid4()
+    outsider_id = uuid.uuid4()
+    route = make_route_mock(driver_id)
+    absence_date = datetime.datetime(2026, 5, 5, 0, 0)
+
+    service, deps = build_route_service_for_absences()
+    deps["route_repository"].find_by_id.return_value = route
+    deps["route_passanger_repository"].find_by_user_and_route_id.return_value = []
+
+    with pytest.raises(RouteOwnershipError):
+        service.get_route_absences(route.id, outsider_id, absence_date)
+
+
+def test_get_route_absences_rejected_passanger_raises_ownership_error() -> None:
+    """Passageiro com status 'rejected' não tem acesso."""
+    import datetime
+    from src.domains.route_passangers.entity import RoutePassangerModel
+    from src.domains.routes.errors import RouteOwnershipError
+
+    driver_id = uuid.uuid4()
+    passanger_id = uuid.uuid4()
+    route = make_route_mock(driver_id)
+    absence_date = datetime.datetime(2026, 5, 5, 0, 0)
+
+    rp = Mock(spec=RoutePassangerModel)
+    rp.status = "rejected"
+
+    service, deps = build_route_service_for_absences()
+    deps["route_repository"].find_by_id.return_value = route
+    deps["route_passanger_repository"].find_by_user_and_route_id.return_value = [rp]
+
+    with pytest.raises(RouteOwnershipError):
+        service.get_route_absences(route.id, passanger_id, absence_date)
+
+
+def test_get_route_absences_route_not_found_raises() -> None:
+    """Rota inexistente levanta RouteNotFoundError."""
+    import datetime
+    from src.domains.routes.errors import RouteNotFoundError
+
+    service, deps = build_route_service_for_absences()
+    deps["route_repository"].find_by_id.return_value = None
+
+    with pytest.raises(RouteNotFoundError):
+        service.get_route_absences(uuid.uuid4(), uuid.uuid4(), datetime.datetime(2026, 5, 5))
