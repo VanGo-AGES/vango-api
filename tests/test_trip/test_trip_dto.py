@@ -205,3 +205,59 @@ def test_trip_next_stop_response_requires_passanger_phone() -> None:
     payload.pop("passanger_phone")
     with pytest.raises(ValidationError):
         TripNextStopResponse(**payload)
+
+
+# ===========================================================================
+# US11-TK01 — CurrentTripResponse
+# ===========================================================================
+
+
+def _current_trip_payload(**overrides) -> dict:
+    base = {
+        "trip_id": uuid.uuid4(),
+        "status": "iniciada",
+        "started_at": datetime(2026, 5, 10, 7, 30, tzinfo=timezone.utc),
+    }
+    base.update(overrides)
+    return base
+
+
+def test_current_trip_response_valid_payload() -> None:
+    """CurrentTripResponse aceita payload completo e serializa corretamente."""
+    from src.domains.trips.dtos import CurrentTripResponse
+
+    payload = _current_trip_payload()
+    resp = CurrentTripResponse(**payload)
+    assert resp.trip_id == payload["trip_id"]
+    assert resp.status == "iniciada"
+    assert resp.started_at == payload["started_at"]
+
+
+def test_current_trip_response_started_at_optional() -> None:
+    """started_at é opcional — pode ser None."""
+    from src.domains.trips.dtos import CurrentTripResponse
+
+    payload = _current_trip_payload()
+    payload.pop("started_at")
+    resp = CurrentTripResponse(**payload)
+    assert resp.started_at is None
+
+
+def test_current_trip_response_trip_id_required() -> None:
+    """trip_id é obrigatório — omitir deve levantar ValidationError."""
+    from src.domains.trips.dtos import CurrentTripResponse
+
+    payload = _current_trip_payload()
+    payload.pop("trip_id")
+    with pytest.raises(ValidationError):
+        CurrentTripResponse(**payload)
+
+
+def test_current_trip_response_status_required() -> None:
+    """status é obrigatório — omitir deve levantar ValidationError."""
+    from src.domains.trips.dtos import CurrentTripResponse
+
+    payload = _current_trip_payload()
+    payload.pop("status")
+    with pytest.raises(ValidationError):
+        CurrentTripResponse(**payload)

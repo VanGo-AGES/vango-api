@@ -420,7 +420,7 @@ def test_integration_register_passenger_success(integration_client):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US02-TK04")
+@pytest.mark.skip(reason="US00-TK03")
 def test_integration_get_user_success(integration_client, db_session):
     """[Integração] GET /users/{id} deve retornar 200 com dados do usuário."""
     repo = UserRepositoryImpl(db_session)
@@ -438,7 +438,7 @@ def test_integration_get_user_success(integration_client, db_session):
     assert response.json()["email"] == user.email
 
 
-@pytest.mark.skip(reason="US02-TK04")
+@pytest.mark.skip(reason="US00-TK03")
 def test_integration_get_user_not_found_returns_404(integration_client):
     """[Integração] GET /users/{id} com id inexistente deve retornar 404."""
     response = integration_client.get(f"/users/{uuid4()}")
@@ -451,7 +451,7 @@ def test_integration_get_user_not_found_returns_404(integration_client):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US02-TK04")
+@pytest.mark.skip(reason="US00-TK03")
 def test_integration_update_user_success(integration_client, db_session):
     """[Integração] PUT /users/{id} deve atualizar e retornar 200 com novos dados."""
     repo = UserRepositoryImpl(db_session)
@@ -469,7 +469,7 @@ def test_integration_update_user_success(integration_client, db_session):
     assert response.json()["name"] == "Carlos Silva"
 
 
-@pytest.mark.skip(reason="US02-TK04")
+@pytest.mark.skip(reason="US00-TK03")
 def test_integration_update_user_not_found_returns_404(integration_client):
     """[Integração] PUT /users/{id} com id inexistente deve retornar 404."""
     response = integration_client.put(f"/users/{uuid4()}", json={"name": "Novo Nome"})
@@ -482,7 +482,7 @@ def test_integration_update_user_not_found_returns_404(integration_client):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US02-TK04")
+@pytest.mark.skip(reason="US00-TK03")
 def test_integration_delete_user_success(integration_client, db_session):
     """[Integração] DELETE /users/{id} deve remover e retornar 204."""
     repo = UserRepositoryImpl(db_session)
@@ -499,7 +499,7 @@ def test_integration_delete_user_success(integration_client, db_session):
     assert response.status_code == 204
 
 
-@pytest.mark.skip(reason="US02-TK04")
+@pytest.mark.skip(reason="US00-TK03")
 def test_integration_delete_user_not_found_returns_404(integration_client):
     """[Integração] DELETE /users/{id} com id inexistente deve retornar 404."""
     response = integration_client.delete(f"/users/{uuid4()}")
@@ -630,3 +630,102 @@ def test_integration_login_invalid_password_returns_401(integration_client):
     })
 
     assert response.status_code == 401
+
+
+# ===========================================================================
+# US12-TK02 — POST /users/me/push-token
+# Arquivo: src/domains/users/controller.py
+# ===========================================================================
+
+# ---- Unitários (mock service) ----
+
+
+@pytest.mark.skip(reason="US12-TK02")
+def test_register_push_token_unit_success():
+    """POST /users/me/push-token deve retornar 200 com UserResponse."""
+    from src.domains.users.dtos import RegisterPushTokenRequest
+
+    mock_service = Mock(spec=UserService)
+    mock_service.register_push_token.return_value = make_user_response()
+
+    app.dependency_overrides[get_user_service] = lambda: mock_service
+    client = TestClient(app)
+
+    response = client.post(
+        "/users/me/push-token",
+        json={"token": "fcm-abc-123"},
+        headers={"X-User-Id": str(uuid4())},
+    )
+
+    assert response.status_code == 200
+    mock_service.register_push_token.assert_called_once()
+
+    app.dependency_overrides.clear()
+
+
+@pytest.mark.skip(reason="US12-TK02")
+def test_register_push_token_unit_missing_header_returns_422():
+    """POST /users/me/push-token sem X-User-Id deve retornar 422."""
+    mock_service = Mock(spec=UserService)
+
+    app.dependency_overrides[get_user_service] = lambda: mock_service
+    client = TestClient(app)
+
+    response = client.post("/users/me/push-token", json={"token": "fcm-abc-123"})
+
+    assert response.status_code == 422
+    mock_service.register_push_token.assert_not_called()
+
+    app.dependency_overrides.clear()
+
+
+@pytest.mark.skip(reason="US12-TK02")
+def test_register_push_token_unit_user_not_found_returns_404():
+    """POST /users/me/push-token para usuário inexistente deve retornar 404."""
+    mock_service = Mock(spec=UserService)
+    mock_service.register_push_token.side_effect = UserNotFoundError()
+
+    app.dependency_overrides[get_user_service] = lambda: mock_service
+    client = TestClient(app)
+
+    response = client.post(
+        "/users/me/push-token",
+        json={"token": "fcm-abc-123"},
+        headers={"X-User-Id": str(uuid4())},
+    )
+
+    assert response.status_code == 404
+
+    app.dependency_overrides.clear()
+
+
+# ---- Integração (stack real) ----
+
+
+@pytest.mark.skip(reason="US12-TK02")
+def test_integration_register_push_token_success(integration_client):
+    """[Integração] POST /users/me/push-token deve salvar token e retornar 200."""
+    payload = make_user_payload()
+    reg = integration_client.post("/users/", json=payload)
+    user_id = reg.json()["id"]
+
+    response = integration_client.post(
+        "/users/me/push-token",
+        json={"token": "fcm-integration-token"},
+        headers={"X-User-Id": user_id},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["id"] == user_id
+
+
+@pytest.mark.skip(reason="US12-TK02")
+def test_integration_register_push_token_not_found_returns_404(integration_client):
+    """[Integração] POST /users/me/push-token com X-User-Id inválido deve retornar 404."""
+    response = integration_client.post(
+        "/users/me/push-token",
+        json={"token": "fcm-token"},
+        headers={"X-User-Id": str(uuid4())},
+    )
+
+    assert response.status_code == 404

@@ -1,10 +1,10 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 
 from src.infrastructure.dependencies.user_dependencies import get_user_service
 
-from .dtos import LoginRequest, UserCreate, UserResponse, UserUpdate
+from .dtos import LoginRequest, RegisterPushTokenRequest, UserCreate, UserResponse, UserUpdate
 from .errors import DuplicateEmailError, InvalidCredentialsError, UserNotFoundError
 from .service import UserService
 
@@ -105,3 +105,23 @@ def delete_user(user_id: str, service: Annotated[UserService, Depends(get_user_s
         service.delete_user(user_id)
     except UserNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+# US12-TK02
+@router.post(
+    "/me/push-token",
+    response_model=UserResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Registrar FCM push token do dispositivo",
+    description=(
+        "Associa o token FCM do dispositivo ao usuário autenticado. "
+        "Usado pelo app mobile logo após o login para habilitar notificações push. "
+        "404 se o usuário não existir."
+    ),
+)
+def register_push_token(
+    body: RegisterPushTokenRequest,
+    service: Annotated[UserService, Depends(get_user_service)],
+    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+) -> UserResponse:
+    pass

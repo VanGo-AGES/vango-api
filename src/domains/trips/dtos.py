@@ -117,3 +117,24 @@ class TripNextStopResponse(BaseModel):
     passanger_phone: str
     trip_passanger_id: UUID
     trip_passanger_status: str
+
+
+# US11-TK01 (nova — viagem atual para o passageiro)
+class CurrentTripResponse(BaseModel):
+    """Resposta mínima exposta ao passageiro para acompanhamento da viagem.
+
+    Retornada por GET /routes/{route_id}/trips/current.
+    Permite ao app do passageiro descobrir o trip_id e conectar ao Socket.IO.
+    Retorna None (204/null) quando não há viagem em andamento na rota.
+
+    Fields:
+    - trip_id: UUID — identificador da viagem em andamento
+    - status: str   — sempre "iniciada" enquanto em andamento
+    - started_at: datetime | None — horário de início da viagem
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    trip_id: UUID
+    status: str
+    started_at: datetime | None = None

@@ -678,3 +678,223 @@ def test_finish_trip_raises_when_wrong_owner() -> None:
     mocks["trip_repo"].find_by_id.return_value = trip
     with pytest.raises(TripOwnershipError):
         service.finish_trip(trip.id, uuid.uuid4(), FinishTripRequest())
+
+
+# ===========================================================================
+# US11-TK01 — TripService.get_current_trip_for_passanger
+# ===========================================================================
+
+
+@pytest.mark.skip(reason="US11-TK01")
+def test_get_current_trip_for_passanger_returns_response_when_trip_in_progress() -> None:
+    """Passageiro com vínculo ativo e viagem em andamento recebe CurrentTripResponse."""
+    from src.domains.trips.dtos import CurrentTripResponse
+    from src.domains.trips.errors import TripNotFoundError
+
+    service, mocks = make_service()
+    route = make_route_mock()
+    rp = make_rp_mock(route_id=route.id, status="accepted")
+    trip = make_trip_mock(route_id=route.id, status="iniciada")
+
+    mocks["route_repo"].find_by_id.return_value = route
+    mocks["rp_repo"].find_active_by_user_and_route.return_value = rp
+    mocks["trip_repo"].find_in_progress_by_route.return_value = trip
+
+    result = service.get_current_trip_for_passanger(route.id, rp.user_id)
+
+    assert isinstance(result, CurrentTripResponse)
+    assert result.trip_id == trip.id
+    assert result.status == "iniciada"
+    assert result.started_at == trip.started_at
+
+
+@pytest.mark.skip(reason="US11-TK01")
+def test_get_current_trip_for_passanger_returns_none_when_no_trip() -> None:
+    """Retorna None quando não há viagem em andamento na rota."""
+    service, mocks = make_service()
+    route = make_route_mock()
+    rp = make_rp_mock(route_id=route.id)
+
+    mocks["route_repo"].find_by_id.return_value = route
+    mocks["rp_repo"].find_active_by_user_and_route.return_value = rp
+    mocks["trip_repo"].find_in_progress_by_route.return_value = None
+
+    result = service.get_current_trip_for_passanger(route.id, rp.user_id)
+
+    assert result is None
+
+
+@pytest.mark.skip(reason="US11-TK01")
+def test_get_current_trip_for_passanger_route_not_found_raises() -> None:
+    """RouteNotFoundError quando a rota não existe."""
+    from src.domains.routes.errors import RouteNotFoundError
+
+    service, mocks = make_service()
+    mocks["route_repo"].find_by_id.return_value = None
+
+    with pytest.raises(RouteNotFoundError):
+        service.get_current_trip_for_passanger(uuid.uuid4(), uuid.uuid4())
+
+
+@pytest.mark.skip(reason="US11-TK01")
+def test_get_current_trip_for_passanger_not_passanger_raises() -> None:
+    """NotRoutePassangerError quando o usuário não tem vínculo ativo na rota."""
+    from src.domains.route_passangers.errors import NotRoutePassangerError
+
+    service, mocks = make_service()
+    route = make_route_mock()
+    mocks["route_repo"].find_by_id.return_value = route
+    mocks["rp_repo"].find_active_by_user_and_route.return_value = None
+
+    with pytest.raises(NotRoutePassangerError):
+        service.get_current_trip_for_passanger(route.id, uuid.uuid4())
+
+
+@pytest.mark.skip(reason="US11-TK01")
+def test_get_current_trip_for_passanger_pending_membership_allowed() -> None:
+    """Passageiro com status pending também pode consultar a viagem."""
+    from src.domains.trips.dtos import CurrentTripResponse
+
+    service, mocks = make_service()
+    route = make_route_mock()
+    rp = make_rp_mock(route_id=route.id, status="pending")
+    trip = make_trip_mock(route_id=route.id)
+
+    mocks["route_repo"].find_by_id.return_value = route
+    mocks["rp_repo"].find_active_by_user_and_route.return_value = rp
+    mocks["trip_repo"].find_in_progress_by_route.return_value = trip
+
+    result = service.get_current_trip_for_passanger(route.id, rp.user_id)
+
+    assert isinstance(result, CurrentTripResponse)
+
+
+@pytest.mark.skip(reason="US11-TK01")
+def test_get_current_trip_for_passanger_forwards_dependent_id() -> None:
+    """dependent_id é repassado para find_active_by_user_and_route ao buscar guardian."""
+    service, mocks = make_service()
+    route = make_route_mock()
+    rp = make_rp_mock(route_id=route.id)
+    dep_id = uuid.uuid4()
+
+    mocks["route_repo"].find_by_id.return_value = route
+    mocks["rp_repo"].find_active_by_user_and_route.return_value = rp
+    mocks["trip_repo"].find_in_progress_by_route.return_value = None
+
+    service.get_current_trip_for_passanger(route.id, rp.user_id, dependent_id=dep_id)
+
+    mocks["rp_repo"].find_active_by_user_and_route.assert_called_once_with(
+        rp.user_id, dep_id, route.id
+    )
+
+
+# ===========================================================================
+# US12-TK05 — wiring de notificações em board_passanger / mark_passanger_absent
+# Arquivo: src/domains/trips/service.py
+# ===========================================================================
+
+
+@pytest.mark.skip(reason="US12-TK05")
+def test_board_passanger_calls_notify_passanger_boarded():
+    """board_passanger deve chamar notification_service.notify_passanger_boarded."""
+    service, mocks = make_service()
+
+    driver_id = uuid.uuid4()
+    trip_id = uuid.uuid4()
+    tp_id = uuid.uuid4()
+
+    route = Mock(spec=__import__("src.domains.routes.entity", fromlist=["RouteModel"]).RouteModel)
+    route.driver_id = driver_id
+
+    trip = Mock(spec=TripModel)
+    trip.id = trip_id
+    trip.route = route
+    trip.status = "iniciada"
+
+    tp = Mock(spec=TripPassangerModel)
+    tp.id = tp_id
+    tp.trip_id = trip_id
+    tp.status = "pendente"
+    tp.route_passanger = Mock()
+    tp.route_passanger.dependent_id = None
+    tp.route_passanger.user = Mock(name="Alice", phone="51999990000")
+    tp.route_passanger.pickup_address = Mock(label="Rua X")
+    tp.boarded_at = None
+    tp.alighted_at = None
+
+    updated_tp = Mock(spec=TripPassangerModel)
+    updated_tp.id = tp_id
+    updated_tp.trip_id = trip_id
+    updated_tp.status = "presente"
+    updated_tp.boarded_at = datetime.now(timezone.utc)
+    updated_tp.alighted_at = None
+    updated_tp.route_passanger = tp.route_passanger
+
+    mocks["trip_repo"].find_by_id.return_value = trip
+    mocks["tp_repo"].find_by_id.return_value = tp
+    mocks["tp_repo"].update_status.return_value = updated_tp
+
+    service.board_passanger(trip_id, tp_id, driver_id)
+
+    mocks["notification"].notify_passanger_boarded.assert_called_once_with(updated_tp)
+
+
+@pytest.mark.skip(reason="US12-TK05")
+def test_mark_passanger_absent_calls_notify_passanger_absent():
+    """mark_passanger_absent deve chamar notification_service.notify_passanger_absent."""
+    service, mocks = make_service()
+
+    driver_id = uuid.uuid4()
+    trip_id = uuid.uuid4()
+    tp_id = uuid.uuid4()
+
+    route = Mock(spec=__import__("src.domains.routes.entity", fromlist=["RouteModel"]).RouteModel)
+    route.driver_id = driver_id
+
+    trip = Mock(spec=TripModel)
+    trip.id = trip_id
+    trip.route = route
+    trip.status = "iniciada"
+
+    tp = Mock(spec=TripPassangerModel)
+    tp.id = tp_id
+    tp.trip_id = trip_id
+    tp.status = "pendente"
+    tp.route_passanger = Mock()
+    tp.route_passanger.dependent_id = None
+    tp.route_passanger.user = Mock(name="Alice", phone="51999990000")
+    tp.route_passanger.pickup_address = Mock(label="Rua X")
+    tp.boarded_at = None
+    tp.alighted_at = None
+
+    updated_tp = Mock(spec=TripPassangerModel)
+    updated_tp.id = tp_id
+    updated_tp.trip_id = trip_id
+    updated_tp.status = "ausente"
+    updated_tp.boarded_at = None
+    updated_tp.alighted_at = None
+    updated_tp.route_passanger = tp.route_passanger
+
+    mocks["trip_repo"].find_by_id.return_value = trip
+    mocks["tp_repo"].find_by_id.return_value = tp
+    mocks["tp_repo"].update_status.return_value = updated_tp
+
+    service.mark_passanger_absent(trip_id, tp_id, driver_id)
+
+    mocks["notification"].notify_passanger_absent.assert_called_once_with(updated_tp)
+
+
+@pytest.mark.skip(reason="US12-TK05")
+def test_notification_service_interface_has_passanger_boarded():
+    """INotificationService deve expor notify_passanger_boarded."""
+    from src.domains.notifications.service import INotificationService
+
+    assert hasattr(INotificationService, "notify_passanger_boarded")
+
+
+@pytest.mark.skip(reason="US12-TK05")
+def test_notification_service_interface_has_passanger_absent():
+    """INotificationService deve expor notify_passanger_absent."""
+    from src.domains.notifications.service import INotificationService
+
+    assert hasattr(INotificationService, "notify_passanger_absent")

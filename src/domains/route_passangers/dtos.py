@@ -144,6 +144,7 @@ class PassangerRouteDetailResponse(BaseModel):
 
     driver_name: str
     driver_phone: str
+    driver_plate: str | None = None
 
     membership_status: str
     dependent_id: UUID | None = None

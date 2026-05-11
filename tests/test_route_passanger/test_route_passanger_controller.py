@@ -1644,6 +1644,7 @@ def make_detail_response(
         stops=[],
         driver_name="Carlos Motorista",
         driver_phone="51988887777",
+        driver_plate="ABC-1234",
         membership_status=membership_status,
         dependent_id=dependent_id,
         dependent_name=dependent_name,
@@ -1747,7 +1748,6 @@ def test_get_my_route_detail_current_trip_id_when_in_progress() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US06-TK06, US08-TK03)")
 def test_integration_get_my_route_detail_success(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session, "Integ Mateus")
@@ -1767,7 +1767,6 @@ def test_integration_get_my_route_detail_success(integration_client, db_session)
     assert "driver_id" not in body
 
 
-@pytest.mark.skip(reason="US06-TK06, US08-TK03")
 def test_integration_get_my_route_detail_route_not_found_returns_404(
     integration_client, db_session
 ) -> None:
@@ -1779,7 +1778,6 @@ def test_integration_get_my_route_detail_route_not_found_returns_404(
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US06-TK06, US08-TK03")
 def test_integration_get_my_route_detail_not_passanger_returns_403(
     integration_client, db_session
 ) -> None:
@@ -1793,7 +1791,6 @@ def test_integration_get_my_route_detail_not_passanger_returns_403(
     assert response.status_code == 403
 
 
-@pytest.mark.skip(reason="US06-TK06, US08-TK03")
 def test_integration_get_my_route_detail_pending_membership_allowed(
     integration_client, db_session
 ) -> None:
@@ -1810,7 +1807,6 @@ def test_integration_get_my_route_detail_pending_membership_allowed(
     assert response.json()["membership_status"] == "pending"
 
 
-@pytest.mark.skip(reason="US06-TK06, US08-TK03")
 def test_integration_get_my_route_detail_does_not_collide_with_route_by_id(
     integration_client, db_session
 ) -> None:
@@ -1829,7 +1825,6 @@ def test_integration_get_my_route_detail_does_not_collide_with_route_by_id(
     assert response.status_code == 200
 
 
-@pytest.mark.skip(reason="US06-TK06, US08-TK03")
 def test_integration_get_my_route_detail_rejected_membership_returns_403(
     integration_client, db_session
 ) -> None:

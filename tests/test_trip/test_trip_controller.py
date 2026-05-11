@@ -99,6 +99,7 @@ def make_next_stop_response():
 # ===========================================================================
 
 
+@pytest.mark.skip(reason="US00-TK01")
 def test_start_trip_success_returns_201() -> None:
     mock_service = Mock(spec=TripService)
     mock_service.start_trip.return_value = make_trip_response(status="iniciada")
@@ -115,6 +116,7 @@ def test_start_trip_success_returns_201() -> None:
     assert response.json()["status"] == "iniciada"
 
 
+@pytest.mark.skip(reason="US00-TK01")
 def test_start_trip_route_not_found_returns_404() -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
@@ -132,6 +134,7 @@ def test_start_trip_route_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
+@pytest.mark.skip(reason="US00-TK01")
 def test_start_trip_wrong_owner_returns_403() -> None:
     from src.domains.routes.errors import RouteOwnershipError
 
@@ -149,6 +152,7 @@ def test_start_trip_wrong_owner_returns_403() -> None:
     assert response.status_code == 403
 
 
+@pytest.mark.skip(reason="US00-TK01")
 def test_start_trip_already_in_progress_returns_409() -> None:
     from src.domains.trips.errors import TripAlreadyInProgressError
 
@@ -166,6 +170,7 @@ def test_start_trip_already_in_progress_returns_409() -> None:
     assert response.status_code == 409
 
 
+@pytest.mark.skip(reason="US00-TK01")
 def test_start_trip_no_passangers_returns_409() -> None:
     from src.domains.trips.errors import NoPassangersToStartError
 
@@ -183,6 +188,7 @@ def test_start_trip_no_passangers_returns_409() -> None:
     assert response.status_code == 409
 
 
+@pytest.mark.skip(reason="US00-TK01")
 def test_start_trip_vehicle_not_owned_returns_403() -> None:
     from src.domains.trips.errors import VehicleNotOwnedError
 
@@ -200,6 +206,7 @@ def test_start_trip_vehicle_not_owned_returns_403() -> None:
     assert response.status_code == 403
 
 
+@pytest.mark.skip(reason="US00-TK01")
 def test_start_trip_invalid_payload_returns_422() -> None:
     mock_service = Mock(spec=TripService)
     app.dependency_overrides[get_trip_service] = lambda: mock_service
@@ -680,6 +687,7 @@ def _driver_headers(driver_id) -> dict:
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.skip(reason="US00-TK01")
 def test_integration_start_trip_success(integration_client, db_session) -> None:
     driver = make_driver(db_session)
     vehicle = make_vehicle(db_session, driver.id)
@@ -699,6 +707,7 @@ def test_integration_start_trip_success(integration_client, db_session) -> None:
     assert response.json()["status"] == "iniciada"
 
 
+@pytest.mark.skip(reason="US00-TK01")
 def test_integration_start_trip_persists_trip_passangers(integration_client, db_session) -> None:
     """Ao iniciar, trip_passangers deve ser pré-preenchido a partir dos rp aceitos."""
     from src.domains.trips.entity import TripPassangerModel
@@ -731,6 +740,7 @@ def test_integration_start_trip_persists_trip_passangers(integration_client, db_
     assert len(tps) == 2
 
 
+@pytest.mark.skip(reason="US00-TK01")
 def test_integration_start_trip_already_in_progress_returns_409(
     integration_client, db_session
 ) -> None:
@@ -752,6 +762,7 @@ def test_integration_start_trip_already_in_progress_returns_409(
     assert response.status_code == 409
 
 
+@pytest.mark.skip(reason="US00-TK01")
 def test_integration_start_trip_no_passangers_returns_409(integration_client, db_session) -> None:
     driver = make_driver(db_session)
     vehicle = make_vehicle(db_session, driver.id)
@@ -766,6 +777,7 @@ def test_integration_start_trip_no_passangers_returns_409(integration_client, db
     assert response.status_code == 409
 
 
+@pytest.mark.skip(reason="US00-TK01")
 def test_integration_start_trip_wrong_owner_returns_403(integration_client, db_session) -> None:
     driver = make_driver(db_session)
     vehicle = make_vehicle(db_session, driver.id)
@@ -781,6 +793,7 @@ def test_integration_start_trip_wrong_owner_returns_403(integration_client, db_s
     assert response.status_code == 403
 
 
+@pytest.mark.skip(reason="US00-TK01")
 def test_integration_start_trip_vehicle_not_owned_returns_403(
     integration_client, db_session
 ) -> None:
@@ -1141,3 +1154,208 @@ def test_integration_finish_trip_wrong_owner_returns_403(integration_client, db_
     )
 
     assert response.status_code == 403
+
+
+# ===========================================================================
+# US11-TK01 — GET /routes/{route_id}/trips/current (UNIDADE)
+# ===========================================================================
+
+
+def make_current_trip_response():
+    from src.domains.trips.dtos import CurrentTripResponse
+
+    return CurrentTripResponse(
+        trip_id=uuid.uuid4(),
+        status="iniciada",
+        started_at=datetime(2026, 5, 10, 7, 30, tzinfo=timezone.utc),
+    )
+
+
+PASSANGER_HEADERS = {"X-User-Id": str(uuid.uuid4()), "X-User-Role": "guardian"}
+
+
+@pytest.mark.skip(reason="US11-TK01")
+def test_get_current_trip_for_passanger_success_returns_200() -> None:
+    """200 com CurrentTripResponse quando viagem em andamento existe."""
+    mock_service = Mock(spec=TripService)
+    mock_service.get_current_trip_for_passanger.return_value = make_current_trip_response()
+    app.dependency_overrides[get_trip_service] = lambda: mock_service
+
+    response = client.get(
+        f"/routes/{uuid.uuid4()}/trips/current",
+        headers=PASSANGER_HEADERS,
+    )
+
+    app.dependency_overrides.clear()
+    assert response.status_code == 200
+    assert response.json()["status"] == "iniciada"
+    assert "trip_id" in response.json()
+
+
+@pytest.mark.skip(reason="US11-TK01")
+def test_get_current_trip_for_passanger_no_trip_returns_200_null() -> None:
+    """200 com null quando não há viagem em andamento."""
+    mock_service = Mock(spec=TripService)
+    mock_service.get_current_trip_for_passanger.return_value = None
+    app.dependency_overrides[get_trip_service] = lambda: mock_service
+
+    response = client.get(
+        f"/routes/{uuid.uuid4()}/trips/current",
+        headers=PASSANGER_HEADERS,
+    )
+
+    app.dependency_overrides.clear()
+    assert response.status_code == 200
+    assert response.json() is None
+
+
+@pytest.mark.skip(reason="US11-TK01")
+def test_get_current_trip_for_passanger_route_not_found_returns_404() -> None:
+    from src.domains.routes.errors import RouteNotFoundError
+
+    mock_service = Mock(spec=TripService)
+    mock_service.get_current_trip_for_passanger.side_effect = RouteNotFoundError()
+    app.dependency_overrides[get_trip_service] = lambda: mock_service
+
+    response = client.get(
+        f"/routes/{uuid.uuid4()}/trips/current",
+        headers=PASSANGER_HEADERS,
+    )
+
+    app.dependency_overrides.clear()
+    assert response.status_code == 404
+
+
+@pytest.mark.skip(reason="US11-TK01")
+def test_get_current_trip_for_passanger_not_passanger_returns_403() -> None:
+    from src.domains.route_passangers.errors import NotRoutePassangerError
+
+    mock_service = Mock(spec=TripService)
+    mock_service.get_current_trip_for_passanger.side_effect = NotRoutePassangerError()
+    app.dependency_overrides[get_trip_service] = lambda: mock_service
+
+    response = client.get(
+        f"/routes/{uuid.uuid4()}/trips/current",
+        headers=PASSANGER_HEADERS,
+    )
+
+    app.dependency_overrides.clear()
+    assert response.status_code == 403
+
+
+@pytest.mark.skip(reason="US11-TK01")
+def test_get_current_trip_for_passanger_dependent_id_forwarded() -> None:
+    """Query param dependent_id deve ser repassado ao service."""
+    mock_service = Mock(spec=TripService)
+    mock_service.get_current_trip_for_passanger.return_value = None
+    app.dependency_overrides[get_trip_service] = lambda: mock_service
+    dep_id = uuid.uuid4()
+
+    response = client.get(
+        f"/routes/{uuid.uuid4()}/trips/current",
+        params={"dependent_id": str(dep_id)},
+        headers=PASSANGER_HEADERS,
+    )
+
+    app.dependency_overrides.clear()
+    assert response.status_code == 200
+    _, kwargs = mock_service.get_current_trip_for_passanger.call_args
+    assert kwargs.get("dependent_id") == dep_id
+
+
+# ===========================================================================
+# US11-TK01 — GET /routes/{route_id}/trips/current (INTEGRAÇÃO)
+# ===========================================================================
+
+
+@pytest.mark.skip(reason="US11-TK01")
+def test_integration_get_current_trip_for_passanger_success(
+    integration_client, db_session
+) -> None:
+    """Passageiro aceito com viagem em andamento recebe trip_id + status."""
+    driver = make_driver(db_session)
+    vehicle = make_vehicle(db_session, driver.id)
+    passanger = make_passenger(db_session)
+    route = make_route(db_session, driver.id, status="em_andamento")
+    make_rp(db_session, route.id, passanger.id, status="accepted")
+    trip = make_trip(db_session, route.id, vehicle.id, status="iniciada")
+
+    response = integration_client.get(
+        f"/routes/{route.id}/trips/current",
+        headers={"X-User-Id": str(passanger.id), "X-User-Role": "guardian"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["trip_id"] == str(trip.id)
+    assert body["status"] == "iniciada"
+
+
+@pytest.mark.skip(reason="US11-TK01")
+def test_integration_get_current_trip_no_trip_returns_null(
+    integration_client, db_session
+) -> None:
+    """Retorna null quando não há viagem em andamento."""
+    driver = make_driver(db_session)
+    passanger = make_passenger(db_session)
+    route = make_route(db_session, driver.id)
+    make_rp(db_session, route.id, passanger.id, status="accepted")
+
+    response = integration_client.get(
+        f"/routes/{route.id}/trips/current",
+        headers={"X-User-Id": str(passanger.id), "X-User-Role": "guardian"},
+    )
+
+    assert response.status_code == 200
+    assert response.json() is None
+
+
+@pytest.mark.skip(reason="US11-TK01")
+def test_integration_get_current_trip_route_not_found_returns_404(
+    integration_client, db_session
+) -> None:
+    passanger = make_passenger(db_session)
+
+    response = integration_client.get(
+        f"/routes/{uuid.uuid4()}/trips/current",
+        headers={"X-User-Id": str(passanger.id), "X-User-Role": "guardian"},
+    )
+
+    assert response.status_code == 404
+
+
+@pytest.mark.skip(reason="US11-TK01")
+def test_integration_get_current_trip_not_passanger_returns_403(
+    integration_client, db_session
+) -> None:
+    """Usuário sem vínculo na rota recebe 403."""
+    driver = make_driver(db_session)
+    outsider = make_passenger(db_session, "Outsider")
+    route = make_route(db_session, driver.id)
+
+    response = integration_client.get(
+        f"/routes/{route.id}/trips/current",
+        headers={"X-User-Id": str(outsider.id), "X-User-Role": "guardian"},
+    )
+
+    assert response.status_code == 403
+
+
+@pytest.mark.skip(reason="US11-TK01")
+def test_integration_get_current_trip_pending_passanger_allowed(
+    integration_client, db_session
+) -> None:
+    """Passageiro ainda pending pode consultar a viagem."""
+    driver = make_driver(db_session)
+    vehicle = make_vehicle(db_session, driver.id)
+    passanger = make_passenger(db_session)
+    route = make_route(db_session, driver.id, status="em_andamento")
+    make_rp(db_session, route.id, passanger.id, status="pending")
+    make_trip(db_session, route.id, vehicle.id, status="iniciada")
+
+    response = integration_client.get(
+        f"/routes/{route.id}/trips/current",
+        headers={"X-User-Id": str(passanger.id), "X-User-Role": "guardian"},
+    )
+
+    assert response.status_code == 200

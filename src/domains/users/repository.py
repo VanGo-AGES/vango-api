@@ -29,6 +29,15 @@ class IUserRepository(ABC):
     def find_all(self) -> list[UserModel]:
         pass
 
+    # US12-TK01
+    @abstractmethod
+    def update_push_token(self, user_id: UUID, token: str) -> UserModel | None:
+        """Persiste o FCM push token no registro do usuário.
+
+        Retorna o UserModel atualizado, ou None se o usuário não existir.
+        """
+        pass
+
 
 class IPasswordHasher(ABC):
     @abstractmethod

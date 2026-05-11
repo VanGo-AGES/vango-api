@@ -69,3 +69,14 @@ class UserUpdate(BaseModel):
 class LoginRequest(BaseModel):
     email: EmailStr = Field(..., example="john.doe@example.com")
     password: str = Field(..., min_length=1, example="senha_segura123")
+
+
+# US12-TK01 — registro de push token FCM
+class RegisterPushTokenRequest(BaseModel):
+    """Payload para registrar o FCM push token do dispositivo do usuário.
+
+    Fields:
+    - token: str — token FCM gerado pelo Firebase SDK no app mobile
+    """
+
+    token: str = Field(..., min_length=1, description="FCM push token do dispositivo")
