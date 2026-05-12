@@ -578,3 +578,107 @@ async def test_location_update_eta_gracefully_none_when_routing_unavailable():
     tracking_sessions.pop(trip_id, None)
     sid_meta.pop(tracker_sid, None)
     sid_meta.pop(follower_sid, None)
+
+
+# ===========================================================================
+# US11-TK05 — emit_passenger_boarded
+# ===========================================================================
+
+
+@pytest.mark.skip(reason="US11-TK05")
+@pytest.mark.asyncio
+async def test_emit_passenger_boarded_emits_to_room():
+    """emit_passenger_boarded deve emitir evento passenger_boarded para o room da sessão."""
+    from src.infrastructure.socketio.server import emit_passenger_boarded, tracking_sessions
+
+    trip_id = _make_trip_id()
+    tracking_sessions[trip_id] = {"tracker_sid": "t1", "followers": ["f1"], "last_location": None}
+
+    with patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock) as mock_emit:
+        await emit_passenger_boarded(trip_id, "tp-uuid-001", "João Silva")
+
+        mock_emit.assert_called_once()
+        assert mock_emit.call_args[0][0] == "passenger_boarded"
+
+    tracking_sessions.pop(trip_id, None)
+
+
+@pytest.mark.skip(reason="US11-TK05")
+@pytest.mark.asyncio
+async def test_emit_passenger_boarded_payload_contains_user_name():
+    """Payload de passenger_boarded deve conter trip_passanger_id e user_name."""
+    from src.infrastructure.socketio.server import emit_passenger_boarded, tracking_sessions
+
+    trip_id = _make_trip_id()
+    tracking_sessions[trip_id] = {"tracker_sid": "t1", "followers": ["f1"], "last_location": None}
+
+    with patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock) as mock_emit:
+        await emit_passenger_boarded(trip_id, "tp-uuid-002", "Maria Souza")
+
+        payload = mock_emit.call_args[0][1]
+        assert payload.get("user_name") == "Maria Souza"
+        assert "trip_passanger_id" in payload
+
+    tracking_sessions.pop(trip_id, None)
+
+
+@pytest.mark.skip(reason="US11-TK05")
+@pytest.mark.asyncio
+async def test_emit_passenger_boarded_no_error_when_session_not_found():
+    """emit_passenger_boarded com trip_id sem sessão ativa não deve levantar exceção."""
+    from src.infrastructure.socketio.server import emit_passenger_boarded
+
+    with patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock):
+        await emit_passenger_boarded(str(uuid.uuid4()), "tp-x", "Alguém")  # sem sessão
+
+
+# ===========================================================================
+# US11-TK06 — emit_passenger_absent
+# ===========================================================================
+
+
+@pytest.mark.skip(reason="US11-TK06")
+@pytest.mark.asyncio
+async def test_emit_passenger_absent_emits_to_room():
+    """emit_passenger_absent deve emitir evento passenger_absent para o room da sessão."""
+    from src.infrastructure.socketio.server import emit_passenger_absent, tracking_sessions
+
+    trip_id = _make_trip_id()
+    tracking_sessions[trip_id] = {"tracker_sid": "t1", "followers": ["f1"], "last_location": None}
+
+    with patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock) as mock_emit:
+        await emit_passenger_absent(trip_id, "tp-uuid-003", "Carlos Lima")
+
+        mock_emit.assert_called_once()
+        assert mock_emit.call_args[0][0] == "passenger_absent"
+
+    tracking_sessions.pop(trip_id, None)
+
+
+@pytest.mark.skip(reason="US11-TK06")
+@pytest.mark.asyncio
+async def test_emit_passenger_absent_payload_contains_user_name():
+    """Payload de passenger_absent deve conter trip_passanger_id e user_name."""
+    from src.infrastructure.socketio.server import emit_passenger_absent, tracking_sessions
+
+    trip_id = _make_trip_id()
+    tracking_sessions[trip_id] = {"tracker_sid": "t1", "followers": ["f1"], "last_location": None}
+
+    with patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock) as mock_emit:
+        await emit_passenger_absent(trip_id, "tp-uuid-004", "Ana Costa")
+
+        payload = mock_emit.call_args[0][1]
+        assert payload.get("user_name") == "Ana Costa"
+        assert "trip_passanger_id" in payload
+
+    tracking_sessions.pop(trip_id, None)
+
+
+@pytest.mark.skip(reason="US11-TK06")
+@pytest.mark.asyncio
+async def test_emit_passenger_absent_no_error_when_session_not_found():
+    """emit_passenger_absent com trip_id sem sessão ativa não deve levantar exceção."""
+    from src.infrastructure.socketio.server import emit_passenger_absent
+
+    with patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock):
+        await emit_passenger_absent(str(uuid.uuid4()), "tp-y", "Ninguém")  # sem sessão

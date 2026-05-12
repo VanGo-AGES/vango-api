@@ -898,3 +898,186 @@ def test_notification_service_interface_has_passanger_absent():
     from src.domains.notifications.service import INotificationService
 
     assert hasattr(INotificationService, "notify_passanger_absent")
+
+
+# ===========================================================================
+# US11-TK05 — board_passanger chama emit_passenger_boarded
+# ===========================================================================
+
+
+@pytest.mark.skip(reason="US11-TK05")
+def test_board_passanger_calls_emit_passenger_boarded() -> None:
+    """board_passanger deve chamar emit_passenger_boarded após atualizar o status."""
+    from unittest.mock import patch, AsyncMock
+
+    driver_id = uuid.uuid4()
+    route = make_route_mock(driver_id=driver_id)
+    route.status = "em_andamento"
+
+    trip = Mock(spec=TripModel)
+    trip.id = uuid.uuid4()
+    trip.status = "iniciada"
+    trip.route = route
+    trip.route_id = route.id
+
+    tp = Mock(spec=TripPassangerModel)
+    tp.id = uuid.uuid4()
+    tp.trip_id = trip.id
+    tp.status = "pendente"
+    tp.route_passanger_id = uuid.uuid4()
+
+    updated_tp = Mock(spec=TripPassangerModel)
+    updated_tp.id = tp.id
+    updated_tp.trip_id = trip.id
+    updated_tp.status = "presente"
+    updated_tp.boarded_at = datetime.now(timezone.utc)
+    updated_tp.route_passanger_id = tp.route_passanger_id
+
+    service, mocks = make_service()
+    mocks["trip_repo"].find_by_id.return_value = trip
+    mocks["tp_repo"].find_by_id.return_value = tp
+    mocks["tp_repo"].update_status.return_value = updated_tp
+
+    with patch(
+        "src.infrastructure.socketio.server.emit_passenger_boarded",
+        new_callable=AsyncMock,
+    ) as mock_emit:
+        service.board_passanger(trip.id, tp.id, driver_id)
+        mock_emit.assert_called_once()
+        call_args = mock_emit.call_args[0]
+        assert str(trip.id) in call_args
+
+
+@pytest.mark.skip(reason="US11-TK05")
+def test_board_passanger_emit_not_called_on_invalid_status() -> None:
+    """board_passanger não deve chamar emit se o status do tp não for pendente."""
+    from unittest.mock import patch, AsyncMock
+
+    driver_id = uuid.uuid4()
+    route = make_route_mock(driver_id=driver_id)
+    route.status = "em_andamento"
+
+    trip = Mock(spec=TripModel)
+    trip.id = uuid.uuid4()
+    trip.status = "iniciada"
+    trip.route = route
+    trip.route_id = route.id
+
+    tp = Mock(spec=TripPassangerModel)
+    tp.id = uuid.uuid4()
+    tp.trip_id = trip.id
+    tp.status = "ausente"  # já processado
+
+    service, mocks = make_service()
+    mocks["trip_repo"].find_by_id.return_value = trip
+    mocks["tp_repo"].find_by_id.return_value = tp
+
+    with patch(
+        "src.infrastructure.socketio.server.emit_passenger_boarded",
+        new_callable=AsyncMock,
+    ) as mock_emit:
+        with pytest.raises(InvalidTripPassangerStatusError):
+            service.board_passanger(trip.id, tp.id, driver_id)
+        mock_emit.assert_not_called()
+
+
+# ===========================================================================
+# US11-TK06 — mark_passanger_absent e skip_stop chamam emit_passenger_absent
+# ===========================================================================
+
+
+@pytest.mark.skip(reason="US11-TK06")
+def test_mark_passanger_absent_calls_emit_passenger_absent() -> None:
+    """mark_passanger_absent deve chamar emit_passenger_absent após atualizar o status."""
+    from unittest.mock import patch, AsyncMock
+
+    driver_id = uuid.uuid4()
+    route = make_route_mock(driver_id=driver_id)
+    route.status = "em_andamento"
+
+    trip = Mock(spec=TripModel)
+    trip.id = uuid.uuid4()
+    trip.status = "iniciada"
+    trip.route = route
+    trip.route_id = route.id
+
+    tp = Mock(spec=TripPassangerModel)
+    tp.id = uuid.uuid4()
+    tp.trip_id = trip.id
+    tp.status = "pendente"
+    tp.route_passanger_id = uuid.uuid4()
+
+    updated_tp = Mock(spec=TripPassangerModel)
+    updated_tp.id = tp.id
+    updated_tp.trip_id = trip.id
+    updated_tp.status = "ausente"
+    updated_tp.boarded_at = None
+    updated_tp.route_passanger_id = tp.route_passanger_id
+
+    service, mocks = make_service()
+    mocks["trip_repo"].find_by_id.return_value = trip
+    mocks["tp_repo"].find_by_id.return_value = tp
+    mocks["tp_repo"].update_status.return_value = updated_tp
+
+    with patch(
+        "src.infrastructure.socketio.server.emit_passenger_absent",
+        new_callable=AsyncMock,
+    ) as mock_emit:
+        service.mark_passanger_absent(trip.id, tp.id, driver_id)
+        mock_emit.assert_called_once()
+        call_args = mock_emit.call_args[0]
+        assert str(trip.id) in call_args
+
+
+@pytest.mark.skip(reason="US11-TK06")
+def test_skip_stop_calls_emit_passenger_absent_for_each_pending_tp() -> None:
+    """skip_stop deve chamar emit_passenger_absent para cada passageiro pendente na parada."""
+    from unittest.mock import patch, AsyncMock
+
+    driver_id = uuid.uuid4()
+    route = make_route_mock(driver_id=driver_id)
+    route.status = "em_andamento"
+
+    trip = Mock(spec=TripModel)
+    trip.id = uuid.uuid4()
+    trip.status = "iniciada"
+    trip.route = route
+    trip.route_id = route.id
+
+    rp_id = uuid.uuid4()
+    stop = Mock(spec=StopModel)
+    stop.id = uuid.uuid4()
+    stop.route_id = route.id
+    stop.route_passanger_id = rp_id
+
+    tp1 = Mock(spec=TripPassangerModel)
+    tp1.id = uuid.uuid4()
+    tp1.trip_id = trip.id
+    tp1.status = "pendente"
+    tp1.route_passanger_id = rp_id
+
+    tp2 = Mock(spec=TripPassangerModel)
+    tp2.id = uuid.uuid4()
+    tp2.trip_id = trip.id
+    tp2.status = "pendente"
+    tp2.route_passanger_id = rp_id
+
+    updated_tp = Mock(spec=TripPassangerModel)
+    updated_tp.id = uuid.uuid4()
+    updated_tp.trip_id = trip.id
+    updated_tp.status = "ausente"
+    updated_tp.boarded_at = None
+    updated_tp.route_passanger_id = rp_id
+
+    service, mocks = make_service()
+    mocks["trip_repo"].find_by_id.return_value = trip
+    mocks["stop_repo"].find_by_id.return_value = stop
+    mocks["tp_repo"].find_by_trip.return_value = [tp1, tp2]
+    mocks["tp_repo"].update_status.return_value = updated_tp
+
+    with patch(
+        "src.infrastructure.socketio.server.emit_passenger_absent",
+        new_callable=AsyncMock,
+    ) as mock_emit:
+        service.skip_stop(trip.id, stop.id, driver_id)
+        assert mock_emit.call_count == 2

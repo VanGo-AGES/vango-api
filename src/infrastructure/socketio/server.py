@@ -71,6 +71,26 @@ async def location_update(sid: str, data: dict) -> None:  # type: ignore[empty-b
     pass
 
 
+# US11-TK05
+async def emit_passenger_boarded(trip_id: str, trip_passanger_id: str, user_name: str) -> None:
+    """Emite passenger_boarded para todos no room da sessão.
+
+    Payload: {"trip_passanger_id": str, "user_name": str}
+    Silenciosamente ignorado se não houver sessão ativa para o trip_id.
+    """
+    pass
+
+
+# US11-TK06
+async def emit_passenger_absent(trip_id: str, trip_passanger_id: str, user_name: str) -> None:
+    """Emite passenger_absent para todos no room da sessão.
+
+    Payload: {"trip_passanger_id": str, "user_name": str}
+    Silenciosamente ignorado se não houver sessão ativa para o trip_id.
+    """
+    pass
+
+
 # US11-TK04
 async def emit_trip_finished(trip_id: str) -> None:
     """Emite trip_finished para todos no room da sessão e remove o estado em memória.
