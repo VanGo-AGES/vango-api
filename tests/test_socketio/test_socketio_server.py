@@ -35,7 +35,7 @@ def _make_user_id() -> str:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US10-TK01")
+
 def test_sio_server_is_async_server():
     """sio deve ser uma instância de socketio.AsyncServer."""
     import socketio as sio_lib
@@ -45,7 +45,7 @@ def test_sio_server_is_async_server():
     assert isinstance(sio, sio_lib.AsyncServer)
 
 
-@pytest.mark.skip(reason="US10-TK01")
+
 def test_tracking_sessions_starts_empty():
     """tracking_sessions deve iniciar como dict vazio."""
     from src.infrastructure.socketio.server import tracking_sessions
@@ -53,7 +53,7 @@ def test_tracking_sessions_starts_empty():
     assert isinstance(tracking_sessions, dict)
 
 
-@pytest.mark.skip(reason="US10-TK01")
+
 def test_sid_meta_starts_empty():
     """sid_meta deve iniciar como dict vazio."""
     from src.infrastructure.socketio.server import sid_meta
@@ -61,7 +61,7 @@ def test_sid_meta_starts_empty():
     assert isinstance(sid_meta, dict)
 
 
-@pytest.mark.skip(reason="US10-TK01")
+
 def test_asgi_app_mountable():
     """socketio.ASGIApp(sio, fastapi_app) deve ser criado sem erros."""
     import socketio as sio_lib

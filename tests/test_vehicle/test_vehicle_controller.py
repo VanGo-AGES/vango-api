@@ -18,7 +18,7 @@ from src.domains.vehicles.errors import VehicleAccessDeniedError, VehiclePlateAl
 from src.domains.vehicles.service import VehicleService
 from src.infrastructure.dependencies.auth_dependencies import get_current_user
 from src.infrastructure.dependencies.vehicle_dependencies import get_vehicle_service
-from src.main import app
+from src.main import fastapi_app as app
 
 
 def make_mock_vehicle(plate: str = "ABC1D23", capacity: int = 4) -> VehicleModel:

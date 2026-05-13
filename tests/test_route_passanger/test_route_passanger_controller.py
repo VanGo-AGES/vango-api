@@ -9,7 +9,7 @@ from src.domains.route_passangers.service import RoutePassangerService
 from src.infrastructure.dependencies.route_passanger_dependencies import (
     get_route_passanger_service,
 )
-from src.main import app
+from src.main import fastapi_app as app
 
 client = TestClient(app, raise_server_exceptions=False)
 

@@ -19,7 +19,7 @@ from src.domains.routes.entity import RouteModel
 from src.domains.users.entity import UserModel
 from src.infrastructure.database import get_db
 from src.infrastructure.dependencies.absence_dependencies import get_absence_service
-from src.main import app
+from src.main import fastapi_app as app
 
 client = TestClient(app, raise_server_exceptions=False)
 

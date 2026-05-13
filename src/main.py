@@ -3,6 +3,7 @@ import traceback
 from contextlib import asynccontextmanager
 
 import firebase_admin
+import socketio
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -27,6 +28,7 @@ from src.domains.users.entity import UserModel
 from src.domains.vehicles.controller import router as vehicle_controller
 from src.domains.vehicles.entity import VehicleModel
 from src.infrastructure.database import Base, engine
+from src.infrastructure.socketio.server import sio
 
 # Force SQLAlchemy to register all mappers so relationship() string refs resolve
 _ = (
@@ -74,15 +76,17 @@ async def lifespan(app: FastAPI):
     print("INFRA: Conexões de banco encerradas.")
 
 
-app = FastAPI(
+fastapi_app = FastAPI(
     title=settings.app_name,
     description="API para gestão de transporte escolar (VanGo)",
     version="0.1.0",
     lifespan=lifespan,
 )
 
+app = socketio.ASGIApp(sio, fastapi_app)
 
-@app.exception_handler(Exception)
+
+@fastapi_app.exception_handler(Exception)
 async def catch_all_handler(request: Request, exc: Exception) -> JSONResponse:
     traceback.print_exc(file=sys.stderr)
 
@@ -96,7 +100,7 @@ async def catch_all_handler(request: Request, exc: Exception) -> JSONResponse:
     )
 
 
-app.add_middleware(
+fastapi_app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:8081"],
     allow_credentials=True,
@@ -104,19 +108,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(user_controller)
-app.include_router(vehicle_controller)
-app.include_router(dependent_controller)
-app.include_router(route_passanger_controller)
-app.include_router(route_controller)
+fastapi_app.include_router(user_controller)
+fastapi_app.include_router(vehicle_controller)
+fastapi_app.include_router(dependent_controller)
+fastapi_app.include_router(route_passanger_controller)
+fastapi_app.include_router(route_controller)
 # US09 — endpoints de execução de viagem (/routes/{id}/trips e /trips/...)
-app.include_router(trip_controller)
-app.include_router(upload_controller)
+fastapi_app.include_router(trip_controller)
+fastapi_app.include_router(upload_controller)
 # US06-TK20 — aviso de ausência (passageiro/guardian)
-app.include_router(absence_controller)
+fastapi_app.include_router(absence_controller)
 
 
-@app.get("/health", tags=["Infrastructure"])
+@fastapi_app.get("/health", tags=["Infrastructure"])
 def health_check() -> dict[str, str]:
     db_status = "ok"
     try:
@@ -128,6 +132,6 @@ def health_check() -> dict[str, str]:
     return {"status": "ok", "database": db_status, "environment": "development"}
 
 
-@app.get("/")
+@fastapi_app.get("/")
 def read_root() -> dict[str, str]:
     return {"message": f"Bem-vindo à {settings.app_name}. Acesse /docs para a documentação interativa."}
