@@ -640,7 +640,7 @@ def test_integration_login_invalid_password_returns_401(integration_client):
 # ---- Unitários (mock service) ----
 
 
-@pytest.mark.skip(reason="US12-TK02")
+
 def test_register_push_token_unit_success():
     """POST /users/me/push-token deve retornar 200 com UserResponse."""
     from src.domains.users.dtos import RegisterPushTokenRequest
@@ -663,7 +663,7 @@ def test_register_push_token_unit_success():
     app.dependency_overrides.clear()
 
 
-@pytest.mark.skip(reason="US12-TK02")
+
 def test_register_push_token_unit_missing_header_returns_422():
     """POST /users/me/push-token sem X-User-Id deve retornar 422."""
     mock_service = Mock(spec=UserService)
@@ -679,7 +679,7 @@ def test_register_push_token_unit_missing_header_returns_422():
     app.dependency_overrides.clear()
 
 
-@pytest.mark.skip(reason="US12-TK02")
+
 def test_register_push_token_unit_user_not_found_returns_404():
     """POST /users/me/push-token para usuário inexistente deve retornar 404."""
     mock_service = Mock(spec=UserService)
@@ -702,7 +702,7 @@ def test_register_push_token_unit_user_not_found_returns_404():
 # ---- Integração (stack real) ----
 
 
-@pytest.mark.skip(reason="US12-TK02")
+
 def test_integration_register_push_token_success(integration_client):
     """[Integração] POST /users/me/push-token deve salvar token e retornar 200."""
     payload = make_user_payload()
@@ -719,7 +719,7 @@ def test_integration_register_push_token_success(integration_client):
     assert response.json()["id"] == user_id
 
 
-@pytest.mark.skip(reason="US12-TK02")
+
 def test_integration_register_push_token_not_found_returns_404(integration_client):
     """[Integração] POST /users/me/push-token com X-User-Id inválido deve retornar 404."""
     response = integration_client.post(
