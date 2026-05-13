@@ -19,7 +19,7 @@ from fastapi.testclient import TestClient
 from src.domains.trips.service import TripService
 from src.infrastructure.database import get_db
 from src.infrastructure.dependencies.trip_dependencies import get_trip_service
-from src.main import app
+from src.main import fastapi_app as app
 from tests.test_trip._helpers import (
     make_address,
     make_driver,

@@ -13,7 +13,7 @@ from src.domains.users.errors import (
 )
 from src.domains.users.service import UserService
 from src.infrastructure.dependencies.user_dependencies import get_user_service
-from src.main import app
+from src.main import fastapi_app as app
 
 
 def make_user_response(**kwargs) -> UserResponse:

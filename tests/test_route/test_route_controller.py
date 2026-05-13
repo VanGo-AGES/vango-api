@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 from src.domains.routes.service import RouteService
 from src.infrastructure.dependencies.route_dependencies import get_route_service
-from src.main import app
+from src.main import fastapi_app as app
 
 client = TestClient(app, raise_server_exceptions=False)
 

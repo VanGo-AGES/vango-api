@@ -18,7 +18,7 @@ from src.domains.dependents.errors import DependentAccessDeniedError
 from src.domains.dependents.service import DependentService
 from src.infrastructure.dependencies.auth_dependencies import get_current_user
 from src.infrastructure.dependencies.dependent_dependencies import get_dependent_service
-from src.main import app
+from src.main import fastapi_app as app
 
 
 def make_mock_dependent(name: str = "Ana") -> DependentModel:
