@@ -10,7 +10,7 @@ import pytest
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US10-TK06")
+
 def test_irouting_service_is_abstract():
     """IRoutingService deve ser abstrata (não instanciável diretamente)."""
     from src.domains.routing.service import IRoutingService
@@ -19,7 +19,7 @@ def test_irouting_service_is_abstract():
         IRoutingService()  # type: ignore[abstract]
 
 
-@pytest.mark.skip(reason="US10-TK06")
+
 def test_irouting_service_has_optimize_stop_order():
     """IRoutingService deve expor optimize_stop_order."""
     from src.domains.routing.service import IRoutingService
@@ -27,7 +27,7 @@ def test_irouting_service_has_optimize_stop_order():
     assert hasattr(IRoutingService, "optimize_stop_order")
 
 
-@pytest.mark.skip(reason="US10-TK06")
+
 def test_irouting_service_has_get_route_info():
     """IRoutingService deve expor get_route_info."""
     from src.domains.routing.service import IRoutingService
@@ -35,7 +35,7 @@ def test_irouting_service_has_get_route_info():
     assert hasattr(IRoutingService, "get_route_info")
 
 
-@pytest.mark.skip(reason="US10-TK06")
+
 def test_route_info_result_valid():
     """RouteInfoResult deve ser instanciável com os campos esperados."""
     from src.domains.routing.dtos import RouteInfoResult
@@ -45,7 +45,7 @@ def test_route_info_result_valid():
     assert result.estimated_duration_min == 20
 
 
-@pytest.mark.skip(reason="US10-TK06")
+
 def test_mapbox_routing_service_implements_interface():
     """MapboxRoutingService deve implementar IRoutingService."""
     from src.domains.routing.service import IRoutingService
@@ -55,7 +55,7 @@ def test_mapbox_routing_service_implements_interface():
     assert isinstance(service, IRoutingService)
 
 
-@pytest.mark.skip(reason="US10-TK06")
+
 def test_mapbox_api_key_in_settings():
     """Settings deve expor mapbox_api_key."""
     from src.config import Settings
@@ -63,7 +63,7 @@ def test_mapbox_api_key_in_settings():
     assert hasattr(Settings.model_fields, "mapbox_api_key") or hasattr(Settings, "mapbox_api_key")
 
 
-@pytest.mark.skip(reason="US10-TK06")
+
 def test_get_routing_service_returns_instance():
     """get_routing_service deve retornar uma instância de IRoutingService."""
     from src.domains.routing.service import IRoutingService

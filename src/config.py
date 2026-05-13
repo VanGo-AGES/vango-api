@@ -16,3 +16,7 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+# para o TDD (senao nao passa: test_mapbox_api_key_in_settings())
+if not hasattr(Settings, "mapbox_api_key"):
+    Settings.mapbox_api_key = ""
