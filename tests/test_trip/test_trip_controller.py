@@ -99,7 +99,6 @@ def make_next_stop_response():
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US00-TK01")
 def test_start_trip_success_returns_201() -> None:
     mock_service = Mock(spec=TripService)
     mock_service.start_trip.return_value = make_trip_response(status="iniciada")
@@ -116,7 +115,6 @@ def test_start_trip_success_returns_201() -> None:
     assert response.json()["status"] == "iniciada"
 
 
-@pytest.mark.skip(reason="US00-TK01")
 def test_start_trip_route_not_found_returns_404() -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
@@ -134,7 +132,6 @@ def test_start_trip_route_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US00-TK01")
 def test_start_trip_wrong_owner_returns_403() -> None:
     from src.domains.routes.errors import RouteOwnershipError
 
@@ -152,7 +149,6 @@ def test_start_trip_wrong_owner_returns_403() -> None:
     assert response.status_code == 403
 
 
-@pytest.mark.skip(reason="US00-TK01")
 def test_start_trip_already_in_progress_returns_409() -> None:
     from src.domains.trips.errors import TripAlreadyInProgressError
 
@@ -170,7 +166,6 @@ def test_start_trip_already_in_progress_returns_409() -> None:
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US00-TK01")
 def test_start_trip_no_passangers_returns_409() -> None:
     from src.domains.trips.errors import NoPassangersToStartError
 
@@ -188,7 +183,6 @@ def test_start_trip_no_passangers_returns_409() -> None:
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US00-TK01")
 def test_start_trip_vehicle_not_owned_returns_403() -> None:
     from src.domains.trips.errors import VehicleNotOwnedError
 
@@ -206,7 +200,6 @@ def test_start_trip_vehicle_not_owned_returns_403() -> None:
     assert response.status_code == 403
 
 
-@pytest.mark.skip(reason="US00-TK01")
 def test_start_trip_invalid_payload_returns_422() -> None:
     mock_service = Mock(spec=TripService)
     app.dependency_overrides[get_trip_service] = lambda: mock_service
