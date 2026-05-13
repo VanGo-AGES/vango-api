@@ -578,3 +578,374 @@ async def test_location_update_eta_gracefully_none_when_routing_unavailable():
     tracking_sessions.pop(trip_id, None)
     sid_meta.pop(tracker_sid, None)
     sid_meta.pop(follower_sid, None)
+
+
+# ===========================================================================
+# US11-TK05 — emit_passenger_boarded
+# ===========================================================================
+
+
+@pytest.mark.skip(reason="US11-TK05")
+@pytest.mark.asyncio
+async def test_emit_passenger_boarded_emits_to_room():
+    """emit_passenger_boarded deve emitir evento passenger_boarded para o room da sessão."""
+    from src.infrastructure.socketio.server import emit_passenger_boarded, tracking_sessions
+
+    trip_id = _make_trip_id()
+    tracking_sessions[trip_id] = {"tracker_sid": "t1", "followers": ["f1"], "last_location": None}
+
+    with patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock) as mock_emit:
+        await emit_passenger_boarded(trip_id, "tp-uuid-001", "João Silva")
+
+        mock_emit.assert_called_once()
+        assert mock_emit.call_args[0][0] == "passenger_boarded"
+
+    tracking_sessions.pop(trip_id, None)
+
+
+@pytest.mark.skip(reason="US11-TK05")
+@pytest.mark.asyncio
+async def test_emit_passenger_boarded_payload_contains_user_name():
+    """Payload de passenger_boarded deve conter trip_passanger_id e user_name."""
+    from src.infrastructure.socketio.server import emit_passenger_boarded, tracking_sessions
+
+    trip_id = _make_trip_id()
+    tracking_sessions[trip_id] = {"tracker_sid": "t1", "followers": ["f1"], "last_location": None}
+
+    with patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock) as mock_emit:
+        await emit_passenger_boarded(trip_id, "tp-uuid-002", "Maria Souza")
+
+        payload = mock_emit.call_args[0][1]
+        assert payload.get("user_name") == "Maria Souza"
+        assert "trip_passanger_id" in payload
+
+    tracking_sessions.pop(trip_id, None)
+
+
+@pytest.mark.skip(reason="US11-TK05")
+@pytest.mark.asyncio
+async def test_emit_passenger_boarded_no_error_when_session_not_found():
+    """emit_passenger_boarded com trip_id sem sessão ativa não deve levantar exceção."""
+    from src.infrastructure.socketio.server import emit_passenger_boarded
+
+    with patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock):
+        await emit_passenger_boarded(str(uuid.uuid4()), "tp-x", "Alguém")  # sem sessão
+
+
+# ===========================================================================
+# US11-TK06 — emit_passenger_absent
+# ===========================================================================
+
+
+@pytest.mark.skip(reason="US11-TK06")
+@pytest.mark.asyncio
+async def test_emit_passenger_absent_emits_to_room():
+    """emit_passenger_absent deve emitir evento passenger_absent para o room da sessão."""
+    from src.infrastructure.socketio.server import emit_passenger_absent, tracking_sessions
+
+    trip_id = _make_trip_id()
+    tracking_sessions[trip_id] = {"tracker_sid": "t1", "followers": ["f1"], "last_location": None}
+
+    with patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock) as mock_emit:
+        await emit_passenger_absent(trip_id, "tp-uuid-003", "Carlos Lima")
+
+        mock_emit.assert_called_once()
+        assert mock_emit.call_args[0][0] == "passenger_absent"
+
+    tracking_sessions.pop(trip_id, None)
+
+
+@pytest.mark.skip(reason="US11-TK06")
+@pytest.mark.asyncio
+async def test_emit_passenger_absent_payload_contains_user_name():
+    """Payload de passenger_absent deve conter trip_passanger_id e user_name."""
+    from src.infrastructure.socketio.server import emit_passenger_absent, tracking_sessions
+
+    trip_id = _make_trip_id()
+    tracking_sessions[trip_id] = {"tracker_sid": "t1", "followers": ["f1"], "last_location": None}
+
+    with patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock) as mock_emit:
+        await emit_passenger_absent(trip_id, "tp-uuid-004", "Ana Costa")
+
+        payload = mock_emit.call_args[0][1]
+        assert payload.get("user_name") == "Ana Costa"
+        assert "trip_passanger_id" in payload
+
+    tracking_sessions.pop(trip_id, None)
+
+
+@pytest.mark.skip(reason="US11-TK06")
+@pytest.mark.asyncio
+async def test_emit_passenger_absent_no_error_when_session_not_found():
+    """emit_passenger_absent com trip_id sem sessão ativa não deve levantar exceção."""
+    from src.infrastructure.socketio.server import emit_passenger_absent
+
+    with patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock):
+        await emit_passenger_absent(str(uuid.uuid4()), "tp-y", "Ninguém")  # sem sessão
+
+
+# ===========================================================================
+# US12-TK06 — _notify_proximity_if_needed (push "motorista está próximo")
+# ===========================================================================
+
+
+@pytest.mark.skip(reason="US12-TK06")
+@pytest.mark.asyncio
+async def test_proximity_notification_sent_when_below_threshold():
+    """_notify_proximity_if_needed deve chamar notify_passanger_driver_approaching quando distance_km < threshold."""
+    from unittest.mock import MagicMock
+    from src.infrastructure.socketio.server import (
+        _notify_proximity_if_needed,
+        sid_meta,
+        PROXIMITY_THRESHOLD_KM,
+    )
+    from src.domains.notifications.service import INotificationService
+
+    follower_sid = "follower-prox-001"
+    sid_meta[follower_sid] = {
+        "trip_id": _make_trip_id(),
+        "role": "follower",
+        "user_id": _make_user_id(),
+        "route_id": str(__import__("uuid").uuid4()),
+        "proximity_notified": False,
+    }
+
+    notif_mock = MagicMock(spec=INotificationService)
+
+    with patch("src.infrastructure.socketio.server._get_notification_service", return_value=notif_mock):
+        await _notify_proximity_if_needed(follower_sid, PROXIMITY_THRESHOLD_KM - 0.1)
+
+    notif_mock.notify_passanger_driver_approaching.assert_called_once()
+
+    sid_meta.pop(follower_sid, None)
+
+
+@pytest.mark.skip(reason="US12-TK06")
+@pytest.mark.asyncio
+async def test_proximity_notification_not_sent_when_above_threshold():
+    """_notify_proximity_if_needed não deve notificar quando distance_km >= threshold."""
+    from unittest.mock import MagicMock
+    from src.infrastructure.socketio.server import (
+        _notify_proximity_if_needed,
+        sid_meta,
+        PROXIMITY_THRESHOLD_KM,
+    )
+    from src.domains.notifications.service import INotificationService
+
+    follower_sid = "follower-prox-002"
+    sid_meta[follower_sid] = {
+        "trip_id": _make_trip_id(),
+        "role": "follower",
+        "user_id": _make_user_id(),
+        "route_id": str(__import__("uuid").uuid4()),
+        "proximity_notified": False,
+    }
+
+    notif_mock = MagicMock(spec=INotificationService)
+
+    with patch("src.infrastructure.socketio.server._get_notification_service", return_value=notif_mock):
+        await _notify_proximity_if_needed(follower_sid, PROXIMITY_THRESHOLD_KM + 0.5)
+
+    notif_mock.notify_passanger_driver_approaching.assert_not_called()
+
+    sid_meta.pop(follower_sid, None)
+
+
+@pytest.mark.skip(reason="US12-TK06")
+@pytest.mark.asyncio
+async def test_proximity_notification_sent_only_once_per_session():
+    """_notify_proximity_if_needed não deve reenviar o push se proximity_notified já for True."""
+    from unittest.mock import MagicMock
+    from src.infrastructure.socketio.server import (
+        _notify_proximity_if_needed,
+        sid_meta,
+        PROXIMITY_THRESHOLD_KM,
+    )
+    from src.domains.notifications.service import INotificationService
+
+    follower_sid = "follower-prox-003"
+    sid_meta[follower_sid] = {
+        "trip_id": _make_trip_id(),
+        "role": "follower",
+        "user_id": _make_user_id(),
+        "route_id": str(__import__("uuid").uuid4()),
+        "proximity_notified": True,  # já notificado
+    }
+
+    notif_mock = MagicMock(spec=INotificationService)
+
+    with patch("src.infrastructure.socketio.server._get_notification_service", return_value=notif_mock):
+        await _notify_proximity_if_needed(follower_sid, PROXIMITY_THRESHOLD_KM - 0.1)
+
+    notif_mock.notify_passanger_driver_approaching.assert_not_called()
+
+    sid_meta.pop(follower_sid, None)
+
+
+@pytest.mark.skip(reason="US12-TK06")
+@pytest.mark.asyncio
+async def test_proximity_notification_sets_flag_after_sending():
+    """_notify_proximity_if_needed deve setar proximity_notified=True após enviar o push."""
+    from unittest.mock import MagicMock
+    from src.infrastructure.socketio.server import (
+        _notify_proximity_if_needed,
+        sid_meta,
+        PROXIMITY_THRESHOLD_KM,
+    )
+    from src.domains.notifications.service import INotificationService
+
+    follower_sid = "follower-prox-004"
+    sid_meta[follower_sid] = {
+        "trip_id": _make_trip_id(),
+        "role": "follower",
+        "user_id": _make_user_id(),
+        "route_id": str(__import__("uuid").uuid4()),
+        "proximity_notified": False,
+    }
+
+    notif_mock = MagicMock(spec=INotificationService)
+
+    with patch("src.infrastructure.socketio.server._get_notification_service", return_value=notif_mock):
+        await _notify_proximity_if_needed(follower_sid, PROXIMITY_THRESHOLD_KM - 0.1)
+
+    assert sid_meta[follower_sid]["proximity_notified"] is True
+
+    sid_meta.pop(follower_sid, None)
+
+
+# ===========================================================================
+# US12-TK07 — _notify_arrival_if_needed (push "motorista chegou")
+# ===========================================================================
+
+
+@pytest.mark.skip(reason="US12-TK07")
+@pytest.mark.asyncio
+async def test_arrival_notification_sent_when_below_threshold():
+    """_notify_arrival_if_needed deve chamar notify_passanger_driver_arrived quando distance_km < ARRIVAL_THRESHOLD_KM."""
+    from unittest.mock import MagicMock
+    from src.infrastructure.socketio.server import (
+        _notify_arrival_if_needed,
+        sid_meta,
+        ARRIVAL_THRESHOLD_KM,
+    )
+    from src.domains.notifications.service import INotificationService
+
+    follower_sid = "follower-arr-001"
+    sid_meta[follower_sid] = {
+        "trip_id": _make_trip_id(),
+        "role": "follower",
+        "user_id": _make_user_id(),
+        "route_id": str(__import__("uuid").uuid4()),
+        "arrived_notified": False,
+    }
+
+    notif_mock = MagicMock(spec=INotificationService)
+
+    with patch("src.infrastructure.socketio.server._get_notification_service", return_value=notif_mock):
+        await _notify_arrival_if_needed(follower_sid, ARRIVAL_THRESHOLD_KM - 0.01)
+
+    notif_mock.notify_passanger_driver_arrived.assert_called_once()
+
+    sid_meta.pop(follower_sid, None)
+
+
+@pytest.mark.skip(reason="US12-TK07")
+@pytest.mark.asyncio
+async def test_arrival_notification_not_sent_when_above_threshold():
+    """_notify_arrival_if_needed não deve notificar quando distance_km >= ARRIVAL_THRESHOLD_KM."""
+    from unittest.mock import MagicMock
+    from src.infrastructure.socketio.server import (
+        _notify_arrival_if_needed,
+        sid_meta,
+        ARRIVAL_THRESHOLD_KM,
+    )
+    from src.domains.notifications.service import INotificationService
+
+    follower_sid = "follower-arr-002"
+    sid_meta[follower_sid] = {
+        "trip_id": _make_trip_id(),
+        "role": "follower",
+        "user_id": _make_user_id(),
+        "route_id": str(__import__("uuid").uuid4()),
+        "arrived_notified": False,
+    }
+
+    notif_mock = MagicMock(spec=INotificationService)
+
+    with patch("src.infrastructure.socketio.server._get_notification_service", return_value=notif_mock):
+        await _notify_arrival_if_needed(follower_sid, ARRIVAL_THRESHOLD_KM + 0.1)
+
+    notif_mock.notify_passanger_driver_arrived.assert_not_called()
+
+    sid_meta.pop(follower_sid, None)
+
+
+@pytest.mark.skip(reason="US12-TK07")
+@pytest.mark.asyncio
+async def test_arrival_notification_sent_only_once_per_session():
+    """_notify_arrival_if_needed não deve reenviar o push se arrived_notified já for True."""
+    from unittest.mock import MagicMock
+    from src.infrastructure.socketio.server import (
+        _notify_arrival_if_needed,
+        sid_meta,
+        ARRIVAL_THRESHOLD_KM,
+    )
+    from src.domains.notifications.service import INotificationService
+
+    follower_sid = "follower-arr-003"
+    sid_meta[follower_sid] = {
+        "trip_id": _make_trip_id(),
+        "role": "follower",
+        "user_id": _make_user_id(),
+        "route_id": str(__import__("uuid").uuid4()),
+        "arrived_notified": True,  # já notificado
+    }
+
+    notif_mock = MagicMock(spec=INotificationService)
+
+    with patch("src.infrastructure.socketio.server._get_notification_service", return_value=notif_mock):
+        await _notify_arrival_if_needed(follower_sid, ARRIVAL_THRESHOLD_KM - 0.01)
+
+    notif_mock.notify_passanger_driver_arrived.assert_not_called()
+
+    sid_meta.pop(follower_sid, None)
+
+
+@pytest.mark.skip(reason="US12-TK07")
+@pytest.mark.asyncio
+async def test_arrival_notification_sets_flag_after_sending():
+    """_notify_arrival_if_needed deve setar arrived_notified=True após enviar o push."""
+    from unittest.mock import MagicMock
+    from src.infrastructure.socketio.server import (
+        _notify_arrival_if_needed,
+        sid_meta,
+        ARRIVAL_THRESHOLD_KM,
+    )
+    from src.domains.notifications.service import INotificationService
+
+    follower_sid = "follower-arr-004"
+    sid_meta[follower_sid] = {
+        "trip_id": _make_trip_id(),
+        "role": "follower",
+        "user_id": _make_user_id(),
+        "route_id": str(__import__("uuid").uuid4()),
+        "arrived_notified": False,
+    }
+
+    notif_mock = MagicMock(spec=INotificationService)
+
+    with patch("src.infrastructure.socketio.server._get_notification_service", return_value=notif_mock):
+        await _notify_arrival_if_needed(follower_sid, ARRIVAL_THRESHOLD_KM - 0.01)
+
+    assert sid_meta[follower_sid]["arrived_notified"] is True
+
+    sid_meta.pop(follower_sid, None)
+
+
+@pytest.mark.skip(reason="US12-TK07")
+@pytest.mark.asyncio
+async def test_arrival_threshold_smaller_than_proximity_threshold():
+    """ARRIVAL_THRESHOLD_KM deve ser menor que PROXIMITY_THRESHOLD_KM."""
+    from src.infrastructure.socketio.server import ARRIVAL_THRESHOLD_KM, PROXIMITY_THRESHOLD_KM
+
+    assert ARRIVAL_THRESHOLD_KM < PROXIMITY_THRESHOLD_KM

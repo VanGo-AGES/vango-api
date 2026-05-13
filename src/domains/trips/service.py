@@ -250,6 +250,7 @@ class TripService:
         updated = self.trip_passanger_repository.update_status(trip_passanger_id, "presente", boarded_at=now)
         # US12-TK05
         # self.notification_service.notify_passanger_boarded(updated)
+        # US11-TK05 — chamar emit_passenger_boarded(str(trip.id), str(updated.id), user_name)
         return self._build_trip_passanger_response(updated)
 
     # US09-TK10
@@ -278,6 +279,7 @@ class TripService:
         updated = self.trip_passanger_repository.update_status(trip_passanger_id, "ausente")
         # US12-TK05
         # self.notification_service.notify_passanger_absent(updated)
+        # US11-TK06 — chamar emit_passenger_absent(str(trip.id), str(updated.id), user_name)
         return self._build_trip_passanger_response(updated)
 
     # US09-TK11
@@ -316,6 +318,7 @@ class TripService:
         updated_responses = []
         for tp in pending_tps:
             updated = self.trip_passanger_repository.update_status(tp.id, "ausente")
+            # US11-TK06 — chamar emit_passenger_absent(str(trip.id), str(updated.id), user_name)
             updated_responses.append(self._build_trip_passanger_response(updated))
 
         return updated_responses
