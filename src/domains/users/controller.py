@@ -1,4 +1,5 @@
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 
@@ -122,6 +123,9 @@ def delete_user(user_id: str, service: Annotated[UserService, Depends(get_user_s
 def register_push_token(
     body: RegisterPushTokenRequest,
     service: Annotated[UserService, Depends(get_user_service)],
-    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    x_user_id: Annotated[UUID, Header(alias="X-User-Id")],
 ) -> UserResponse:
-    pass
+    try:
+        return service.register_push_token(x_user_id, body)
+    except UserNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc

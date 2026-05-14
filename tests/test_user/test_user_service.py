@@ -401,7 +401,7 @@ def test_login_invalid_password():
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US12-TK02")
+
 def test_register_push_token_success():
     """register_push_token deve chamar update_push_token e retornar o UserModel."""
     from src.domains.users.dtos import RegisterPushTokenRequest
@@ -428,7 +428,7 @@ def test_register_push_token_success():
     assert result.push_token == "fcm-token-abc"
 
 
-@pytest.mark.skip(reason="US12-TK02")
+
 def test_register_push_token_user_not_found_raises():
     """register_push_token deve levantar UserNotFoundError se o usuário não existir."""
     from src.domains.users.dtos import RegisterPushTokenRequest

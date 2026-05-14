@@ -67,7 +67,15 @@ class UserService:
         - UserNotFoundError se o usuário não existir.
         - Persiste via update_push_token e retorna o UserModel atualizado.
         """
-        pass
+        user = self.repository.find_by_id(user_id)
+        if not user:
+            raise UserNotFoundError()
+
+        updated_user = self.repository.update_push_token(user_id, data.token)
+        if not updated_user:
+            raise UserNotFoundError()
+
+        return updated_user
 
     def login(self, email: str, password: str) -> UserModel:
         """Login intermediário: valida email + senha e devolve o UserModel.
