@@ -1,6 +1,9 @@
 """US06-TK07 — DI para INotificationService."""
 
 from src.domains.notifications.service import INotificationService, LoggingNotificationService
+from src.infrastructure.notifications.firebase_notification_service import (
+    FirebaseNotificationService,
+)
 
 
 def get_notification_service() -> INotificationService:
@@ -14,4 +17,5 @@ def get_firebase_notification_service() -> INotificationService:
     Troca o get_notification_service padrão (Logging) pela implementação FCM.
     Será injetado no get_trip_service e outros serviços em US12-TK05.
     """
-    pass
+
+    return FirebaseNotificationService()

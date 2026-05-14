@@ -12,6 +12,7 @@ htmlcov/
 firebase-secrets.json
 .pem
 *firebase*
+!src/infrastructure/notifications/firebase_notification_service.py
 
 # Python
 __pycache__/
