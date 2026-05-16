@@ -64,7 +64,16 @@ class FirebaseNotificationService(INotificationService):
     def notify_trip_arriving_at_stop(self, trip_passanger: Any) -> None:
         pass
 
+    def notify_trip_arrived_at_stop(self, trip_passanger: Any) -> None:
+        pass
+
     def notify_trip_finished(self, trip: Any) -> None:
+        pass
+
+    def notify_passanger_driver_approaching(self, user_id: str, route_id: str) -> None:
+        pass
+
+    def notify_passanger_driver_arrived(self, user_id: str, route_id: str) -> None:
         pass
 
     def notify_passanger_boarded(self, trip_passanger: Any) -> None:
