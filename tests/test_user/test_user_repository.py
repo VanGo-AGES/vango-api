@@ -244,7 +244,6 @@ def test_user_repository_find_all_empty(db_session):
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US12-TK01")
 def test_update_push_token_persists_token(db_session):
     """update_push_token deve salvar o token no campo push_token do usuário."""
     repo = UserRepositoryImpl(db_session)
@@ -266,7 +265,7 @@ def test_update_push_token_persists_token(db_session):
     assert reloaded.push_token == "fcm-token-xyz"
 
 
-@pytest.mark.skip(reason="US12-TK01")
+
 def test_update_push_token_overwrites_existing_token(db_session):
     """update_push_token deve substituir token previamente registrado."""
     repo = UserRepositoryImpl(db_session)
@@ -285,7 +284,7 @@ def test_update_push_token_overwrites_existing_token(db_session):
     assert updated.push_token == "new-token"
 
 
-@pytest.mark.skip(reason="US12-TK01")
+
 def test_update_push_token_user_not_found_returns_none(db_session):
     """update_push_token com user_id inexistente deve retornar None."""
     repo = UserRepositoryImpl(db_session)
