@@ -70,7 +70,7 @@ def list_users(service: Annotated[UserService, Depends(get_user_service)]) -> li
     summary="Buscar usuário por ID",
     description="Retorna os dados de um usuário específico pelo seu ID.",
 )
-def get_user(user_id: str, service: Annotated[UserService, Depends(get_user_service)]) -> UserResponse:
+def get_user(user_id: UUID, service: Annotated[UserService, Depends(get_user_service)]) -> UserResponse:
     try:
         return service.get_user(user_id)
     except UserNotFoundError as exc:
@@ -85,7 +85,7 @@ def get_user(user_id: str, service: Annotated[UserService, Depends(get_user_serv
     description="Atualiza os campos de um usuário existente.",
 )
 def update_user(
-    user_id: str,
+    user_id: UUID,
     body: UserUpdate,
     service: Annotated[UserService, Depends(get_user_service)],
 ) -> UserResponse:
@@ -101,7 +101,7 @@ def update_user(
     summary="Excluir usuário",
     description="Remove a conta do usuário e todos os dados associados em cascata.",
 )
-def delete_user(user_id: str, service: Annotated[UserService, Depends(get_user_service)]) -> None:
+def delete_user(user_id: UUID, service: Annotated[UserService, Depends(get_user_service)]) -> None:
     try:
         service.delete_user(user_id)
     except UserNotFoundError as exc:

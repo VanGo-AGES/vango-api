@@ -420,7 +420,6 @@ def test_integration_register_passenger_success(integration_client):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US00-TK03")
 def test_integration_get_user_success(integration_client, db_session):
     """[Integração] GET /users/{id} deve retornar 200 com dados do usuário."""
     repo = UserRepositoryImpl(db_session)
@@ -438,7 +437,6 @@ def test_integration_get_user_success(integration_client, db_session):
     assert response.json()["email"] == user.email
 
 
-@pytest.mark.skip(reason="US00-TK03")
 def test_integration_get_user_not_found_returns_404(integration_client):
     """[Integração] GET /users/{id} com id inexistente deve retornar 404."""
     response = integration_client.get(f"/users/{uuid4()}")
@@ -451,7 +449,6 @@ def test_integration_get_user_not_found_returns_404(integration_client):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US00-TK03")
 def test_integration_update_user_success(integration_client, db_session):
     """[Integração] PUT /users/{id} deve atualizar e retornar 200 com novos dados."""
     repo = UserRepositoryImpl(db_session)
@@ -469,7 +466,6 @@ def test_integration_update_user_success(integration_client, db_session):
     assert response.json()["name"] == "Carlos Silva"
 
 
-@pytest.mark.skip(reason="US00-TK03")
 def test_integration_update_user_not_found_returns_404(integration_client):
     """[Integração] PUT /users/{id} com id inexistente deve retornar 404."""
     response = integration_client.put(f"/users/{uuid4()}", json={"name": "Novo Nome"})
@@ -482,7 +478,6 @@ def test_integration_update_user_not_found_returns_404(integration_client):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US00-TK03")
 def test_integration_delete_user_success(integration_client, db_session):
     """[Integração] DELETE /users/{id} deve remover e retornar 204."""
     repo = UserRepositoryImpl(db_session)
@@ -499,7 +494,6 @@ def test_integration_delete_user_success(integration_client, db_session):
     assert response.status_code == 204
 
 
-@pytest.mark.skip(reason="US00-TK03")
 def test_integration_delete_user_not_found_returns_404(integration_client):
     """[Integração] DELETE /users/{id} com id inexistente deve retornar 404."""
     response = integration_client.delete(f"/users/{uuid4()}")
