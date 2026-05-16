@@ -249,7 +249,7 @@ class TripService:
         now = datetime.now(UTC)
         updated = self.trip_passanger_repository.update_status(trip_passanger_id, "presente", boarded_at=now)
         # US12-TK05
-        # self.notification_service.notify_passanger_boarded(updated)
+        self.notification_service.notify_passanger_boarded(updated)
         # US11-TK05 — chamar emit_passenger_boarded(str(trip.id), str(updated.id), user_name)
         return self._build_trip_passanger_response(updated)
 
@@ -278,7 +278,7 @@ class TripService:
 
         updated = self.trip_passanger_repository.update_status(trip_passanger_id, "ausente")
         # US12-TK05
-        # self.notification_service.notify_passanger_absent(updated)
+        self.notification_service.notify_passanger_absent(updated)
         # US11-TK06 — chamar emit_passenger_absent(str(trip.id), str(updated.id), user_name)
         return self._build_trip_passanger_response(updated)
 
