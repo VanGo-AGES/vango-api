@@ -78,7 +78,6 @@ def test_get_routing_service_returns_instance():
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US10-TK07")
 def test_optimize_stop_order_calls_mapbox_optimization_api():
     """optimize_stop_order deve chamar a Mapbox Optimization API v1."""
     from src.infrastructure.routing.mapbox_routing_service import MapboxRoutingService
@@ -109,7 +108,6 @@ def test_optimize_stop_order_calls_mapbox_optimization_api():
     assert len(result) == 3
 
 
-@pytest.mark.skip(reason="US10-TK07")
 def test_get_route_info_calls_mapbox_directions_api():
     """get_route_info deve chamar a Mapbox Directions API."""
     from src.infrastructure.routing.mapbox_routing_service import MapboxRoutingService
@@ -133,7 +131,6 @@ def test_get_route_info_calls_mapbox_directions_api():
     assert result.estimated_duration_min == 20
 
 
-@pytest.mark.skip(reason="US10-TK07")
 def test_get_route_info_returns_route_info_result():
     """get_route_info deve retornar uma instância de RouteInfoResult."""
     from src.domains.routing.dtos import RouteInfoResult
