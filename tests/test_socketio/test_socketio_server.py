@@ -165,7 +165,7 @@ async def test_join_session_tracker_emits_session_joined():
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US10-TK04")
+
 @pytest.mark.asyncio
 async def test_location_update_saves_last_location():
     """location_update deve salvar last_location no estado da sessão."""
@@ -187,7 +187,7 @@ async def test_location_update_saves_last_location():
     sid_meta.pop(sid, None)
 
 
-@pytest.mark.skip(reason="US10-TK04")
+
 @pytest.mark.asyncio
 async def test_location_update_broadcasts_to_room():
     """location_update deve fazer broadcast para o room da sessão."""
@@ -210,7 +210,7 @@ async def test_location_update_broadcasts_to_room():
     sid_meta.pop(sid, None)
 
 
-@pytest.mark.skip(reason="US10-TK04")
+
 @pytest.mark.asyncio
 async def test_location_update_non_tracker_ignored():
     """location_update emitido por follower deve ser ignorado silenciosamente."""
