@@ -78,7 +78,7 @@ def test_asgi_app_mountable():
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US10-TK02")
+
 @pytest.mark.asyncio
 async def test_connect_tracker_invalid_user_disconnects():
     """connect com X-User-Id inválido (usuário não existe) deve emitir error e desconectar."""
@@ -95,7 +95,7 @@ async def test_connect_tracker_invalid_user_disconnects():
         mock_disc.assert_called_once_with(sid)
 
 
-@pytest.mark.skip(reason="US10-TK02")
+
 @pytest.mark.asyncio
 async def test_connect_tracker_not_route_driver_disconnects():
     """connect com tracker que não é o motorista da trip deve desconectar."""
