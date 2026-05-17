@@ -13,7 +13,12 @@ Montagem em main.py (US10-TK01):
   app = socketio.ASGIApp(sio, fastapi_app)
 """
 
+import uuid
+from urllib.parse import parse_qs
+
 import socketio
+from src.infrastructure.database import SessionLocal
+from src.infrastructure.repositories.trip_repository import TripRepositoryImpl
 
 # ---------------------------------------------------------------------------
 # Socket.IO server
@@ -64,7 +69,40 @@ ARRIVAL_THRESHOLD_KM: float = 0.05
 # US10-TK02
 @sio.event
 async def connect(sid: str, environ: dict, auth: dict | None = None) -> None:  # type: ignore[empty-body]
-    pass
+    # Extrair query string
+    qs = environ.get("QUERY_STRING", "")
+    params = parse_qs(qs)
+
+    user_id = params.get("user_id", [None])[0]
+    trip_id = params.get("trip_id", [None])[0]
+    role = params.get("role", [None])[0]
+
+    # Validação básica
+    if not user_id or not trip_id or not role:
+        await sio.emit("error", {"message": "missing_credentials"}, to=sid)
+        await sio.disconnect(sid)
+        return
+
+    # Se for tracker, validar que user é o motorista dono da rota da trip
+    if role == "tracker":
+        valid = _validate_tracker(user_id, trip_id)
+        if not valid:
+            await sio.emit("error", {"message": "unauthorized"}, to=sid)
+            await sio.disconnect(sid)
+            return
+
+    # Popular metadata do sid
+    sid_meta[sid] = {
+        "trip_id": trip_id,
+        "role": role,
+        "user_id": user_id,
+        # campos adicionais populados por join_session quando aplicável
+        "stop_lat": None,
+        "stop_lng": None,
+        "route_id": None,
+        "proximity_notified": False,
+        "arrived_notified": False,
+    }
 
 
 # US10-TK05
@@ -236,3 +274,29 @@ async def _calculate_eta_for_tracker(
       routing service indisponível, ou trip não encontrada.
     """
     pass  # type: ignore[return-value]
+
+
+def _validate_tracker(user_id: str, trip_id: str) -> bool:
+    """Abre sessão de DB e verifica que a trip existe e que user_id é o driver."""
+    try:
+        trip_uuid = uuid.UUID(trip_id)
+    except Exception:
+        return False
+
+    session = SessionLocal()
+    try:
+        repo = TripRepositoryImpl(session)
+        trip = repo.find_by_id(trip_uuid)
+        if trip is None:
+            return False
+
+        # trip.route.driver_id pode ser UUID; comparar como string
+        driver_id = getattr(trip.route, "driver_id", None)
+        if driver_id is None:
+            return False
+
+        return str(driver_id) == str(user_id)
+    except Exception:
+        return False
+    finally:
+        session.close()
