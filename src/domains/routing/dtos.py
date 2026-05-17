@@ -14,3 +14,16 @@ class RouteInfoResult(BaseModel):
 
     total_distance_km: float = Field(..., description="Distância total em km")
     estimated_duration_min: int = Field(..., description="Duração estimada em minutos")
+
+
+# US10-TK18
+class GeocodeResult(BaseModel):
+    """Resultado da resolução de endereço → coordenadas via Mapbox Geocoding API.
+
+    Fields:
+    - latitude: latitude do endereço (graus decimais, WGS84)
+    - longitude: longitude do endereço (graus decimais, WGS84)
+    """
+
+    latitude: float = Field(..., description="Latitude em graus decimais")
+    longitude: float = Field(..., description="Longitude em graus decimais")

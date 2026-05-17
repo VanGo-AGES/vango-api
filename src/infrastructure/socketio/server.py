@@ -79,7 +79,7 @@ async def join_session(sid: str, data: dict) -> None:  # type: ignore[empty-body
     pass
 
 
-# US10-TK04 / US10-TK08 / US12-TK06 / US12-TK07
+# US10-TK04 / US10-TK08 / US10-TK17 / US12-TK06 / US12-TK07
 @sio.event
 async def location_update(sid: str, data: dict) -> None:
     """Handler para atualização de localização do tracker.
@@ -88,6 +88,10 @@ async def location_update(sid: str, data: dict) -> None:
     - Ignora silenciosamente se não for
     - Salva o payload em tracking_sessions[trip_id]["last_location"]
     - Faz broadcast via sio.emit(..., room=f"trip:{trip_id}", skip_sid=sid)
+    - US10-TK17: também chamar _calculate_eta_for_tracker e emitir
+      "driver_eta" diretamente para o tracker_sid (to=sid), independente
+      do broadcast. Falhas no cálculo do tracker NÃO devem interromper
+      o broadcast aos followers (try/except isolado).
     """
     # Verificar que sid é um tracker
     if sid not in sid_meta or sid_meta[sid].get("role") != "tracker":
@@ -182,5 +186,53 @@ async def _calculate_eta_for_follower(
 
     Retorna {"eta_minutes": int, "distance_km": float} ou None se routing
     service não estiver disponível ou se stop não estiver configurada.
+    """
+    pass  # type: ignore[return-value]
+
+
+# US10-TK17
+def _get_trip_service():  # type: ignore[no-untyped-def]
+    """Retorna uma instância de TripService para uso dentro dos handlers Socket.IO.
+
+    Necessário porque o socketio roda fora do ciclo de DI do FastAPI e precisa
+    de acesso ao TripService (e indiretamente ao banco) para descobrir a
+    próxima parada pendente da trip no `_calculate_eta_for_tracker`.
+
+    Implementação: abrir uma sessão de banco via SessionLocal, montar os
+    repositórios necessários (trip, trip_passanger, stop, etc.) e devolver
+    uma instância configurada. Cuidar do ciclo da sessão (with/finally).
+    Os testes substituem essa função via patch.
+    """
+    pass  # type: ignore[return-value]
+
+
+# US10-TK17
+async def _calculate_eta_for_tracker(
+    driver_lat: float,
+    driver_lng: float,
+    trip_id: str,
+) -> dict | None:
+    """Calcula eta_minutes e distance_km do motorista até a próxima parada
+    pendente da trip.
+
+    Diferente do `_calculate_eta_for_follower` (que usa as coords da parada
+    fixa associada ao sid do follower), aqui a próxima parada precisa ser
+    descoberta dinamicamente — passageiros vão sendo embarcados/marcados
+    ausentes/pulados durante a viagem.
+
+    Lógica esperada:
+    - Buscar trip via _get_trip_service (ou repositório equivalente)
+    - Identificar próxima parada pendente (mesma regra de
+      TripService.get_next_stop: trip_passanger.status == "pendente"
+      ordenado por stop.order_index)
+    - Ler latitude/longitude do AddressModel da stop
+    - Chamar IRoutingService.get_route_info(
+        origin={"lat": driver_lat, "lng": driver_lng},
+        waypoints=[],
+        destination={"lat": stop_lat, "lng": stop_lng},
+      )
+    - Retornar {"stop_id": str, "eta_minutes": int, "distance_km": float}
+      ou None se: não houver parada pendente, endereço sem coordenadas,
+      routing service indisponível, ou trip não encontrada.
     """
     pass  # type: ignore[return-value]

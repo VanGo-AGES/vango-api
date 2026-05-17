@@ -580,6 +580,184 @@ async def test_location_update_eta_gracefully_none_when_routing_unavailable():
     sid_meta.pop(follower_sid, None)
 
 
+# ---------------------------------------------------------------------------
+# US10-TK08 — _calculate_eta_for_follower (impl isolada do helper)
+#
+# Os testes acima cobrem o WIRING do helper no `location_update` (mockam a
+# função inteira). Estes abaixo cobrem a IMPLEMENTAÇÃO do helper em si,
+# mockando apenas IRoutingService e usando as coordenadas reais de
+# sid_meta. Esse padrão é o mesmo de `_calculate_eta_for_tracker`
+# (US10-TK17) e de `_trigger_route_optimization` (route_passanger_service /
+# absence_service).
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.skip(reason="US10-TK08")
+@pytest.mark.asyncio
+async def test_calculate_eta_for_follower_returns_dict_when_stop_coordinates_present():
+    """Quando sid_meta[follower_sid] tem stop_lat/stop_lng e routing responde,
+    o helper devolve dict com eta_minutes e distance_km."""
+    from src.infrastructure.socketio.server import _calculate_eta_for_follower, sid_meta
+
+    follower_sid = "follower-impl-001"
+    sid_meta[follower_sid] = {
+        "trip_id": _make_trip_id(),
+        "role": "follower",
+        "user_id": _make_user_id(),
+        "stop_lat": -30.05,
+        "stop_lng": -51.25,
+    }
+
+    routing_mock = MagicMock()
+    routing_mock.get_route_info.return_value = MagicMock(
+        estimated_duration_min=5,
+        total_distance_km=2.3,
+    )
+
+    with patch(
+        "src.infrastructure.socketio.server._get_routing_service",
+        return_value=routing_mock,
+        create=True,
+    ):
+        result = await _calculate_eta_for_follower(-30.0, -51.2, follower_sid)
+
+    assert result is not None
+    assert result.get("eta_minutes") == 5
+    assert result.get("distance_km") == 2.3
+
+    sid_meta.pop(follower_sid, None)
+
+
+@pytest.mark.skip(reason="US10-TK08")
+@pytest.mark.asyncio
+async def test_calculate_eta_for_follower_returns_none_when_stop_coordinates_missing():
+    """Se sid_meta[follower_sid] não tem stop_lat/stop_lng (ou está com None),
+    o helper retorna None sem chamar o routing service."""
+    from src.infrastructure.socketio.server import _calculate_eta_for_follower, sid_meta
+
+    follower_sid = "follower-impl-002"
+    sid_meta[follower_sid] = {
+        "trip_id": _make_trip_id(),
+        "role": "follower",
+        "user_id": _make_user_id(),
+        # sem stop_lat/stop_lng
+    }
+
+    routing_mock = MagicMock()
+
+    with patch(
+        "src.infrastructure.socketio.server._get_routing_service",
+        return_value=routing_mock,
+        create=True,
+    ):
+        result = await _calculate_eta_for_follower(-30.0, -51.2, follower_sid)
+
+    assert result is None
+    routing_mock.get_route_info.assert_not_called()
+
+    sid_meta.pop(follower_sid, None)
+
+
+@pytest.mark.skip(reason="US10-TK08")
+@pytest.mark.asyncio
+async def test_calculate_eta_for_follower_returns_none_when_follower_not_in_sid_meta():
+    """Se o follower_sid não existir em sid_meta, o helper retorna None
+    silenciosamente (não levanta KeyError)."""
+    from src.infrastructure.socketio.server import _calculate_eta_for_follower
+
+    routing_mock = MagicMock()
+
+    with patch(
+        "src.infrastructure.socketio.server._get_routing_service",
+        return_value=routing_mock,
+        create=True,
+    ):
+        result = await _calculate_eta_for_follower(-30.0, -51.2, "follower-nao-existe")
+
+    assert result is None
+    routing_mock.get_route_info.assert_not_called()
+
+
+@pytest.mark.skip(reason="US10-TK08")
+@pytest.mark.asyncio
+async def test_calculate_eta_for_follower_passes_correct_origin_and_destination():
+    """O helper deve chamar IRoutingService.get_route_info com origin =
+    posição do motorista e destination = stop_lat/stop_lng do follower —
+    pegar essa ordem trocada é o bug clássico que esses testes precisam
+    pegar."""
+    from src.infrastructure.socketio.server import _calculate_eta_for_follower, sid_meta
+
+    follower_sid = "follower-impl-004"
+    sid_meta[follower_sid] = {
+        "trip_id": _make_trip_id(),
+        "role": "follower",
+        "user_id": _make_user_id(),
+        "stop_lat": -30.10,
+        "stop_lng": -51.30,
+    }
+
+    driver_lat, driver_lng = -30.00, -51.20
+
+    routing_mock = MagicMock()
+    routing_mock.get_route_info.return_value = MagicMock(
+        estimated_duration_min=7,
+        total_distance_km=2.0,
+    )
+
+    with patch(
+        "src.infrastructure.socketio.server._get_routing_service",
+        return_value=routing_mock,
+        create=True,
+    ):
+        await _calculate_eta_for_follower(driver_lat, driver_lng, follower_sid)
+
+    routing_mock.get_route_info.assert_called_once()
+    call = routing_mock.get_route_info.call_args
+    origin = call.kwargs.get("origin") or call.args[0]
+    destination = call.kwargs.get("destination") or call.args[-1]
+
+    # origin é o motorista
+    assert origin.get("lat") == pytest.approx(driver_lat)
+    assert origin.get("lng") == pytest.approx(driver_lng)
+    # destination é a parada do follower
+    assert destination.get("lat") == pytest.approx(-30.10)
+    assert destination.get("lng") == pytest.approx(-51.30)
+
+    sid_meta.pop(follower_sid, None)
+
+
+@pytest.mark.skip(reason="US10-TK08")
+@pytest.mark.asyncio
+async def test_calculate_eta_for_follower_returns_none_when_routing_raises():
+    """Se IRoutingService.get_route_info levantar exceção, o helper devolve
+    None em vez de propagar — falha de routing é best-effort e não deve
+    derrubar o location_update."""
+    from src.infrastructure.socketio.server import _calculate_eta_for_follower, sid_meta
+
+    follower_sid = "follower-impl-005"
+    sid_meta[follower_sid] = {
+        "trip_id": _make_trip_id(),
+        "role": "follower",
+        "user_id": _make_user_id(),
+        "stop_lat": -30.05,
+        "stop_lng": -51.25,
+    }
+
+    routing_mock = MagicMock()
+    routing_mock.get_route_info.side_effect = RuntimeError("mapbox down")
+
+    with patch(
+        "src.infrastructure.socketio.server._get_routing_service",
+        return_value=routing_mock,
+        create=True,
+    ):
+        result = await _calculate_eta_for_follower(-30.0, -51.2, follower_sid)
+
+    assert result is None
+
+    sid_meta.pop(follower_sid, None)
+
+
 # ===========================================================================
 # US11-TK05 — emit_passenger_boarded
 # ===========================================================================
@@ -949,3 +1127,242 @@ async def test_arrival_threshold_smaller_than_proximity_threshold():
     from src.infrastructure.socketio.server import ARRIVAL_THRESHOLD_KM, PROXIMITY_THRESHOLD_KM
 
     assert ARRIVAL_THRESHOLD_KM < PROXIMITY_THRESHOLD_KM
+
+
+# ===========================================================================
+# US10-TK17 — _calculate_eta_for_tracker + driver_eta emit no location_update
+# ===========================================================================
+
+
+@pytest.mark.skip(reason="US10-TK17")
+@pytest.mark.asyncio
+async def test_location_update_emits_driver_eta_to_tracker():
+    """location_update deve emitir 'driver_eta' diretamente para o tracker_sid."""
+    from src.infrastructure.socketio.server import sio, tracking_sessions, sid_meta
+
+    trip_id = _make_trip_id()
+    tracker_sid = "tracker-driver-eta-001"
+
+    tracking_sessions[trip_id] = {
+        "tracker_sid": tracker_sid,
+        "followers": [],
+        "last_location": None,
+    }
+    sid_meta[tracker_sid] = {"trip_id": trip_id, "role": "tracker", "user_id": _make_user_id()}
+
+    payload = {"lat": -30.0, "lng": -51.2, "heading": 90.0, "speed": 40.0, "timestamp": "2026-01-01T08:00:00Z"}
+
+    with patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock) as mock_emit, \
+         patch("src.infrastructure.socketio.server._calculate_eta_for_tracker", new_callable=AsyncMock) as mock_eta:
+        mock_eta.return_value = {"stop_id": "stop-x", "eta_minutes": 6, "distance_km": 1.4}
+        await sio.handlers["/"]["location_update"](tracker_sid, payload)
+
+        # entre as chamadas de emit deve haver uma para "driver_eta" com to=tracker_sid
+        driver_eta_calls = [
+            call for call in mock_emit.call_args_list
+            if len(call.args) > 0 and call.args[0] == "driver_eta"
+        ]
+        assert len(driver_eta_calls) >= 1
+        # to deve apontar para o tracker_sid (kwarg ou posicional)
+        first_call = driver_eta_calls[0]
+        to_target = first_call.kwargs.get("to") or (first_call.args[2] if len(first_call.args) > 2 else None)
+        assert to_target == tracker_sid
+
+    tracking_sessions.pop(trip_id, None)
+    sid_meta.pop(tracker_sid, None)
+
+
+@pytest.mark.skip(reason="US10-TK17")
+@pytest.mark.asyncio
+async def test_driver_eta_payload_contains_eta_and_distance_fields():
+    """driver_eta payload deve conter eta_minutes e distance_km vindos do calculo."""
+    from src.infrastructure.socketio.server import sio, tracking_sessions, sid_meta
+
+    trip_id = _make_trip_id()
+    tracker_sid = "tracker-driver-eta-002"
+
+    tracking_sessions[trip_id] = {"tracker_sid": tracker_sid, "followers": [], "last_location": None}
+    sid_meta[tracker_sid] = {"trip_id": trip_id, "role": "tracker", "user_id": _make_user_id()}
+
+    payload = {"lat": -30.0, "lng": -51.0, "heading": 0.0, "speed": 0.0, "timestamp": "2026-01-01T08:00:00Z"}
+
+    with patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock) as mock_emit, \
+         patch("src.infrastructure.socketio.server._calculate_eta_for_tracker", new_callable=AsyncMock) as mock_eta:
+        mock_eta.return_value = {"stop_id": "stop-y", "eta_minutes": 12, "distance_km": 3.5}
+        await sio.handlers["/"]["location_update"](tracker_sid, payload)
+
+        driver_eta_call = next(
+            call for call in mock_emit.call_args_list
+            if len(call.args) > 0 and call.args[0] == "driver_eta"
+        )
+        body = driver_eta_call.args[1]
+        assert body.get("eta_minutes") == 12
+        assert body.get("distance_km") == 3.5
+
+    tracking_sessions.pop(trip_id, None)
+    sid_meta.pop(tracker_sid, None)
+
+
+@pytest.mark.skip(reason="US10-TK17")
+@pytest.mark.asyncio
+async def test_driver_eta_emitted_with_null_when_no_pending_stop():
+    """Se _calculate_eta_for_tracker retornar None, emit ocorre com eta_minutes e
+    distance_km nulos (ou um payload equivalente que sinalize ausência)."""
+    from src.infrastructure.socketio.server import sio, tracking_sessions, sid_meta
+
+    trip_id = _make_trip_id()
+    tracker_sid = "tracker-driver-eta-003"
+
+    tracking_sessions[trip_id] = {"tracker_sid": tracker_sid, "followers": [], "last_location": None}
+    sid_meta[tracker_sid] = {"trip_id": trip_id, "role": "tracker", "user_id": _make_user_id()}
+
+    payload = {"lat": -30.0, "lng": -51.0, "heading": 0.0, "speed": 0.0, "timestamp": "2026-01-01T08:00:00Z"}
+
+    with patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock) as mock_emit, \
+         patch("src.infrastructure.socketio.server._calculate_eta_for_tracker", new_callable=AsyncMock) as mock_eta:
+        mock_eta.return_value = None
+        await sio.handlers["/"]["location_update"](tracker_sid, payload)
+
+        driver_eta_call = next(
+            call for call in mock_emit.call_args_list
+            if len(call.args) > 0 and call.args[0] == "driver_eta"
+        )
+        body = driver_eta_call.args[1]
+        assert body.get("eta_minutes") is None
+        assert body.get("distance_km") is None
+
+    tracking_sessions.pop(trip_id, None)
+    sid_meta.pop(tracker_sid, None)
+
+
+@pytest.mark.skip(reason="US10-TK17")
+@pytest.mark.asyncio
+async def test_driver_eta_failure_does_not_block_follower_broadcast():
+    """Falha em _calculate_eta_for_tracker (exceção) não pode interromper o
+    broadcast de location_update para os followers."""
+    from src.infrastructure.socketio.server import sio, tracking_sessions, sid_meta
+
+    trip_id = _make_trip_id()
+    tracker_sid = "tracker-driver-eta-004"
+    follower_sid = "follower-driver-eta-004"
+
+    tracking_sessions[trip_id] = {
+        "tracker_sid": tracker_sid,
+        "followers": [follower_sid],
+        "last_location": None,
+    }
+    sid_meta[tracker_sid] = {"trip_id": trip_id, "role": "tracker", "user_id": _make_user_id()}
+    sid_meta[follower_sid] = {"trip_id": trip_id, "role": "follower", "user_id": _make_user_id()}
+
+    payload = {"lat": -30.0, "lng": -51.0, "heading": 0.0, "speed": 0.0, "timestamp": "2026-01-01T08:00:00Z"}
+
+    with patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock) as mock_emit, \
+         patch("src.infrastructure.socketio.server._calculate_eta_for_tracker", new_callable=AsyncMock) as mock_eta:
+        mock_eta.side_effect = RuntimeError("routing service down")
+        # location_update não deve propagar a exceção
+        await sio.handlers["/"]["location_update"](tracker_sid, payload)
+
+        # broadcast pro room dos followers deve ter ocorrido normalmente
+        room_calls = [
+            call for call in mock_emit.call_args_list
+            if call.kwargs.get("room") and "trip" in str(call.kwargs.get("room"))
+        ]
+        assert len(room_calls) >= 1
+
+    tracking_sessions.pop(trip_id, None)
+    sid_meta.pop(tracker_sid, None)
+    sid_meta.pop(follower_sid, None)
+
+
+@pytest.mark.skip(reason="US10-TK17")
+@pytest.mark.asyncio
+async def test_calculate_eta_for_tracker_returns_dict_when_pending_stop_exists():
+    """_calculate_eta_for_tracker deve devolver dict com eta_minutes/distance_km
+    quando há próxima parada pendente com coordenadas e routing service responde."""
+    from src.infrastructure.socketio.server import _calculate_eta_for_tracker
+
+    trip_id = _make_trip_id()
+
+    # service mock que devolve uma trip com próxima parada conhecida (com coords)
+    trip_service_mock = MagicMock()
+    next_stop_mock = MagicMock()
+    next_stop_mock.stop_id = "stop-pending-001"
+    next_stop_mock.address_label = "Rua X, 100"
+    # mock interno usado pelo helper para descobrir coords
+    trip_service_mock.get_next_stop_with_coordinates.return_value = {
+        "stop_id": "stop-pending-001",
+        "lat": -30.05,
+        "lng": -51.25,
+    }
+
+    routing_mock = MagicMock()
+    routing_mock.get_route_info.return_value = MagicMock(
+        estimated_duration_min=6,
+        total_distance_km=1.4,
+    )
+
+    with patch("src.infrastructure.socketio.server._get_trip_service", return_value=trip_service_mock), \
+         patch("src.infrastructure.socketio.server._get_routing_service", return_value=routing_mock, create=True):
+        result = await _calculate_eta_for_tracker(-30.0, -51.2, trip_id)
+
+    assert result is not None
+    assert result.get("eta_minutes") == 6
+    assert result.get("distance_km") == 1.4
+    assert result.get("stop_id") == "stop-pending-001"
+
+
+@pytest.mark.skip(reason="US10-TK17")
+@pytest.mark.asyncio
+async def test_calculate_eta_for_tracker_returns_none_when_no_pending_stop():
+    """Se não houver parada pendente (todos embarcados/ausentes), retorna None."""
+    from src.infrastructure.socketio.server import _calculate_eta_for_tracker
+
+    trip_service_mock = MagicMock()
+    trip_service_mock.get_next_stop_with_coordinates.return_value = None
+
+    with patch("src.infrastructure.socketio.server._get_trip_service", return_value=trip_service_mock):
+        result = await _calculate_eta_for_tracker(-30.0, -51.2, _make_trip_id())
+
+    assert result is None
+
+
+@pytest.mark.skip(reason="US10-TK17")
+@pytest.mark.asyncio
+async def test_calculate_eta_for_tracker_returns_none_when_address_missing_coordinates():
+    """Se a próxima parada pendente tiver address.latitude/longitude None, retorna None."""
+    from src.infrastructure.socketio.server import _calculate_eta_for_tracker
+
+    trip_service_mock = MagicMock()
+    trip_service_mock.get_next_stop_with_coordinates.return_value = {
+        "stop_id": "stop-no-coords",
+        "lat": None,
+        "lng": None,
+    }
+
+    with patch("src.infrastructure.socketio.server._get_trip_service", return_value=trip_service_mock):
+        result = await _calculate_eta_for_tracker(-30.0, -51.2, _make_trip_id())
+
+    assert result is None
+
+
+@pytest.mark.skip(reason="US10-TK17")
+@pytest.mark.asyncio
+async def test_calculate_eta_for_tracker_returns_none_when_routing_unavailable():
+    """Se routing_service não estiver disponível (ou levantar exceção), retorna None."""
+    from src.infrastructure.socketio.server import _calculate_eta_for_tracker
+
+    trip_service_mock = MagicMock()
+    trip_service_mock.get_next_stop_with_coordinates.return_value = {
+        "stop_id": "stop-x",
+        "lat": -30.05,
+        "lng": -51.25,
+    }
+
+    routing_mock = MagicMock()
+    routing_mock.get_route_info.side_effect = RuntimeError("mapbox down")
+
+    with patch("src.infrastructure.socketio.server._get_trip_service", return_value=trip_service_mock), \
+         patch("src.infrastructure.socketio.server._get_routing_service", return_value=routing_mock, create=True):
+        result = await _calculate_eta_for_tracker(-30.0, -51.2, _make_trip_id())
+
+    assert result is None

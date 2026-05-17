@@ -13,6 +13,7 @@ from src.domains.route_passangers.schedule_repository import (
 )
 from src.domains.route_passangers.service import RoutePassangerService
 from src.domains.routes.repository import IAddressRepository, IRouteRepository
+from src.domains.routing.service import IGeocodingService
 from src.domains.stops.repository import IStopRepository
 from src.domains.users.repository import IUserRepository
 from src.infrastructure.database import get_db
@@ -22,6 +23,7 @@ from src.infrastructure.dependencies.route_dependencies import get_address_repos
 from src.infrastructure.dependencies.route_passanger_schedule_dependencies import (
     get_route_passanger_schedule_repository,
 )
+from src.infrastructure.dependencies.routing_dependencies import get_geocoding_service
 from src.infrastructure.dependencies.stop_dependencies import get_stop_repository
 from src.infrastructure.dependencies.user_dependencies import get_user_repository
 from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
@@ -45,6 +47,7 @@ def get_route_passanger_service(
         Depends(get_route_passanger_schedule_repository),
     ],
     address_repo: Annotated[IAddressRepository, Depends(get_address_repository)],
+    geocoding_service: Annotated[IGeocodingService, Depends(get_geocoding_service)],
 ) -> RoutePassangerService:
     return RoutePassangerService(
         rp_repo,
@@ -55,4 +58,5 @@ def get_route_passanger_service(
         stop_repo,
         schedule_repo,
         address_repo,
+        geocoding_service=geocoding_service,
     )

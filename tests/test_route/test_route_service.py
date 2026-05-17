@@ -978,3 +978,171 @@ def test_get_route_absences_route_not_found_raises() -> None:
 
     with pytest.raises(RouteNotFoundError):
         service.get_route_absences(uuid.uuid4(), uuid.uuid4(), datetime.datetime(2026, 5, 5))
+
+
+# ===========================================================================
+# US10-TK18 — create_route chama geocoding_service para origin e destination
+# ===========================================================================
+
+
+@pytest.mark.skip(reason="US10-TK18")
+def test_create_route_calls_geocoding_for_origin_address() -> None:
+    """create_route deve chamar geocoding_service.geocode_address para o
+    endereço de origem antes de salvar."""
+    from src.domains.routes.service import RouteService
+    from src.domains.routing.dtos import GeocodeResult
+
+    driver_id = uuid.uuid4()
+    vehicle = make_vehicle_mock()
+    origin_address = make_address_mock("Casa")
+    dest_address = make_address_mock("PUCRS")
+
+    route_repo = Mock()
+    address_repo = Mock()
+    vehicle_repo = Mock()
+    geocoding = Mock()
+
+    vehicle_repo.get_by_driver_id.return_value = [vehicle]
+    address_repo.save.side_effect = [origin_address, dest_address]
+    route_repo.save.return_value = make_route_mock(driver_id)
+    geocoding.geocode_address.return_value = GeocodeResult(latitude=-30.0, longitude=-51.2)
+
+    service = RouteService(
+        route_repo,
+        address_repo,
+        vehicle_repo,
+        geocoding_service=geocoding,
+    )
+    service.create_route(driver_id, make_route_create())
+
+    # geocoding chamado pelo menos para origem (e provavelmente destino também)
+    assert geocoding.geocode_address.call_count >= 1
+
+
+@pytest.mark.skip(reason="US10-TK18")
+def test_create_route_calls_geocoding_for_destination_address() -> None:
+    """create_route deve chamar geocoding_service.geocode_address também para o
+    endereço de destino."""
+    from src.domains.routes.service import RouteService
+    from src.domains.routing.dtos import GeocodeResult
+
+    driver_id = uuid.uuid4()
+    vehicle = make_vehicle_mock()
+    origin_address = make_address_mock("Casa")
+    dest_address = make_address_mock("PUCRS")
+
+    route_repo = Mock()
+    address_repo = Mock()
+    vehicle_repo = Mock()
+    geocoding = Mock()
+
+    vehicle_repo.get_by_driver_id.return_value = [vehicle]
+    address_repo.save.side_effect = [origin_address, dest_address]
+    route_repo.save.return_value = make_route_mock(driver_id)
+    geocoding.geocode_address.return_value = GeocodeResult(latitude=-30.0, longitude=-51.2)
+
+    service = RouteService(
+        route_repo,
+        address_repo,
+        vehicle_repo,
+        geocoding_service=geocoding,
+    )
+    service.create_route(driver_id, make_route_create())
+
+    # esperamos uma chamada para origin e outra para destination
+    assert geocoding.geocode_address.call_count == 2
+
+
+@pytest.mark.skip(reason="US10-TK18")
+def test_create_route_persists_coordinates_when_geocoding_succeeds() -> None:
+    """Quando geocoding retorna lat/lng, esses valores devem estar populados
+    no AddressModel antes do address_repository.save."""
+    from src.domains.routes.service import RouteService
+    from src.domains.routing.dtos import GeocodeResult
+
+    driver_id = uuid.uuid4()
+    vehicle = make_vehicle_mock()
+
+    route_repo = Mock()
+    address_repo = Mock()
+    vehicle_repo = Mock()
+    geocoding = Mock()
+
+    saved_addresses: list = []
+    address_repo.save.side_effect = lambda addr: saved_addresses.append(addr) or addr
+    vehicle_repo.get_by_driver_id.return_value = [vehicle]
+    route_repo.save.return_value = make_route_mock(driver_id)
+    geocoding.geocode_address.return_value = GeocodeResult(latitude=-30.05, longitude=-51.22)
+
+    service = RouteService(
+        route_repo,
+        address_repo,
+        vehicle_repo,
+        geocoding_service=geocoding,
+    )
+    service.create_route(driver_id, make_route_create())
+
+    assert len(saved_addresses) == 2
+    for addr in saved_addresses:
+        assert addr.latitude == pytest.approx(-30.05)
+        assert addr.longitude == pytest.approx(-51.22)
+
+
+@pytest.mark.skip(reason="US10-TK18")
+def test_create_route_persists_null_coordinates_when_geocoding_fails() -> None:
+    """Quando geocoding retorna None (não conseguiu resolver), o endereço deve
+    ser salvo mesmo assim, com latitude/longitude permanecendo None."""
+    from src.domains.routes.service import RouteService
+
+    driver_id = uuid.uuid4()
+    vehicle = make_vehicle_mock()
+
+    route_repo = Mock()
+    address_repo = Mock()
+    vehicle_repo = Mock()
+    geocoding = Mock()
+
+    saved_addresses: list = []
+    address_repo.save.side_effect = lambda addr: saved_addresses.append(addr) or addr
+    vehicle_repo.get_by_driver_id.return_value = [vehicle]
+    route_repo.save.return_value = make_route_mock(driver_id)
+    geocoding.geocode_address.return_value = None  # falha silenciosa
+
+    service = RouteService(
+        route_repo,
+        address_repo,
+        vehicle_repo,
+        geocoding_service=geocoding,
+    )
+    service.create_route(driver_id, make_route_create())
+
+    assert len(saved_addresses) == 2
+    for addr in saved_addresses:
+        # latitude/longitude permanecem None ou nunca foram setados
+        assert getattr(addr, "latitude", None) is None
+        assert getattr(addr, "longitude", None) is None
+
+
+@pytest.mark.skip(reason="US10-TK18")
+def test_create_route_works_without_geocoding_service() -> None:
+    """create_route deve continuar funcionando se geocoding_service for None
+    (instanciação legacy ou desabilitada por config)."""
+    from src.domains.routes.service import RouteService
+
+    driver_id = uuid.uuid4()
+    vehicle = make_vehicle_mock()
+    origin_address = make_address_mock("Casa")
+    dest_address = make_address_mock("PUCRS")
+
+    route_repo = Mock()
+    address_repo = Mock()
+    vehicle_repo = Mock()
+
+    vehicle_repo.get_by_driver_id.return_value = [vehicle]
+    address_repo.save.side_effect = [origin_address, dest_address]
+    route_repo.save.return_value = make_route_mock(driver_id)
+
+    service = RouteService(route_repo, address_repo, vehicle_repo)  # sem geocoding
+    result = service.create_route(driver_id, make_route_create())
+
+    assert result is not None
