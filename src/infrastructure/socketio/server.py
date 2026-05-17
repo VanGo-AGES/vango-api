@@ -81,8 +81,33 @@ async def join_session(sid: str, data: dict) -> None:  # type: ignore[empty-body
 
 # US10-TK04 / US10-TK08 / US12-TK06 / US12-TK07
 @sio.event
-async def location_update(sid: str, data: dict) -> None:  # type: ignore[empty-body]
-    pass
+async def location_update(sid: str, data: dict) -> None:
+    """Handler para atualização de localização do tracker.
+
+    - Verifica que sid está em sid_meta com role == "tracker"
+    - Ignora silenciosamente se não for
+    - Salva o payload em tracking_sessions[trip_id]["last_location"]
+    - Faz broadcast via sio.emit(..., room=f"trip:{trip_id}", skip_sid=sid)
+    """
+    # Verificar que sid é um tracker
+    if sid not in sid_meta or sid_meta[sid].get("role") != "tracker":
+        return  # Ignorar silenciosamente
+
+    # Obter trip_id do sid_meta
+    trip_id = sid_meta[sid].get("trip_id")
+    if not trip_id or trip_id not in tracking_sessions:
+        return  # Ignorar se sessão não existe
+
+    # Salvar a última localização conhecida
+    tracking_sessions[trip_id]["last_location"] = data
+
+    # Fazer broadcast para o room da sessão
+    await sio.emit(
+        "location_update",
+        data,
+        room=f"trip:{trip_id}",
+        skip_sid=sid,
+    )
 
 
 # US11-TK05
