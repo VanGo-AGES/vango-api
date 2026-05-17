@@ -246,3 +246,66 @@ def test_firebase_notify_passanger_route_cancelled_sends_fcm():
     with patch("firebase_admin.messaging.send") as mock_send:
         service.notify_passanger_route_cancelled(rp)
         mock_send.assert_called_once()
+
+
+# ===========================================================================
+# US12-TK03 fix — métodos faltantes (notify_trip_arrived_at_stop,
+#                  notify_driver_passanger_absence_reported,
+#                  notify_passanger_driver_approaching, notify_passanger_driver_arrived)
+# ===========================================================================
+
+
+def test_firebase_notify_trip_arrived_at_stop_sends_fcm():
+    """notify_trip_arrived_at_stop deve chamar firebase_admin.messaging.send."""
+    from src.infrastructure.notifications.firebase_notification_service import (
+        FirebaseNotificationService,
+    )
+
+    service = FirebaseNotificationService()
+    tp = _make_trip_passanger_stub(status="pendente")
+
+    with patch("firebase_admin.messaging.send") as mock_send:
+        service.notify_trip_arrived_at_stop(tp)
+        mock_send.assert_called_once()
+
+
+def test_firebase_notify_driver_passanger_absence_reported_sends_fcm():
+    """notify_driver_passanger_absence_reported deve chamar firebase_admin.messaging.send."""
+    from src.infrastructure.notifications.firebase_notification_service import (
+        FirebaseNotificationService,
+    )
+
+    service = FirebaseNotificationService()
+    rp = _make_rp_stub(status="accepted")
+
+    with patch("firebase_admin.messaging.send") as mock_send:
+        service.notify_driver_passanger_absence_reported(rp)
+        mock_send.assert_called_once()
+
+
+def test_firebase_notify_passanger_driver_approaching_sends_fcm():
+    """notify_passanger_driver_approaching deve chamar firebase_admin.messaging.send via topic."""
+    from src.infrastructure.notifications.firebase_notification_service import (
+        FirebaseNotificationService,
+    )
+
+    service = FirebaseNotificationService()
+    user_id = str(uuid.uuid4())
+
+    with patch("firebase_admin.messaging.send") as mock_send:
+        service.notify_passanger_driver_approaching(user_id, str(uuid.uuid4()))
+        mock_send.assert_called_once()
+
+
+def test_firebase_notify_passanger_driver_arrived_sends_fcm():
+    """notify_passanger_driver_arrived deve chamar firebase_admin.messaging.send via topic."""
+    from src.infrastructure.notifications.firebase_notification_service import (
+        FirebaseNotificationService,
+    )
+
+    service = FirebaseNotificationService()
+    user_id = str(uuid.uuid4())
+
+    with patch("firebase_admin.messaging.send") as mock_send:
+        service.notify_passanger_driver_arrived(user_id, str(uuid.uuid4()))
+        mock_send.assert_called_once()
