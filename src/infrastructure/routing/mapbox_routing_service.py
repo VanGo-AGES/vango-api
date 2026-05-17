@@ -1,14 +1,16 @@
 """US10-TK06/TK07 — MapboxRoutingService.
+US10-TK18 — MapboxGeocodingService (stub).
 
-Implementação concreta de IRoutingService usando a Mapbox API.
-- optimize_stop_order: Mapbox Optimization API v1
-- get_route_info:      Mapbox Directions API
+Implementação concreta usando a Mapbox API:
+- MapboxRoutingService.optimize_stop_order → Mapbox Optimization API v1
+- MapboxRoutingService.get_route_info      → Mapbox Directions API
+- MapboxGeocodingService.geocode_address   → Mapbox Geocoding API v5/v6
 """
 
 import requests
 
-from src.domains.routing.dtos import RouteInfoResult
-from src.domains.routing.service import IRoutingService
+from src.domains.routing.dtos import GeocodeResult, RouteInfoResult
+from src.domains.routing.service import IGeocodingService, IRoutingService
 
 
 class MapboxRoutingService(IRoutingService):
@@ -28,7 +30,6 @@ class MapboxRoutingService(IRoutingService):
         Returns:
             lista de índices originais na nova sequência otimizada
         """
-        # Monta coordenadas em formato "lng,lat;lng,lat;..."
         coords = ";".join(f"{stop['lng']},{stop['lat']}" for stop in stop_coordinates)
 
         url = f"https://api.mapbox.com/optimized-trips/v1/mapbox/driving/{coords}"
@@ -38,8 +39,6 @@ class MapboxRoutingService(IRoutingService):
         response.raise_for_status()
         data = response.json()
 
-        # Extrai os waypoint_index de cada waypoint na resposta
-        # A ordem de waypoints[i]["waypoint_index"] representa a ordem otimizada
         waypoints = data.get("waypoints", [])
         optimized_order = [wp["waypoint_index"] for wp in waypoints]
 
@@ -62,7 +61,6 @@ class MapboxRoutingService(IRoutingService):
         Returns:
             RouteInfoResult com total_distance_km e estimated_duration_min
         """
-        # Monta coordenadas: origin;waypoint1;waypoint2;...;destination
         coordinates = [origin] + waypoints + [destination]
         coords = ";".join(f"{coord['lng']},{coord['lat']}" for coord in coordinates)
 
@@ -73,12 +71,10 @@ class MapboxRoutingService(IRoutingService):
         response.raise_for_status()
         data = response.json()
 
-        # Extrai distância (metros) e duração (segundos) da primeira rota
         route = data.get("routes", [{}])[0]
         distance_m = route.get("distance", 0)
         duration_s = route.get("duration", 0)
 
-        # Converte: metros → km, segundos → minutos
         total_distance_km = distance_m / 1000
         estimated_duration_min = int(duration_s / 60)
 
@@ -86,3 +82,39 @@ class MapboxRoutingService(IRoutingService):
             total_distance_km=total_distance_km,
             estimated_duration_min=estimated_duration_min,
         )
+
+
+# US10-TK18
+class MapboxGeocodingService(IGeocodingService):
+    """Resolve endereços brasileiros em coordenadas via Mapbox Geocoding API.
+
+    Implementação esperada:
+    - Montar uma query textual a partir dos campos do endereço
+      (ex.: "{street} {number}, {neighborhood}, {city}, {state}, {zip}, Brazil").
+    - Chamar a Mapbox Geocoding API (forward geocoding) com country=BR e
+      limit=1 (ou similar) usando self.api_key.
+    - Conferir relevance da feature retornada; descartar se abaixo de
+      limiar (~0.5) — endereços ambíguos viram None.
+    - Extrair longitude/latitude da feature (center[0]/center[1] no v5,
+      properties.coordinates no v6) e devolver GeocodeResult.
+    - Qualquer erro de rede/parsing/credencial deve resultar em None,
+      nunca em exceção propagada — geocoding é best-effort durante a
+      criação do endereço.
+    """
+
+    # US10-TK18
+    def __init__(self, api_key: str) -> None:
+        self.api_key = api_key
+
+    # US10-TK18
+    def geocode_address(
+        self,
+        street: str,
+        number: str,
+        neighborhood: str,
+        zip_code: str,
+        city: str,
+        state: str,
+    ) -> GeocodeResult | None:
+        """Chama Mapbox Geocoding API e retorna lat/lng do endereço."""
+        pass  # type: ignore[return-value]

@@ -19,6 +19,7 @@ from src.domains.routes.errors import (
     RouteOwnershipError,
 )
 from src.domains.routes.repository import IAddressRepository, IRouteRepository
+from src.domains.routing.service import IGeocodingService
 from src.domains.trips.repository import IAbsenceRepository
 from src.domains.vehicles.repository import IVehicleRepository
 
@@ -32,6 +33,7 @@ class RouteService:
         route_passanger_repository: IRoutePassangerRepository | None = None,
         notification_service: INotificationService | None = None,
         absence_repository: IAbsenceRepository | None = None,
+        geocoding_service: IGeocodingService | None = None,
     ):
         self.route_repository = route_repository
         self.address_repository = address_repository
@@ -43,6 +45,10 @@ class RouteService:
         self.notification_service = notification_service
         # Usado pelo GET /routes/{route_id}/absences (view do motorista).
         self.absence_repository = absence_repository
+        # US10-TK18: usado para preencher lat/lng dos AddressModel criados
+        # em create_route (origin e destination). Opcional para não quebrar
+        # testes/instanciações que não dependem de geocoding.
+        self.geocoding_service = geocoding_service
 
     # US05 - TK03
     def create_route(self, driver_id: UUID, data: RouteCreate) -> RouteModel:
@@ -62,6 +68,8 @@ class RouteService:
             city=data.origin.city,
             state=data.origin.state,
         )
+        # US10-TK18: chamar self._geocode_address(origin) para popular
+        # origin.latitude/longitude antes do save.
         destination = AddressModel(
             user_id=driver_id,
             label=data.destination.label,
@@ -72,6 +80,8 @@ class RouteService:
             city=data.destination.city,
             state=data.destination.state,
         )
+        # US10-TK18: chamar self._geocode_address(destination) para popular
+        # destination.latitude/longitude antes do save.
 
         saved_origin = self.address_repository.save(origin)
         saved_destination = self.address_repository.save(destination)
@@ -138,6 +148,8 @@ class RouteService:
                 city=_origin_data["city"],
                 state=_origin_data["state"],
             )
+            # US10-TK18: chamar self._geocode_address(origin) para popular
+            # origin.latitude/longitude antes do save.
             saved_origin = self.address_repository.save(origin)
             update_data["origin_address_id"] = saved_origin.id
 
@@ -153,6 +165,8 @@ class RouteService:
                 city=_destination_data["city"],
                 state=_destination_data["state"],
             )
+            # US10-TK18: chamar self._geocode_address(destination) para popular
+            # destination.latitude/longitude antes do save.
             saved_destination = self.address_repository.save(destination)
             update_data["destination_address_id"] = saved_destination.id
 
@@ -289,3 +303,15 @@ class RouteService:
                 self.notification_service.notify_passanger_route_cancelled(rp)
 
         self.route_repository.delete(route_id)
+
+    # US10-TK18
+    def _geocode_address(self, address: AddressModel) -> None:
+        """Tenta resolver as coordenadas do endereço via geocoding_service e
+        popula address.latitude/longitude in-place. Silenciosamente ignorado
+        se geocoding_service for None ou se a API retornar None — endereço
+        permanece sem coords (FE pode optar por mostrar placeholder no mapa).
+
+        Chamado por create_route e update_route logo após instanciar o
+        AddressModel e antes do address_repository.save.
+        """
+        pass

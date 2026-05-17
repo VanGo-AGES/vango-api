@@ -1,8 +1,9 @@
-"""US10-TK06 — Interface IRoutingService."""
+"""US10-TK06 — Interface IRoutingService.
+US10-TK18 — Interface IGeocodingService."""
 
 from abc import ABC, abstractmethod
 
-from src.domains.routing.dtos import RouteInfoResult
+from src.domains.routing.dtos import GeocodeResult, RouteInfoResult
 
 
 class IRoutingService(ABC):
@@ -39,5 +40,46 @@ class IRoutingService(ABC):
 
         Retorno:
           RouteInfoResult com total_distance_km e estimated_duration_min.
+        """
+        pass
+
+
+# US10-TK18
+class IGeocodingService(ABC):
+    """Interface para resolução de endereços em coordenadas geográficas.
+
+    Existe como contrato separado de IRoutingService porque geocoding é uma
+    responsabilidade distinta (forward geocoding: endereço → coords) e tem
+    uma API própria do Mapbox. Mantida separada para permitir injeção
+    independente nos services que criam endereços (routes.create_route,
+    route_passangers.join_route).
+    """
+
+    # US10-TK18
+    @abstractmethod
+    def geocode_address(
+        self,
+        street: str,
+        number: str,
+        neighborhood: str,
+        zip_code: str,
+        city: str,
+        state: str,
+    ) -> GeocodeResult | None:
+        """Resolve um endereço brasileiro em latitude/longitude via Mapbox
+        Geocoding API.
+
+        Parâmetros: campos textuais do AddressModel.
+
+        Retorno:
+          GeocodeResult com latitude e longitude se a API encontrou
+          coordenadas para o endereço.
+          None se: endereço não pôde ser resolvido, API indisponível,
+          ou resposta sem coordenadas confiáveis (relevance abaixo de
+          limiar configurado pela implementação).
+
+        Implementações nunca devem levantar exceção em uso normal —
+        falhas devem virar None para que o fluxo de criação de endereço
+        siga adiante mesmo sem coordenadas.
         """
         pass

@@ -1768,3 +1768,125 @@ def test_remove_passanger_calls_optimize_stop_order() -> None:
     service.remove_passanger(route.id, rp.id, driver_id)
 
     routing_mock.optimize_stop_order.assert_called_once()
+
+
+# ===========================================================================
+# US10-TK18 — join_route chama geocoding_service para o pickup_address
+# ===========================================================================
+
+
+@pytest.mark.skip(reason="US10-TK18")
+def test_join_route_calls_geocoding_for_pickup_address() -> None:
+    """join_route deve chamar geocoding_service.geocode_address para o
+    endereço de embarque criado inline."""
+    from src.domains.routing.dtos import GeocodeResult
+
+    route = make_route_mock(uuid.uuid4(), status="ativa", max_passengers=5)
+    user_id = uuid.uuid4()
+    req = make_join_request()
+
+    geocoding = Mock()
+    geocoding.geocode_address.return_value = GeocodeResult(latitude=-30.0, longitude=-51.2)
+
+    service, rp_repo, route_repo, _, _, _, _, _ = build_service()
+    service.geocoding_service = geocoding
+
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_by_user_and_route.return_value = None
+    rp_repo.count_accepted_by_route.return_value = 0
+    rp_repo.save.return_value = make_rp_mock(route.id, user_id, status="pending")
+
+    service.join_route(route.id, user_id, req)
+
+    geocoding.geocode_address.assert_called_once()
+
+
+@pytest.mark.skip(reason="US10-TK18")
+def test_join_route_persists_coordinates_when_geocoding_succeeds() -> None:
+    """Quando geocoding retorna lat/lng, o pickup_address salvo deve estar
+    com latitude/longitude populados."""
+    from src.domains.routing.dtos import GeocodeResult
+
+    route = make_route_mock(uuid.uuid4(), status="ativa", max_passengers=5)
+    user_id = uuid.uuid4()
+    req = make_join_request()
+
+    geocoding = Mock()
+    geocoding.geocode_address.return_value = GeocodeResult(latitude=-30.05, longitude=-51.22)
+
+    service, rp_repo, route_repo, _, _, _, _, _ = build_service()
+    service.geocoding_service = geocoding
+
+    saved_addr_holder = {}
+
+    def capture_save(addr):
+        saved_addr_holder["addr"] = addr
+        addr.id = uuid.uuid4()
+        return addr
+
+    service.address_repository.save.side_effect = capture_save
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_by_user_and_route.return_value = None
+    rp_repo.count_accepted_by_route.return_value = 0
+    rp_repo.save.return_value = make_rp_mock(route.id, user_id, status="pending")
+
+    service.join_route(route.id, user_id, req)
+
+    saved = saved_addr_holder["addr"]
+    assert saved.latitude == pytest.approx(-30.05)
+    assert saved.longitude == pytest.approx(-51.22)
+
+
+@pytest.mark.skip(reason="US10-TK18")
+def test_join_route_persists_null_coordinates_when_geocoding_fails() -> None:
+    """Quando geocoding retorna None, o endereço de embarque deve ser salvo
+    mesmo assim, com lat/lng permanecendo None."""
+    route = make_route_mock(uuid.uuid4(), status="ativa", max_passengers=5)
+    user_id = uuid.uuid4()
+    req = make_join_request()
+
+    geocoding = Mock()
+    geocoding.geocode_address.return_value = None
+
+    service, rp_repo, route_repo, _, _, _, _, _ = build_service()
+    service.geocoding_service = geocoding
+
+    saved_addr_holder = {}
+
+    def capture_save(addr):
+        saved_addr_holder["addr"] = addr
+        addr.id = uuid.uuid4()
+        return addr
+
+    service.address_repository.save.side_effect = capture_save
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_by_user_and_route.return_value = None
+    rp_repo.count_accepted_by_route.return_value = 0
+    rp_repo.save.return_value = make_rp_mock(route.id, user_id, status="pending")
+
+    service.join_route(route.id, user_id, req)
+
+    saved = saved_addr_holder["addr"]
+    assert getattr(saved, "latitude", None) is None
+    assert getattr(saved, "longitude", None) is None
+
+
+@pytest.mark.skip(reason="US10-TK18")
+def test_join_route_works_without_geocoding_service() -> None:
+    """join_route deve continuar funcionando se geocoding_service for None
+    (instanciação legacy)."""
+    route = make_route_mock(uuid.uuid4(), status="ativa", max_passengers=5)
+    user_id = uuid.uuid4()
+    req = make_join_request()
+
+    service, rp_repo, route_repo, _, _, _, _, _ = build_service()
+    assert service.geocoding_service is None  # default
+
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_by_user_and_route.return_value = None
+    rp_repo.count_accepted_by_route.return_value = 0
+    rp_repo.save.return_value = make_rp_mock(route.id, user_id, status="pending")
+
+    # não deve levantar exceção
+    service.join_route(route.id, user_id, req)
+    rp_repo.save.assert_called_once()

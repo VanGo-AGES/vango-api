@@ -43,7 +43,7 @@ from src.domains.route_passangers.schedule_repository import (
 from src.domains.routes.dtos import AddressResponse
 from src.domains.routes.errors import RouteInProgressError, RouteNotFoundError, RouteOwnershipError
 from src.domains.routes.repository import IAddressRepository, IRouteRepository
-from src.domains.routing.service import IRoutingService
+from src.domains.routing.service import IGeocodingService, IRoutingService
 from src.domains.stops.dtos import StopResponse
 from src.domains.stops.entity import StopModel
 from src.domains.stops.repository import IStopRepository
@@ -62,6 +62,7 @@ class RoutePassangerService:
         schedule_repository: IRoutePassangerScheduleRepository,
         address_repository: IAddressRepository | None = None,
         routing_service: IRoutingService | None = None,
+        geocoding_service: IGeocodingService | None = None,
     ):
         self.route_passanger_repository = route_passanger_repository
         self.route_repository = route_repository
@@ -75,6 +76,9 @@ class RoutePassangerService:
         self.address_repository = address_repository
         # US10-TK08: usado para reordenar paradas após add/remove.
         self.routing_service = routing_service
+        # US10-TK18: usado para popular lat/lng do pickup_address criado em
+        # join_route. Opcional para não quebrar testes que não dependem.
+        self.geocoding_service = geocoding_service
 
     # US06-TK08
     def accept_request(self, route_id: UUID, rp_id: UUID, driver_id: UUID) -> RoutePassangerResponse:
@@ -235,6 +239,18 @@ class RoutePassangerService:
         """
         pass
 
+    # US10-TK18
+    def _geocode_address(self, address: AddressModel) -> None:
+        """Tenta resolver as coordenadas do endereço de embarque via
+        geocoding_service e popula address.latitude/longitude in-place.
+        Silenciosamente ignorado se geocoding_service for None ou se a API
+        retornar None.
+
+        Chamado por join_route logo após instanciar o pickup AddressModel
+        e antes do address_repository.save.
+        """
+        pass
+
     # Helper interno (sem @abstractmethod — não está na interface)
     def _to_response(self, rp: RoutePassangerModel) -> RoutePassangerResponse:
         """Constrói RoutePassangerResponse resolvendo nomes de user/dependent/guardian.
@@ -319,6 +335,8 @@ class RoutePassangerService:
             city=data.address.city,
             state=data.address.state,
         )
+        # US10-TK18: chamar self._geocode_address(pickup_address) para popular
+        # latitude/longitude antes do save.
         saved_address = self.address_repository.save(pickup_address)
 
         rp = RoutePassangerModel(
