@@ -1775,7 +1775,6 @@ def test_remove_passanger_calls_optimize_stop_order() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US10-TK18")
 def test_join_route_calls_geocoding_for_pickup_address() -> None:
     """join_route deve chamar geocoding_service.geocode_address para o
     endereço de embarque criado inline."""
@@ -1801,7 +1800,6 @@ def test_join_route_calls_geocoding_for_pickup_address() -> None:
     geocoding.geocode_address.assert_called_once()
 
 
-@pytest.mark.skip(reason="US10-TK18")
 def test_join_route_persists_coordinates_when_geocoding_succeeds() -> None:
     """Quando geocoding retorna lat/lng, o pickup_address salvo deve estar
     com latitude/longitude populados."""
@@ -1837,7 +1835,6 @@ def test_join_route_persists_coordinates_when_geocoding_succeeds() -> None:
     assert saved.longitude == pytest.approx(-51.22)
 
 
-@pytest.mark.skip(reason="US10-TK18")
 def test_join_route_persists_null_coordinates_when_geocoding_fails() -> None:
     """Quando geocoding retorna None, o endereço de embarque deve ser salvo
     mesmo assim, com lat/lng permanecendo None."""
@@ -1871,7 +1868,6 @@ def test_join_route_persists_null_coordinates_when_geocoding_fails() -> None:
     assert getattr(saved, "longitude", None) is None
 
 
-@pytest.mark.skip(reason="US10-TK18")
 def test_join_route_works_without_geocoding_service() -> None:
     """join_route deve continuar funcionando se geocoding_service for None
     (instanciação legacy)."""

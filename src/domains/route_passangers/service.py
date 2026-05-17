@@ -249,7 +249,22 @@ class RoutePassangerService:
         Chamado por join_route logo após instanciar o pickup AddressModel
         e antes do address_repository.save.
         """
-        pass
+        if self.geocoding_service is None:
+            return
+
+        result = self.geocoding_service.geocode_address(
+            street=address.street,
+            number=address.number,
+            neighborhood=address.neighborhood,
+            zip_code=address.zip,
+            city=address.city,
+            state=address.state,
+        )
+        if result is None:
+            return
+
+        address.latitude = result.latitude
+        address.longitude = result.longitude
 
     # Helper interno (sem @abstractmethod — não está na interface)
     def _to_response(self, rp: RoutePassangerModel) -> RoutePassangerResponse:
@@ -335,8 +350,7 @@ class RoutePassangerService:
             city=data.address.city,
             state=data.address.state,
         )
-        # US10-TK18: chamar self._geocode_address(pickup_address) para popular
-        # latitude/longitude antes do save.
+        self._geocode_address(pickup_address)
         saved_address = self.address_repository.save(pickup_address)
 
         rp = RoutePassangerModel(

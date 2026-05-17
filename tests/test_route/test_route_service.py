@@ -985,7 +985,6 @@ def test_get_route_absences_route_not_found_raises() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US10-TK18")
 def test_create_route_calls_geocoding_for_origin_address() -> None:
     """create_route deve chamar geocoding_service.geocode_address para o
     endereço de origem antes de salvar."""
@@ -1019,7 +1018,6 @@ def test_create_route_calls_geocoding_for_origin_address() -> None:
     assert geocoding.geocode_address.call_count >= 1
 
 
-@pytest.mark.skip(reason="US10-TK18")
 def test_create_route_calls_geocoding_for_destination_address() -> None:
     """create_route deve chamar geocoding_service.geocode_address também para o
     endereço de destino."""
@@ -1053,7 +1051,6 @@ def test_create_route_calls_geocoding_for_destination_address() -> None:
     assert geocoding.geocode_address.call_count == 2
 
 
-@pytest.mark.skip(reason="US10-TK18")
 def test_create_route_persists_coordinates_when_geocoding_succeeds() -> None:
     """Quando geocoding retorna lat/lng, esses valores devem estar populados
     no AddressModel antes do address_repository.save."""
@@ -1088,7 +1085,6 @@ def test_create_route_persists_coordinates_when_geocoding_succeeds() -> None:
         assert addr.longitude == pytest.approx(-51.22)
 
 
-@pytest.mark.skip(reason="US10-TK18")
 def test_create_route_persists_null_coordinates_when_geocoding_fails() -> None:
     """Quando geocoding retorna None (não conseguiu resolver), o endereço deve
     ser salvo mesmo assim, com latitude/longitude permanecendo None."""
@@ -1123,7 +1119,6 @@ def test_create_route_persists_null_coordinates_when_geocoding_fails() -> None:
         assert getattr(addr, "longitude", None) is None
 
 
-@pytest.mark.skip(reason="US10-TK18")
 def test_create_route_works_without_geocoding_service() -> None:
     """create_route deve continuar funcionando se geocoding_service for None
     (instanciação legacy ou desabilitada por config)."""

@@ -69,7 +69,6 @@ def test_get_geocoding_service_returns_instance():
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US10-TK18")
 def test_geocode_address_calls_mapbox_geocoding_api():
     """geocode_address deve chamar a Mapbox Geocoding API com query montada
     a partir dos campos do endereço (street, number, neighborhood, city,
@@ -107,7 +106,6 @@ def test_geocode_address_calls_mapbox_geocoding_api():
         assert "Ipiranga" in called_url or "Ipiranga" in str(mock_get.call_args)
 
 
-@pytest.mark.skip(reason="US10-TK18")
 def test_geocode_address_returns_coordinates_when_found():
     """geocode_address deve devolver GeocodeResult com lat/lng quando a API
     retorna feature com relevance suficiente."""
@@ -143,7 +141,6 @@ def test_geocode_address_returns_coordinates_when_found():
         assert result.longitude == pytest.approx(-51.2287)
 
 
-@pytest.mark.skip(reason="US10-TK18")
 def test_geocode_address_returns_none_when_no_features():
     """geocode_address deve devolver None quando a API retorna lista vazia."""
     from src.infrastructure.routing.mapbox_routing_service import MapboxGeocodingService
@@ -168,7 +165,6 @@ def test_geocode_address_returns_none_when_no_features():
         assert result is None
 
 
-@pytest.mark.skip(reason="US10-TK18")
 def test_geocode_address_returns_none_when_relevance_too_low():
     """geocode_address deve descartar features com relevance abaixo do limiar."""
     from src.infrastructure.routing.mapbox_routing_service import MapboxGeocodingService
@@ -200,7 +196,6 @@ def test_geocode_address_returns_none_when_relevance_too_low():
         assert result is None
 
 
-@pytest.mark.skip(reason="US10-TK18")
 def test_geocode_address_returns_none_on_api_error():
     """geocode_address deve absorver erros de rede/credencial e devolver None
     em vez de propagar a exceção — geocoding é best-effort."""
