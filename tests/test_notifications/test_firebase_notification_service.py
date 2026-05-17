@@ -176,3 +176,73 @@ def test_firebase_notify_passanger_accepted_sends_fcm():
     with patch("firebase_admin.messaging.send") as mock_send:
         service.notify_passanger_accepted(rp)
         mock_send.assert_called_once()
+
+
+def test_firebase_notify_passanger_rejected_sends_fcm():
+    """notify_passanger_rejected deve chamar firebase_admin.messaging.send."""
+    from src.infrastructure.notifications.firebase_notification_service import (
+        FirebaseNotificationService,
+    )
+
+    service = FirebaseNotificationService()
+    rp = _make_rp_stub(status="rejected")
+
+    with patch("firebase_admin.messaging.send") as mock_send:
+        service.notify_passanger_rejected(rp)
+        mock_send.assert_called_once()
+
+
+def test_firebase_notify_passanger_removed_sends_fcm():
+    """notify_passanger_removed deve chamar firebase_admin.messaging.send."""
+    from src.infrastructure.notifications.firebase_notification_service import (
+        FirebaseNotificationService,
+    )
+
+    service = FirebaseNotificationService()
+    rp = _make_rp_stub(status="rejected")
+
+    with patch("firebase_admin.messaging.send") as mock_send:
+        service.notify_passanger_removed(rp)
+        mock_send.assert_called_once()
+
+
+def test_firebase_notify_driver_passanger_requested_sends_fcm():
+    """notify_driver_passanger_requested deve chamar firebase_admin.messaging.send."""
+    from src.infrastructure.notifications.firebase_notification_service import (
+        FirebaseNotificationService,
+    )
+
+    service = FirebaseNotificationService()
+    rp = _make_rp_stub(status="pending")
+
+    with patch("firebase_admin.messaging.send") as mock_send:
+        service.notify_driver_passanger_requested(rp)
+        mock_send.assert_called_once()
+
+
+def test_firebase_notify_driver_passanger_left_sends_fcm():
+    """notify_driver_passanger_left deve chamar firebase_admin.messaging.send."""
+    from src.infrastructure.notifications.firebase_notification_service import (
+        FirebaseNotificationService,
+    )
+
+    service = FirebaseNotificationService()
+    rp = _make_rp_stub(status="rejected")
+
+    with patch("firebase_admin.messaging.send") as mock_send:
+        service.notify_driver_passanger_left(rp)
+        mock_send.assert_called_once()
+
+
+def test_firebase_notify_passanger_route_cancelled_sends_fcm():
+    """notify_passanger_route_cancelled deve chamar firebase_admin.messaging.send."""
+    from src.infrastructure.notifications.firebase_notification_service import (
+        FirebaseNotificationService,
+    )
+
+    service = FirebaseNotificationService()
+    rp = _make_rp_stub(status="accepted")
+
+    with patch("firebase_admin.messaging.send") as mock_send:
+        service.notify_passanger_route_cancelled(rp)
+        mock_send.assert_called_once()
