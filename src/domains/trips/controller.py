@@ -5,6 +5,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 
+from src.domains.route_passangers.errors import NotRoutePassangerError
 from src.domains.routes.errors import (
     RouteNotFoundError,
     RouteOwnershipError,
@@ -233,4 +234,13 @@ def get_current_trip_for_passanger(
     x_user_id: Annotated[str, Header(alias="X-User-Id")],
     dependent_id: Annotated[UUID | None, Query()] = None,
 ) -> CurrentTripResponse | None:
-    pass
+    try:
+        return service.get_current_trip_for_passanger(
+            route_id,
+            UUID(x_user_id),
+            dependent_id=dependent_id,
+        )
+    except RouteNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except NotRoutePassangerError as exc:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc

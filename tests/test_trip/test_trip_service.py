@@ -685,7 +685,6 @@ def test_finish_trip_raises_when_wrong_owner() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US11-TK01")
 def test_get_current_trip_for_passanger_returns_response_when_trip_in_progress() -> None:
     """Passageiro com vínculo ativo e viagem em andamento recebe CurrentTripResponse."""
     from src.domains.trips.dtos import CurrentTripResponse
@@ -708,7 +707,6 @@ def test_get_current_trip_for_passanger_returns_response_when_trip_in_progress()
     assert result.started_at == trip.started_at
 
 
-@pytest.mark.skip(reason="US11-TK01")
 def test_get_current_trip_for_passanger_returns_none_when_no_trip() -> None:
     """Retorna None quando não há viagem em andamento na rota."""
     service, mocks = make_service()
@@ -724,7 +722,6 @@ def test_get_current_trip_for_passanger_returns_none_when_no_trip() -> None:
     assert result is None
 
 
-@pytest.mark.skip(reason="US11-TK01")
 def test_get_current_trip_for_passanger_route_not_found_raises() -> None:
     """RouteNotFoundError quando a rota não existe."""
     from src.domains.routes.errors import RouteNotFoundError
@@ -736,7 +733,6 @@ def test_get_current_trip_for_passanger_route_not_found_raises() -> None:
         service.get_current_trip_for_passanger(uuid.uuid4(), uuid.uuid4())
 
 
-@pytest.mark.skip(reason="US11-TK01")
 def test_get_current_trip_for_passanger_not_passanger_raises() -> None:
     """NotRoutePassangerError quando o usuário não tem vínculo ativo na rota."""
     from src.domains.route_passangers.errors import NotRoutePassangerError
@@ -750,7 +746,6 @@ def test_get_current_trip_for_passanger_not_passanger_raises() -> None:
         service.get_current_trip_for_passanger(route.id, uuid.uuid4())
 
 
-@pytest.mark.skip(reason="US11-TK01")
 def test_get_current_trip_for_passanger_pending_membership_allowed() -> None:
     """Passageiro com status pending também pode consultar a viagem."""
     from src.domains.trips.dtos import CurrentTripResponse
@@ -769,7 +764,6 @@ def test_get_current_trip_for_passanger_pending_membership_allowed() -> None:
     assert isinstance(result, CurrentTripResponse)
 
 
-@pytest.mark.skip(reason="US11-TK01")
 def test_get_current_trip_for_passanger_forwards_dependent_id() -> None:
     """dependent_id é repassado para find_active_by_user_and_route ao buscar guardian."""
     service, mocks = make_service()
