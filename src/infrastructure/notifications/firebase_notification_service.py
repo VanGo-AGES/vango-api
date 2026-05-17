@@ -223,10 +223,33 @@ class FirebaseNotificationService(INotificationService):
             pass
 
     def notify_driver_passanger_absence_reported(self, rp: Any) -> None:
-        pass
+        try:
+            push_token = rp.route.driver.push_token
+            if push_token:
+                message = messaging.Message(
+                    notification=messaging.Notification(title="Ausência reportada", body="Um passageiro avisou ausência nesta data."),
+                    token=push_token,
+                )
+                messaging.send(message)
+        except (AttributeError, TypeError):
+            pass
 
     def notify_passanger_driver_approaching(self, user_id: str, route_id: str) -> None:
-        pass
+        try:
+            message = messaging.Message(
+                notification=messaging.Notification(title="Motorista chegando", body="Seu motorista está próximo da sua parada!"),
+                topic=f"user_{user_id}",
+            )
+            messaging.send(message)
+        except Exception:
+            pass
 
     def notify_passanger_driver_arrived(self, user_id: str, route_id: str) -> None:
-        pass
+        try:
+            message = messaging.Message(
+                notification=messaging.Notification(title="Motorista chegou", body="Seu motorista chegou à sua parada!"),
+                topic=f"user_{user_id}",
+            )
+            messaging.send(message)
+        except Exception:
+            pass
