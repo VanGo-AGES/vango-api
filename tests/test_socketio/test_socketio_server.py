@@ -996,7 +996,7 @@ async def test_proximity_notification_sets_flag_after_sending():
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US12-TK07")
+
 @pytest.mark.asyncio
 async def test_arrival_notification_sent_when_below_threshold():
     """_notify_arrival_if_needed deve chamar notify_passanger_driver_arrived quando distance_km < ARRIVAL_THRESHOLD_KM."""
@@ -1027,7 +1027,7 @@ async def test_arrival_notification_sent_when_below_threshold():
     sid_meta.pop(follower_sid, None)
 
 
-@pytest.mark.skip(reason="US12-TK07")
+
 @pytest.mark.asyncio
 async def test_arrival_notification_not_sent_when_above_threshold():
     """_notify_arrival_if_needed não deve notificar quando distance_km >= ARRIVAL_THRESHOLD_KM."""
@@ -1058,7 +1058,7 @@ async def test_arrival_notification_not_sent_when_above_threshold():
     sid_meta.pop(follower_sid, None)
 
 
-@pytest.mark.skip(reason="US12-TK07")
+
 @pytest.mark.asyncio
 async def test_arrival_notification_sent_only_once_per_session():
     """_notify_arrival_if_needed não deve reenviar o push se arrived_notified já for True."""
@@ -1089,7 +1089,7 @@ async def test_arrival_notification_sent_only_once_per_session():
     sid_meta.pop(follower_sid, None)
 
 
-@pytest.mark.skip(reason="US12-TK07")
+
 @pytest.mark.asyncio
 async def test_arrival_notification_sets_flag_after_sending():
     """_notify_arrival_if_needed deve setar arrived_notified=True após enviar o push."""
@@ -1120,7 +1120,7 @@ async def test_arrival_notification_sets_flag_after_sending():
     sid_meta.pop(follower_sid, None)
 
 
-@pytest.mark.skip(reason="US12-TK07")
+
 @pytest.mark.asyncio
 async def test_arrival_threshold_smaller_than_proximity_threshold():
     """ARRIVAL_THRESHOLD_KM deve ser menor que PROXIMITY_THRESHOLD_KM."""

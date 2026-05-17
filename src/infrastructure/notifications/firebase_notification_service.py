@@ -6,12 +6,15 @@ US12-TK04: envio real de mensagens FCM.
 
 import logging
 from typing import Any
+from uuid import UUID
 
 import firebase_admin
 from firebase_admin import credentials, messaging
 
 from src.config import settings
 from src.domains.notifications.service import INotificationService
+from src.infrastructure.database import SessionLocal
+from src.infrastructure.repositories.user_repository import UserRepositoryImpl
 
 logger = logging.getLogger(__name__)
 
@@ -220,4 +223,28 @@ class FirebaseNotificationService(INotificationService):
         pass
 
     def notify_passanger_driver_arrived(self, user_id: str, route_id: str) -> None:
-        pass
+        try:
+            db = SessionLocal()
+
+            try:
+                user_repo = UserRepositoryImpl(db)
+                user = user_repo.find_by_id(UUID(user_id))
+
+                if not user or not user.push_token:
+                    return
+
+                message = messaging.Message(
+                    notification=messaging.Notification(
+                        title="Motorista chegou",
+                        body="Seu motorista chegou à sua parada!",
+                    ),
+                    token=user.push_token,
+                )
+
+                messaging.send(message)
+
+            finally:
+                db.close()
+
+        except (AttributeError, TypeError, ValueError):
+            pass
