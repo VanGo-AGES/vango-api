@@ -117,7 +117,7 @@ async def test_connect_tracker_not_route_driver_disconnects():
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US10-TK03")
+
 @pytest.mark.asyncio
 async def test_join_session_tracker_creates_session():
     """join_session tracker deve criar entrada em tracking_sessions."""
@@ -138,7 +138,7 @@ async def test_join_session_tracker_creates_session():
     sid_meta.pop(sid, None)
 
 
-@pytest.mark.skip(reason="US10-TK03")
+
 @pytest.mark.asyncio
 async def test_join_session_tracker_emits_session_joined():
     """join_session tracker deve emitir session_joined com follower_count."""

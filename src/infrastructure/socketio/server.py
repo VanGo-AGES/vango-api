@@ -75,8 +75,37 @@ async def disconnect(sid: str) -> None:  # type: ignore[empty-body]
 
 # US10-TK03 / US11-TK02 / US11-TK03
 @sio.event
-async def join_session(sid: str, data: dict) -> None:  # type: ignore[empty-body]
-    pass
+async def join_session(sid: str, data: dict) -> None:
+    meta = sid_meta.get(sid)
+    if not meta:
+        return
+
+    trip_id = meta.get("trip_id")
+    role = meta.get("role")
+
+    if not trip_id:
+        return
+
+    if role == "tracker":
+        if trip_id not in tracking_sessions:
+            tracking_sessions[trip_id] = {
+                "tracker_sid": None,
+                "followers": [],
+                "last_location": None,
+            }
+
+        tracking_sessions[trip_id]["tracker_sid"] = sid
+
+        await sio.enter_room(sid, f"trip:{trip_id}")
+
+        await sio.emit(
+            "session_joined",
+            {
+                "role": "tracker",
+                "follower_count": len(tracking_sessions[trip_id]["followers"]),
+            },
+            to=sid,
+        )
 
 
 # US10-TK04 / US10-TK08 / US10-TK17 / US12-TK06 / US12-TK07
