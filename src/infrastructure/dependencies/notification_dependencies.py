@@ -1,13 +1,13 @@
 """US06-TK07 — DI para INotificationService."""
 
-from src.domains.notifications.service import INotificationService, LoggingNotificationService
+from src.domains.notifications.service import INotificationService
 from src.infrastructure.notifications.firebase_notification_service import (
     FirebaseNotificationService,
 )
 
 
 def get_notification_service() -> INotificationService:
-    return LoggingNotificationService()
+    return FirebaseNotificationService()
 
 
 # US12-TK03 — factory para FirebaseNotificationService (wiring completo em TK05)

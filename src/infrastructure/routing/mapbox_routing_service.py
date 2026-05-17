@@ -1,11 +1,13 @@
-"""US10-TK06/TK07 — MapboxRoutingService (stub).
+"""US10-TK06/TK07 — MapboxRoutingService.
 US10-TK18 — MapboxGeocodingService (stub).
 
-Implementações concretas usando a Mapbox API:
+Implementação concreta usando a Mapbox API:
 - MapboxRoutingService.optimize_stop_order → Mapbox Optimization API v1
 - MapboxRoutingService.get_route_info      → Mapbox Directions API
 - MapboxGeocodingService.geocode_address   → Mapbox Geocoding API v5/v6
 """
+
+import requests
 
 from src.domains.routing.dtos import GeocodeResult, RouteInfoResult
 from src.domains.routing.service import IGeocodingService, IRoutingService
@@ -20,8 +22,27 @@ class MapboxRoutingService(IRoutingService):
 
     # US10-TK07
     def optimize_stop_order(self, stop_coordinates: list[dict]) -> list[int]:
-        """Chama Mapbox Optimization API v1 e retorna a ordem otimizada."""
-        pass  # type: ignore[return-value]
+        """Chama Mapbox Optimization API v1 e retorna a ordem otimizada.
+
+        Args:
+            stop_coordinates: lista de dicts com 'lng' e 'lat'
+
+        Returns:
+            lista de índices originais na nova sequência otimizada
+        """
+        coords = ";".join(f"{stop['lng']},{stop['lat']}" for stop in stop_coordinates)
+
+        url = f"https://api.mapbox.com/optimized-trips/v1/mapbox/driving/{coords}"
+        params = {"access_token": self.api_key}
+
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        data = response.json()
+
+        waypoints = data.get("waypoints", [])
+        optimized_order = [wp["waypoint_index"] for wp in waypoints]
+
+        return optimized_order
 
     # US10-TK07
     def get_route_info(
@@ -30,8 +51,37 @@ class MapboxRoutingService(IRoutingService):
         waypoints: list[dict],
         destination: dict,
     ) -> RouteInfoResult:
-        """Chama Mapbox Directions API e retorna distância e duração."""
-        pass  # type: ignore[return-value]
+        """Chama Mapbox Directions API e retorna distância e duração.
+
+        Args:
+            origin: dict com 'lng' e 'lat'
+            waypoints: lista de dicts com 'lng' e 'lat'
+            destination: dict com 'lng' e 'lat'
+
+        Returns:
+            RouteInfoResult com total_distance_km e estimated_duration_min
+        """
+        coordinates = [origin] + waypoints + [destination]
+        coords = ";".join(f"{coord['lng']},{coord['lat']}" for coord in coordinates)
+
+        url = f"https://api.mapbox.com/directions/v5/mapbox/driving/{coords}"
+        params = {"access_token": self.api_key}
+
+        response = requests.get(url, params=params)
+        response.raise_for_status()
+        data = response.json()
+
+        route = data.get("routes", [{}])[0]
+        distance_m = route.get("distance", 0)
+        duration_s = route.get("duration", 0)
+
+        total_distance_km = distance_m / 1000
+        estimated_duration_min = int(duration_s / 60)
+
+        return RouteInfoResult(
+            total_distance_km=total_distance_km,
+            estimated_duration_min=estimated_duration_min,
+        )
 
 
 # US10-TK18
