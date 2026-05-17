@@ -794,7 +794,7 @@ def test_get_current_trip_for_passanger_forwards_dependent_id() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US12-TK05")
+
 def test_board_passanger_calls_notify_passanger_boarded():
     """board_passanger deve chamar notification_service.notify_passanger_boarded."""
     service, mocks = make_service()
@@ -829,6 +829,7 @@ def test_board_passanger_calls_notify_passanger_boarded():
     updated_tp.boarded_at = datetime.now(timezone.utc)
     updated_tp.alighted_at = None
     updated_tp.route_passanger = tp.route_passanger
+    updated_tp.route_passanger_id = uuid.uuid4()
 
     mocks["trip_repo"].find_by_id.return_value = trip
     mocks["tp_repo"].find_by_id.return_value = tp
@@ -839,7 +840,7 @@ def test_board_passanger_calls_notify_passanger_boarded():
     mocks["notification"].notify_passanger_boarded.assert_called_once_with(updated_tp)
 
 
-@pytest.mark.skip(reason="US12-TK05")
+
 def test_mark_passanger_absent_calls_notify_passanger_absent():
     """mark_passanger_absent deve chamar notification_service.notify_passanger_absent."""
     service, mocks = make_service()
@@ -874,6 +875,7 @@ def test_mark_passanger_absent_calls_notify_passanger_absent():
     updated_tp.boarded_at = None
     updated_tp.alighted_at = None
     updated_tp.route_passanger = tp.route_passanger
+    updated_tp.route_passanger_id = uuid.uuid4()
 
     mocks["trip_repo"].find_by_id.return_value = trip
     mocks["tp_repo"].find_by_id.return_value = tp
@@ -884,7 +886,7 @@ def test_mark_passanger_absent_calls_notify_passanger_absent():
     mocks["notification"].notify_passanger_absent.assert_called_once_with(updated_tp)
 
 
-@pytest.mark.skip(reason="US12-TK05")
+
 def test_notification_service_interface_has_passanger_boarded():
     """INotificationService deve expor notify_passanger_boarded."""
     from src.domains.notifications.service import INotificationService
@@ -892,7 +894,7 @@ def test_notification_service_interface_has_passanger_boarded():
     assert hasattr(INotificationService, "notify_passanger_boarded")
 
 
-@pytest.mark.skip(reason="US12-TK05")
+
 def test_notification_service_interface_has_passanger_absent():
     """INotificationService deve expor notify_passanger_absent."""
     from src.domains.notifications.service import INotificationService

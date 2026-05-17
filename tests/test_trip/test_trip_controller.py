@@ -680,7 +680,6 @@ def _driver_headers(driver_id) -> dict:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US00-TK01")
 def test_integration_start_trip_success(integration_client, db_session) -> None:
     driver = make_driver(db_session)
     vehicle = make_vehicle(db_session, driver.id)
@@ -700,7 +699,6 @@ def test_integration_start_trip_success(integration_client, db_session) -> None:
     assert response.json()["status"] == "iniciada"
 
 
-@pytest.mark.skip(reason="US00-TK01")
 def test_integration_start_trip_persists_trip_passangers(integration_client, db_session) -> None:
     """Ao iniciar, trip_passangers deve ser pré-preenchido a partir dos rp aceitos."""
     from src.domains.trips.entity import TripPassangerModel
@@ -733,7 +731,6 @@ def test_integration_start_trip_persists_trip_passangers(integration_client, db_
     assert len(tps) == 2
 
 
-@pytest.mark.skip(reason="US00-TK01")
 def test_integration_start_trip_already_in_progress_returns_409(
     integration_client, db_session
 ) -> None:
@@ -755,7 +752,6 @@ def test_integration_start_trip_already_in_progress_returns_409(
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US00-TK01")
 def test_integration_start_trip_no_passangers_returns_409(integration_client, db_session) -> None:
     driver = make_driver(db_session)
     vehicle = make_vehicle(db_session, driver.id)
@@ -770,7 +766,6 @@ def test_integration_start_trip_no_passangers_returns_409(integration_client, db
     assert response.status_code == 409
 
 
-@pytest.mark.skip(reason="US00-TK01")
 def test_integration_start_trip_wrong_owner_returns_403(integration_client, db_session) -> None:
     driver = make_driver(db_session)
     vehicle = make_vehicle(db_session, driver.id)
@@ -786,7 +781,6 @@ def test_integration_start_trip_wrong_owner_returns_403(integration_client, db_s
     assert response.status_code == 403
 
 
-@pytest.mark.skip(reason="US00-TK01")
 def test_integration_start_trip_vehicle_not_owned_returns_403(
     integration_client, db_session
 ) -> None:
