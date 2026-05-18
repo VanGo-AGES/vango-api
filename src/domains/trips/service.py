@@ -18,7 +18,9 @@ from datetime import UTC, datetime
 from uuid import UUID
 
 from src.domains.notifications.service import INotificationService
+from src.domains.route_passangers.errors import NotRoutePassangerError
 from src.domains.route_passangers.repository import IRoutePassangerRepository
+from src.domains.routes.errors import RouteNotFoundError
 from src.domains.routes.repository import IRouteRepository
 from src.domains.stops.repository import IStopRepository
 from src.domains.trips.dtos import (
@@ -420,4 +422,23 @@ class TripService:
         - Não valida ownership do motorista — qualquer passageiro da rota pode
           consultar.
         """
-        pass
+        # Valida que a rota existe
+        route = self.route_repository.find_by_id(route_id)
+        if route is None:
+            raise RouteNotFoundError(f"Rota {route_id} não encontrada.")
+
+        # Valida que o usuário/dependente tem vínculo ativo na rota
+        active_link = self.route_passanger_repository.find_active_by_user_and_route(user_id, dependent_id, route_id)
+        if active_link is None:
+            raise NotRoutePassangerError("Usuário não possui vínculo ativo nesta rota.")
+
+        # Busca viagem em andamento
+        trip = self.trip_repository.find_in_progress_by_route(route_id)
+        if trip is None:
+            return None
+
+        return CurrentTripResponse(
+            trip_id=trip.id,
+            status=trip.status,
+            started_at=trip.started_at,
+        )

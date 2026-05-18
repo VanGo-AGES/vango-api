@@ -78,7 +78,7 @@ def test_asgi_app_mountable():
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US10-TK02")
+
 @pytest.mark.asyncio
 async def test_connect_tracker_invalid_user_disconnects():
     """connect com X-User-Id inválido (usuário não existe) deve emitir error e desconectar."""
@@ -95,7 +95,7 @@ async def test_connect_tracker_invalid_user_disconnects():
         mock_disc.assert_called_once_with(sid)
 
 
-@pytest.mark.skip(reason="US10-TK02")
+
 @pytest.mark.asyncio
 async def test_connect_tracker_not_route_driver_disconnects():
     """connect com tracker que não é o motorista da trip deve desconectar."""
@@ -117,7 +117,7 @@ async def test_connect_tracker_not_route_driver_disconnects():
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US10-TK03")
+
 @pytest.mark.asyncio
 async def test_join_session_tracker_creates_session():
     """join_session tracker deve criar entrada em tracking_sessions."""
@@ -138,7 +138,7 @@ async def test_join_session_tracker_creates_session():
     sid_meta.pop(sid, None)
 
 
-@pytest.mark.skip(reason="US10-TK03")
+
 @pytest.mark.asyncio
 async def test_join_session_tracker_emits_session_joined():
     """join_session tracker deve emitir session_joined com follower_count."""
@@ -234,7 +234,7 @@ async def test_location_update_non_tracker_ignored():
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US10-TK05")
+
 @pytest.mark.asyncio
 async def test_disconnect_tracker_emits_tracker_disconnected():
     """disconnect do tracker deve emitir tracker_disconnected para followers."""
@@ -254,7 +254,7 @@ async def test_disconnect_tracker_emits_tracker_disconnected():
     tracking_sessions.pop(trip_id, None)
 
 
-@pytest.mark.skip(reason="US10-TK05")
+
 @pytest.mark.asyncio
 async def test_disconnect_tracker_clears_tracker_sid():
     """disconnect do tracker deve setar tracker_sid para None na sessão."""
@@ -272,7 +272,7 @@ async def test_disconnect_tracker_clears_tracker_sid():
     tracking_sessions.pop(trip_id, None)
 
 
-@pytest.mark.skip(reason="US10-TK05")
+
 @pytest.mark.asyncio
 async def test_disconnect_removes_empty_session():
     """disconnect com sessão sem tracker e sem followers deve remover da memória."""
@@ -294,7 +294,6 @@ async def test_disconnect_removes_empty_session():
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US11-TK02")
 @pytest.mark.asyncio
 async def test_connect_follower_without_active_membership_disconnects():
     """connect com role follower sem vínculo ativo deve desconectar."""
@@ -311,7 +310,6 @@ async def test_connect_follower_without_active_membership_disconnects():
         mock_disc.assert_called_once_with(sid)
 
 
-@pytest.mark.skip(reason="US11-TK02")
 @pytest.mark.asyncio
 async def test_connect_follower_with_active_membership_allowed():
     """connect com role follower com vínculo ativo (accepted/pending) não deve desconectar."""
@@ -329,12 +327,60 @@ async def test_connect_follower_with_active_membership_allowed():
         mock_disc.assert_not_called()
 
 
+def test_validate_follower_accepts_pending_or_accepted_statuses():
+    """_validate_follower deve aceitar vínculos pending e accepted na rota da trip."""
+    from src.infrastructure.socketio.server import _validate_follower
+
+    trip_id = _make_trip_id()
+    user_id = _make_user_id()
+    route_id = uuid.uuid4()
+
+    class FakeTrip:
+        def __init__(self, route_id):
+            self.route_id = route_id
+
+    pending_rp = MagicMock(status="pending")
+    accepted_rp = MagicMock(status="accepted")
+
+    with patch("src.infrastructure.socketio.server.SessionLocal") as mock_session_local, \
+         patch("src.infrastructure.socketio.server.TripRepositoryImpl") as mock_trip_repo_cls, \
+         patch("src.infrastructure.socketio.server.RoutePassangerRepositoryImpl") as mock_rp_repo_cls:
+        session = MagicMock()
+        mock_session_local.return_value = session
+        mock_trip_repo_cls.return_value.find_by_id.return_value = FakeTrip(route_id)
+        mock_rp_repo_cls.return_value.find_by_user_and_route_id.return_value = [pending_rp, accepted_rp]
+
+        assert _validate_follower(user_id, trip_id) is True
+
+
+def test_validate_follower_returns_false_without_link():
+    """_validate_follower deve retornar False quando não houver vínculo."""
+    from src.infrastructure.socketio.server import _validate_follower
+
+    trip_id = _make_trip_id()
+    user_id = _make_user_id()
+    route_id = uuid.uuid4()
+
+    class FakeTrip:
+        def __init__(self, route_id):
+            self.route_id = route_id
+
+    with patch("src.infrastructure.socketio.server.SessionLocal") as mock_session_local, \
+         patch("src.infrastructure.socketio.server.TripRepositoryImpl") as mock_trip_repo_cls, \
+         patch("src.infrastructure.socketio.server.RoutePassangerRepositoryImpl") as mock_rp_repo_cls:
+        session = MagicMock()
+        mock_session_local.return_value = session
+        mock_trip_repo_cls.return_value.find_by_id.return_value = FakeTrip(route_id)
+        mock_rp_repo_cls.return_value.find_by_user_and_route_id.return_value = []
+
+        assert _validate_follower(user_id, trip_id) is False
+
+
 # ===========================================================================
 # US11-TK03 — join_session (follower) + session_joined com last_location
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US11-TK03")
 @pytest.mark.asyncio
 async def test_join_session_follower_registered_in_followers():
     """join_session follower deve adicionar o sid à lista de followers da sessão."""
@@ -357,7 +403,6 @@ async def test_join_session_follower_registered_in_followers():
     sid_meta.pop(follower_sid, None)
 
 
-@pytest.mark.skip(reason="US11-TK03")
 @pytest.mark.asyncio
 async def test_join_session_follower_receives_last_location():
     """join_session follower deve incluir last_location no session_joined se disponível."""
@@ -382,7 +427,6 @@ async def test_join_session_follower_receives_last_location():
     sid_meta.pop(follower_sid, None)
 
 
-@pytest.mark.skip(reason="US11-TK03")
 @pytest.mark.asyncio
 async def test_join_session_follower_tracker_online_true_when_connected():
     """session_joined para follower deve indicar tracker_online=True quando tracker está conectado."""

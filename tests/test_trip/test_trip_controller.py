@@ -1161,7 +1161,6 @@ def make_current_trip_response():
 PASSANGER_HEADERS = {"X-User-Id": str(uuid.uuid4()), "X-User-Role": "guardian"}
 
 
-@pytest.mark.skip(reason="US11-TK01")
 def test_get_current_trip_for_passanger_success_returns_200() -> None:
     """200 com CurrentTripResponse quando viagem em andamento existe."""
     mock_service = Mock(spec=TripService)
@@ -1179,7 +1178,6 @@ def test_get_current_trip_for_passanger_success_returns_200() -> None:
     assert "trip_id" in response.json()
 
 
-@pytest.mark.skip(reason="US11-TK01")
 def test_get_current_trip_for_passanger_no_trip_returns_200_null() -> None:
     """200 com null quando não há viagem em andamento."""
     mock_service = Mock(spec=TripService)
@@ -1196,7 +1194,6 @@ def test_get_current_trip_for_passanger_no_trip_returns_200_null() -> None:
     assert response.json() is None
 
 
-@pytest.mark.skip(reason="US11-TK01")
 def test_get_current_trip_for_passanger_route_not_found_returns_404() -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
@@ -1213,7 +1210,6 @@ def test_get_current_trip_for_passanger_route_not_found_returns_404() -> None:
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US11-TK01")
 def test_get_current_trip_for_passanger_not_passanger_returns_403() -> None:
     from src.domains.route_passangers.errors import NotRoutePassangerError
 
@@ -1230,7 +1226,6 @@ def test_get_current_trip_for_passanger_not_passanger_returns_403() -> None:
     assert response.status_code == 403
 
 
-@pytest.mark.skip(reason="US11-TK01")
 def test_get_current_trip_for_passanger_dependent_id_forwarded() -> None:
     """Query param dependent_id deve ser repassado ao service."""
     mock_service = Mock(spec=TripService)
@@ -1255,7 +1250,6 @@ def test_get_current_trip_for_passanger_dependent_id_forwarded() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US11-TK01")
 def test_integration_get_current_trip_for_passanger_success(
     integration_client, db_session
 ) -> None:
@@ -1278,7 +1272,6 @@ def test_integration_get_current_trip_for_passanger_success(
     assert body["status"] == "iniciada"
 
 
-@pytest.mark.skip(reason="US11-TK01")
 def test_integration_get_current_trip_no_trip_returns_null(
     integration_client, db_session
 ) -> None:
@@ -1297,7 +1290,6 @@ def test_integration_get_current_trip_no_trip_returns_null(
     assert response.json() is None
 
 
-@pytest.mark.skip(reason="US11-TK01")
 def test_integration_get_current_trip_route_not_found_returns_404(
     integration_client, db_session
 ) -> None:
@@ -1311,7 +1303,6 @@ def test_integration_get_current_trip_route_not_found_returns_404(
     assert response.status_code == 404
 
 
-@pytest.mark.skip(reason="US11-TK01")
 def test_integration_get_current_trip_not_passanger_returns_403(
     integration_client, db_session
 ) -> None:
@@ -1328,7 +1319,6 @@ def test_integration_get_current_trip_not_passanger_returns_403(
     assert response.status_code == 403
 
 
-@pytest.mark.skip(reason="US11-TK01")
 def test_integration_get_current_trip_pending_passanger_allowed(
     integration_client, db_session
 ) -> None:

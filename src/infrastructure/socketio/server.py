@@ -13,7 +13,13 @@ Montagem em main.py (US10-TK01):
   app = socketio.ASGIApp(sio, fastapi_app)
 """
 
+import uuid
+from urllib.parse import parse_qs
+
 import socketio
+from src.infrastructure.database import SessionLocal
+from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
+from src.infrastructure.repositories.trip_repository import TripRepositoryImpl
 
 # ---------------------------------------------------------------------------
 # Socket.IO server
@@ -72,19 +78,131 @@ def _get_notification_service() -> object:
 # US10-TK02
 @sio.event
 async def connect(sid: str, environ: dict, auth: dict | None = None) -> None:  # type: ignore[empty-body]
-    pass
+    # Extrair query string
+    qs = environ.get("QUERY_STRING", "")
+    params = parse_qs(qs)
+
+    user_id = params.get("user_id", [None])[0]
+    trip_id = params.get("trip_id", [None])[0]
+    role = params.get("role", [None])[0]
+
+    # Validação básica
+    if not user_id or not trip_id or not role:
+        await sio.emit("error", {"message": "missing_credentials"}, to=sid)
+        await sio.disconnect(sid)
+        return
+
+    # Se for tracker, validar que user é o motorista dono da rota da trip
+    if role == "tracker":
+        valid = _validate_tracker(user_id, trip_id)
+        if not valid:
+            await sio.emit("error", {"message": "unauthorized"}, to=sid)
+            await sio.disconnect(sid)
+            return
+
+    if role == "follower":
+        valid = _validate_follower(user_id, trip_id)
+        if not valid:
+            await sio.emit("error", {"message": "session_not_found"}, to=sid)
+            await sio.disconnect(sid)
+            return
+
+    # Popular metadata do sid
+    sid_meta[sid] = {
+        "trip_id": trip_id,
+        "role": role,
+        "user_id": user_id,
+        # campos adicionais populados por join_session quando aplicável
+        "stop_lat": None,
+        "stop_lng": None,
+        "route_id": None,
+        "proximity_notified": False,
+        "arrived_notified": False,
+    }
 
 
 # US10-TK05
 @sio.event
 async def disconnect(sid: str) -> None:  # type: ignore[empty-body]
-    pass
+    if sid not in sid_meta:
+        return
+
+    meta = sid_meta.pop(sid)
+    trip_id = meta.get("trip_id")
+    role = meta.get("role")
+
+    if not trip_id or trip_id not in tracking_sessions:
+        return
+
+    session = tracking_sessions[trip_id]
+
+    if role == "tracker":
+        session["tracker_sid"] = None
+        await sio.emit("tracker_disconnected", {"trip_id": trip_id}, room=f"trip:{trip_id}")
+
+    if role == "follower":
+        followers = session.get("followers", [])
+        if sid in followers:
+            followers.remove(sid)
+
+    if not session.get("tracker_sid") and not session.get("followers"):
+        tracking_sessions.pop(trip_id, None)
 
 
 # US10-TK03 / US11-TK02 / US11-TK03
 @sio.event
-async def join_session(sid: str, data: dict) -> None:  # type: ignore[empty-body]
-    pass
+async def join_session(sid: str, data: dict) -> None:
+    meta = sid_meta.get(sid)
+    if not meta:
+        return
+
+    trip_id = meta.get("trip_id")
+    role = meta.get("role")
+
+    if not trip_id:
+        return
+
+    if role == "tracker":
+        if trip_id not in tracking_sessions:
+            tracking_sessions[trip_id] = {
+                "tracker_sid": None,
+                "followers": [],
+                "last_location": None,
+            }
+
+        tracking_sessions[trip_id]["tracker_sid"] = sid
+
+        await sio.enter_room(sid, f"trip:{trip_id}")
+
+        await sio.emit(
+            "session_joined",
+            {
+                "role": "tracker",
+                "follower_count": len(tracking_sessions[trip_id]["followers"]),
+            },
+            to=sid,
+        )
+
+    if role == "follower":
+        if trip_id not in tracking_sessions:
+            tracking_sessions[trip_id] = {
+                "tracker_sid": None,
+                "followers": [],
+                "last_location": None,
+            }
+
+        tracking_sessions[trip_id]["followers"].append(sid)
+
+        await sio.enter_room(sid, f"trip:{trip_id}")
+
+        await sio.emit(
+            "session_joined",
+            {
+                "last_location": tracking_sessions[trip_id]["last_location"],
+                "tracker_online": bool(tracking_sessions[trip_id]["tracker_sid"]),
+            },
+            to=sid,
+        )
 
 
 # US10-TK04 / US10-TK08 / US10-TK17 / US12-TK06 / US12-TK07
@@ -286,3 +404,54 @@ async def _calculate_eta_for_tracker(
       routing service indisponível, ou trip não encontrada.
     """
     pass  # type: ignore[return-value]
+
+
+def _validate_tracker(user_id: str, trip_id: str) -> bool:
+    """Abre sessão de DB e verifica que a trip existe e que user_id é o driver."""
+    try:
+        trip_uuid = uuid.UUID(trip_id)
+    except Exception:
+        return False
+
+    session = SessionLocal()
+    try:
+        repo = TripRepositoryImpl(session)
+        trip = repo.find_by_id(trip_uuid)
+        if trip is None:
+            return False
+
+        # trip.route.driver_id pode ser UUID; comparar como string
+        driver_id = getattr(trip.route, "driver_id", None)
+        if driver_id is None:
+            return False
+
+        return str(driver_id) == str(user_id)
+    except Exception:
+        return False
+    finally:
+        session.close()
+
+
+def _validate_follower(user_id: str, trip_id: str) -> bool:
+    """Abre sessão de DB e verifica vínculo pending/accepted do user na rota da trip."""
+    try:
+        trip_uuid = uuid.UUID(trip_id)
+        user_uuid = uuid.UUID(user_id)
+    except Exception:
+        return False
+
+    session = SessionLocal()
+    try:
+        trip_repo = TripRepositoryImpl(session)
+        rp_repo = RoutePassangerRepositoryImpl(session)
+
+        trip = trip_repo.find_by_id(trip_uuid)
+        if trip is None or getattr(trip, "route_id", None) is None:
+            return False
+
+        route_passangers = rp_repo.find_by_user_and_route_id(user_uuid, trip.route_id)
+        return any(rp.status in ("pending", "accepted") for rp in route_passangers)
+    except Exception:
+        return False
+    finally:
+        session.close()

@@ -249,7 +249,22 @@ class RoutePassangerService:
         Chamado por join_route logo após instanciar o pickup AddressModel
         e antes do address_repository.save.
         """
-        pass
+        if self.geocoding_service is None:
+            return
+
+        result = self.geocoding_service.geocode_address(
+            street=address.street,
+            number=address.number,
+            neighborhood=address.neighborhood,
+            zip_code=address.zip,
+            city=address.city,
+            state=address.state,
+        )
+        if result is None:
+            return
+
+        address.latitude = result.latitude
+        address.longitude = result.longitude
 
     # Helper interno (sem @abstractmethod — não está na interface)
     def _to_response(self, rp: RoutePassangerModel) -> RoutePassangerResponse:
@@ -335,8 +350,7 @@ class RoutePassangerService:
             city=data.address.city,
             state=data.address.state,
         )
-        # US10-TK18: chamar self._geocode_address(pickup_address) para popular
-        # latitude/longitude antes do save.
+        self._geocode_address(pickup_address)
         saved_address = self.address_repository.save(pickup_address)
 
         rp = RoutePassangerModel(
@@ -471,6 +485,10 @@ class RoutePassangerService:
             destination_address = route_data.get("destination_address") or route_data.get("destination")
             origin_label = getattr(origin_address, "label", "")
             destination_label = getattr(destination_address, "label", "")
+            origin_latitude: float | None = getattr(origin_address, "latitude", None)
+            origin_longitude: float | None = getattr(origin_address, "longitude", None)
+            destination_latitude: float | None = getattr(destination_address, "latitude", None)
+            destination_longitude: float | None = getattr(destination_address, "longitude", None)
 
             dependent_name: str | None = None
             if rp.dependent_id is not None:
@@ -497,6 +515,10 @@ class RoutePassangerService:
                     driver_phone=driver.phone,
                     origin_label=origin_label,
                     destination_label=destination_label,
+                    origin_latitude=origin_latitude,
+                    origin_longitude=origin_longitude,
+                    destination_latitude=destination_latitude,
+                    destination_longitude=destination_longitude,
                     expected_time=route.expected_time,
                     recurrence=recurrence_list,
                     status=route.status,

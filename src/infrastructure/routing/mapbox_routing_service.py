@@ -7,6 +7,8 @@ Implementação concreta usando a Mapbox API:
 - MapboxGeocodingService.geocode_address   → Mapbox Geocoding API v5/v6
 """
 
+from urllib.parse import quote
+
 import requests
 
 from src.domains.routing.dtos import GeocodeResult, RouteInfoResult
@@ -106,6 +108,8 @@ class MapboxGeocodingService(IGeocodingService):
     def __init__(self, api_key: str) -> None:
         self.api_key = api_key
 
+    _MIN_RELEVANCE = 0.5
+
     # US10-TK18
     def geocode_address(
         self,
@@ -117,4 +121,42 @@ class MapboxGeocodingService(IGeocodingService):
         state: str,
     ) -> GeocodeResult | None:
         """Chama Mapbox Geocoding API e retorna lat/lng do endereço."""
-        pass  # type: ignore[return-value]
+        if not self.api_key:
+            return None
+
+        query_parts = [
+            f"{number} {street}".strip(),
+            neighborhood,
+            city,
+            state,
+            zip_code,
+            "Brazil",
+        ]
+        query = ", ".join(part for part in query_parts if part)
+
+        url = f"https://api.mapbox.com/geocoding/v5/mapbox.places/{quote(query, safe='')}.json"
+        params = {
+            "access_token": self.api_key,
+            "country": "BR",
+            "limit": 1,
+        }
+
+        try:
+            response = requests.get(url, params=params, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            features = data.get("features", [])
+            if not features:
+                return None
+
+            feature = features[0]
+            if feature.get("relevance", 0) < self._MIN_RELEVANCE:
+                return None
+
+            center = feature.get("center")
+            if isinstance(center, list) and len(center) >= 2:
+                return GeocodeResult(latitude=center[1], longitude=center[0])
+
+            return None
+        except Exception:
+            return None

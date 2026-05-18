@@ -68,8 +68,7 @@ class RouteService:
             city=data.origin.city,
             state=data.origin.state,
         )
-        # US10-TK18: chamar self._geocode_address(origin) para popular
-        # origin.latitude/longitude antes do save.
+        self._geocode_address(origin)
         destination = AddressModel(
             user_id=driver_id,
             label=data.destination.label,
@@ -80,8 +79,7 @@ class RouteService:
             city=data.destination.city,
             state=data.destination.state,
         )
-        # US10-TK18: chamar self._geocode_address(destination) para popular
-        # destination.latitude/longitude antes do save.
+        self._geocode_address(destination)
 
         saved_origin = self.address_repository.save(origin)
         saved_destination = self.address_repository.save(destination)
@@ -148,8 +146,7 @@ class RouteService:
                 city=_origin_data["city"],
                 state=_origin_data["state"],
             )
-            # US10-TK18: chamar self._geocode_address(origin) para popular
-            # origin.latitude/longitude antes do save.
+            self._geocode_address(origin)
             saved_origin = self.address_repository.save(origin)
             update_data["origin_address_id"] = saved_origin.id
 
@@ -165,8 +162,7 @@ class RouteService:
                 city=_destination_data["city"],
                 state=_destination_data["state"],
             )
-            # US10-TK18: chamar self._geocode_address(destination) para popular
-            # destination.latitude/longitude antes do save.
+            self._geocode_address(destination)
             saved_destination = self.address_repository.save(destination)
             update_data["destination_address_id"] = saved_destination.id
 
@@ -314,4 +310,19 @@ class RouteService:
         Chamado por create_route e update_route logo após instanciar o
         AddressModel e antes do address_repository.save.
         """
-        pass
+        if self.geocoding_service is None:
+            return
+
+        result = self.geocoding_service.geocode_address(
+            street=address.street,
+            number=address.number,
+            neighborhood=address.neighborhood,
+            zip_code=address.zip,
+            city=address.city,
+            state=address.state,
+        )
+        if result is None:
+            return
+
+        address.latitude = result.latitude
+        address.longitude = result.longitude
