@@ -381,7 +381,6 @@ def test_validate_follower_returns_false_without_link():
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US11-TK03")
 @pytest.mark.asyncio
 async def test_join_session_follower_registered_in_followers():
     """join_session follower deve adicionar o sid à lista de followers da sessão."""
@@ -404,7 +403,6 @@ async def test_join_session_follower_registered_in_followers():
     sid_meta.pop(follower_sid, None)
 
 
-@pytest.mark.skip(reason="US11-TK03")
 @pytest.mark.asyncio
 async def test_join_session_follower_receives_last_location():
     """join_session follower deve incluir last_location no session_joined se disponível."""
@@ -429,7 +427,6 @@ async def test_join_session_follower_receives_last_location():
     sid_meta.pop(follower_sid, None)
 
 
-@pytest.mark.skip(reason="US11-TK03")
 @pytest.mark.asyncio
 async def test_join_session_follower_tracker_online_true_when_connected():
     """session_joined para follower deve indicar tracker_online=True quando tracker está conectado."""

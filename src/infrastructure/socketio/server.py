@@ -153,6 +153,27 @@ async def join_session(sid: str, data: dict) -> None:
             to=sid,
         )
 
+    if role == "follower":
+        if trip_id not in tracking_sessions:
+            tracking_sessions[trip_id] = {
+                "tracker_sid": None,
+                "followers": [],
+                "last_location": None,
+            }
+
+        tracking_sessions[trip_id]["followers"].append(sid)
+
+        await sio.enter_room(sid, f"trip:{trip_id}")
+
+        await sio.emit(
+            "session_joined",
+            {
+                "last_location": tracking_sessions[trip_id]["last_location"],
+                "tracker_online": bool(tracking_sessions[trip_id]["tracker_sid"]),
+            },
+            to=sid,
+        )
+
 
 # US10-TK04 / US10-TK08 / US10-TK17 / US12-TK06 / US12-TK07
 @sio.event
