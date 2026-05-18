@@ -79,10 +79,7 @@ class AbsenceService:
         if route is None:
             raise RouteNotFoundError()
 
-        if data.dependent_id is not None:
-            rp = self.route_passanger_repository.find_active_by_user_and_route(user_id, data.dependent_id, data.route_id)
-        else:
-            rp = self.route_passanger_repository.find_active_for_user_or_as_guardian(user_id, data.route_id)
+        rp = self.route_passanger_repository.find_active_by_user_and_route(user_id, data.dependent_id, data.route_id)
         if rp is None:
             raise NotRoutePassangerError()
 
