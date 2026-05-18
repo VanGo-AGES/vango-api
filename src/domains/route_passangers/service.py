@@ -237,7 +237,27 @@ class RoutePassangerService:
         cada stop de acordo com a nova ordem.
         Silenciosamente ignorado se routing_service for None.
         """
-        pass
+        if self.routing_service is None:
+            return
+
+        stops = self.stop_repository.find_by_route_id(route_id)
+        coordinates = []
+        optimizable_stops = []
+        for stop in stops:
+            address = getattr(stop, "address", None)
+            latitude = getattr(address, "latitude", None)
+            longitude = getattr(address, "longitude", None)
+            if latitude is None or longitude is None:
+                continue
+            coordinates.append({"id": stop.id, "lat": latitude, "lng": longitude})
+            optimizable_stops.append(stop)
+
+        optimized_order = self.routing_service.optimize_stop_order(coordinates)
+        for order_index, original_index in enumerate(optimized_order):
+            if 0 <= original_index < len(optimizable_stops):
+                stop = optimizable_stops[original_index]
+                stop.order_index = order_index
+                self.stop_repository.save(stop)
 
     # US10-TK18
     def _geocode_address(self, address: AddressModel) -> None:
