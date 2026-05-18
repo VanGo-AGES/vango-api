@@ -294,7 +294,6 @@ async def test_disconnect_removes_empty_session():
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US11-TK02")
 @pytest.mark.asyncio
 async def test_connect_follower_without_active_membership_disconnects():
     """connect com role follower sem vínculo ativo deve desconectar."""
@@ -311,7 +310,6 @@ async def test_connect_follower_without_active_membership_disconnects():
         mock_disc.assert_called_once_with(sid)
 
 
-@pytest.mark.skip(reason="US11-TK02")
 @pytest.mark.asyncio
 async def test_connect_follower_with_active_membership_allowed():
     """connect com role follower com vínculo ativo (accepted/pending) não deve desconectar."""
@@ -327,6 +325,55 @@ async def test_connect_follower_with_active_membership_allowed():
          patch("src.infrastructure.socketio.server._validate_tracker", return_value=True):
         await sio.handlers["/"]["connect"](sid, environ)
         mock_disc.assert_not_called()
+
+
+def test_validate_follower_accepts_pending_or_accepted_statuses():
+    """_validate_follower deve aceitar vínculos pending e accepted na rota da trip."""
+    from src.infrastructure.socketio.server import _validate_follower
+
+    trip_id = _make_trip_id()
+    user_id = _make_user_id()
+    route_id = uuid.uuid4()
+
+    class FakeTrip:
+        def __init__(self, route_id):
+            self.route_id = route_id
+
+    pending_rp = MagicMock(status="pending")
+    accepted_rp = MagicMock(status="accepted")
+
+    with patch("src.infrastructure.socketio.server.SessionLocal") as mock_session_local, \
+         patch("src.infrastructure.socketio.server.TripRepositoryImpl") as mock_trip_repo_cls, \
+         patch("src.infrastructure.socketio.server.RoutePassangerRepositoryImpl") as mock_rp_repo_cls:
+        session = MagicMock()
+        mock_session_local.return_value = session
+        mock_trip_repo_cls.return_value.find_by_id.return_value = FakeTrip(route_id)
+        mock_rp_repo_cls.return_value.find_by_user_and_route_id.return_value = [pending_rp, accepted_rp]
+
+        assert _validate_follower(user_id, trip_id) is True
+
+
+def test_validate_follower_returns_false_without_link():
+    """_validate_follower deve retornar False quando não houver vínculo."""
+    from src.infrastructure.socketio.server import _validate_follower
+
+    trip_id = _make_trip_id()
+    user_id = _make_user_id()
+    route_id = uuid.uuid4()
+
+    class FakeTrip:
+        def __init__(self, route_id):
+            self.route_id = route_id
+
+    with patch("src.infrastructure.socketio.server.SessionLocal") as mock_session_local, \
+         patch("src.infrastructure.socketio.server.TripRepositoryImpl") as mock_trip_repo_cls, \
+         patch("src.infrastructure.socketio.server.RoutePassangerRepositoryImpl") as mock_rp_repo_cls:
+        session = MagicMock()
+        mock_session_local.return_value = session
+        mock_trip_repo_cls.return_value.find_by_id.return_value = FakeTrip(route_id)
+        mock_rp_repo_cls.return_value.find_by_user_and_route_id.return_value = []
+
+        assert _validate_follower(user_id, trip_id) is False
 
 
 # ===========================================================================
