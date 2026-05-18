@@ -116,7 +116,29 @@ async def connect(sid: str, environ: dict, auth: dict | None = None) -> None:  #
 # US10-TK05
 @sio.event
 async def disconnect(sid: str) -> None:  # type: ignore[empty-body]
-    pass
+    if sid not in sid_meta:
+        return
+
+    meta = sid_meta.pop(sid)
+    trip_id = meta.get("trip_id")
+    role = meta.get("role")
+
+    if not trip_id or trip_id not in tracking_sessions:
+        return
+
+    session = tracking_sessions[trip_id]
+
+    if role == "tracker":
+        session["tracker_sid"] = None
+        await sio.emit("tracker_disconnected", {"trip_id": trip_id}, room=f"trip:{trip_id}")
+
+    if role == "follower":
+        followers = session.get("followers", [])
+        if sid in followers:
+            followers.remove(sid)
+
+    if not session.get("tracker_sid") and not session.get("followers"):
+        tracking_sessions.pop(trip_id, None)
 
 
 # US10-TK03 / US11-TK02 / US11-TK03
