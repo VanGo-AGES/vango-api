@@ -1178,7 +1178,7 @@ async def test_arrival_threshold_smaller_than_proximity_threshold():
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US10-TK17")
+
 @pytest.mark.asyncio
 async def test_location_update_emits_driver_eta_to_tracker():
     """location_update deve emitir 'driver_eta' diretamente para o tracker_sid."""
@@ -1216,7 +1216,7 @@ async def test_location_update_emits_driver_eta_to_tracker():
     sid_meta.pop(tracker_sid, None)
 
 
-@pytest.mark.skip(reason="US10-TK17")
+
 @pytest.mark.asyncio
 async def test_driver_eta_payload_contains_eta_and_distance_fields():
     """driver_eta payload deve conter eta_minutes e distance_km vindos do calculo."""
@@ -1247,7 +1247,7 @@ async def test_driver_eta_payload_contains_eta_and_distance_fields():
     sid_meta.pop(tracker_sid, None)
 
 
-@pytest.mark.skip(reason="US10-TK17")
+
 @pytest.mark.asyncio
 async def test_driver_eta_emitted_with_null_when_no_pending_stop():
     """Se _calculate_eta_for_tracker retornar None, emit ocorre com eta_minutes e
@@ -1279,7 +1279,7 @@ async def test_driver_eta_emitted_with_null_when_no_pending_stop():
     sid_meta.pop(tracker_sid, None)
 
 
-@pytest.mark.skip(reason="US10-TK17")
+
 @pytest.mark.asyncio
 async def test_driver_eta_failure_does_not_block_follower_broadcast():
     """Falha em _calculate_eta_for_tracker (exceção) não pode interromper o
@@ -1318,7 +1318,7 @@ async def test_driver_eta_failure_does_not_block_follower_broadcast():
     sid_meta.pop(follower_sid, None)
 
 
-@pytest.mark.skip(reason="US10-TK17")
+
 @pytest.mark.asyncio
 async def test_calculate_eta_for_tracker_returns_dict_when_pending_stop_exists():
     """_calculate_eta_for_tracker deve devolver dict com eta_minutes/distance_km
@@ -1355,7 +1355,7 @@ async def test_calculate_eta_for_tracker_returns_dict_when_pending_stop_exists()
     assert result.get("stop_id") == "stop-pending-001"
 
 
-@pytest.mark.skip(reason="US10-TK17")
+
 @pytest.mark.asyncio
 async def test_calculate_eta_for_tracker_returns_none_when_no_pending_stop():
     """Se não houver parada pendente (todos embarcados/ausentes), retorna None."""
@@ -1370,7 +1370,7 @@ async def test_calculate_eta_for_tracker_returns_none_when_no_pending_stop():
     assert result is None
 
 
-@pytest.mark.skip(reason="US10-TK17")
+
 @pytest.mark.asyncio
 async def test_calculate_eta_for_tracker_returns_none_when_address_missing_coordinates():
     """Se a próxima parada pendente tiver address.latitude/longitude None, retorna None."""
@@ -1389,7 +1389,7 @@ async def test_calculate_eta_for_tracker_returns_none_when_address_missing_coord
     assert result is None
 
 
-@pytest.mark.skip(reason="US10-TK17")
+
 @pytest.mark.asyncio
 async def test_calculate_eta_for_tracker_returns_none_when_routing_unavailable():
     """Se routing_service não estiver disponível (ou levantar exceção), retorna None."""

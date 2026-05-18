@@ -17,9 +17,18 @@ import uuid
 from urllib.parse import parse_qs
 
 import socketio
+from src.domains.notifications.service import LoggingNotificationService
+from src.domains.routing.service import IRoutingService
+from src.domains.trips.service import TripService
 from src.infrastructure.database import SessionLocal
+from src.infrastructure.dependencies.routing_dependencies import get_routing_service
+from src.infrastructure.repositories.absence_repository import AbsenceRepositoryImpl
 from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
+from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
+from src.infrastructure.repositories.stop_repository import StopRepositoryImpl
+from src.infrastructure.repositories.trip_passanger_repository import TripPassangerRepositoryImpl
 from src.infrastructure.repositories.trip_repository import TripRepositoryImpl
+from src.infrastructure.repositories.vehicle_repository import VehicleRepositoryImpl
 
 # ---------------------------------------------------------------------------
 # Socket.IO server
@@ -231,6 +240,17 @@ async def location_update(sid: str, data: dict) -> None:
         skip_sid=sid,
     )
 
+    # Enviar ETA para o tracker, sem interromper o broadcast se o cálculo falhar.
+    driver_eta_payload = {"stop_id": None, "eta_minutes": None, "distance_km": None}
+    try:
+        eta = await _calculate_eta_for_tracker(data.get("lat"), data.get("lng"), trip_id)
+        if eta is not None:
+            driver_eta_payload.update(eta)
+    except Exception:
+        pass
+
+    await sio.emit("driver_eta", driver_eta_payload, to=sid)
+
 
 # US11-TK05
 async def emit_passenger_boarded(trip_id: str, trip_passanger_id: str, user_name: str) -> None:
@@ -309,7 +329,7 @@ async def _calculate_eta_for_follower(
 
 
 # US10-TK17
-def _get_trip_service():  # type: ignore[no-untyped-def]
+def _get_trip_service() -> TripService:
     """Retorna uma instância de TripService para uso dentro dos handlers Socket.IO.
 
     Necessário porque o socketio roda fora do ciclo de DI do FastAPI e precisa
@@ -321,7 +341,44 @@ def _get_trip_service():  # type: ignore[no-untyped-def]
     uma instância configurada. Cuidar do ciclo da sessão (with/finally).
     Os testes substituem essa função via patch.
     """
-    pass  # type: ignore[return-value]
+    session = SessionLocal()
+    return TripService(
+        TripRepositoryImpl(session),
+        TripPassangerRepositoryImpl(session),
+        AbsenceRepositoryImpl(session),
+        RouteRepositoryImpl(session),
+        RoutePassangerRepositoryImpl(session),
+        StopRepositoryImpl(session),
+        VehicleRepositoryImpl(session),
+        LoggingNotificationService(),
+    )
+
+
+def _get_routing_service() -> IRoutingService:
+    """Retorna um IRoutingService para uso no cálculo de ETA do tracker."""
+    return get_routing_service()
+
+
+def _get_next_stop_with_coordinates(trip_service: TripService, trip_id: object) -> dict | None:
+    if hasattr(trip_service, "get_next_stop_with_coordinates"):
+        return trip_service.get_next_stop_with_coordinates(trip_id)
+
+    trip_passangers = trip_service.trip_passanger_repository.find_by_trip(trip_id)
+    for tp in trip_passangers:
+        if tp.status != "pendente":
+            continue
+
+        stop = trip_service.stop_repository.find_by_route_passanger_id(tp.route_passanger_id)
+        if stop is None or stop.address is None:
+            continue
+
+        return {
+            "stop_id": str(stop.id),
+            "lat": stop.address.latitude,
+            "lng": stop.address.longitude,
+        }
+
+    return None
 
 
 # US10-TK17
@@ -353,7 +410,53 @@ async def _calculate_eta_for_tracker(
       ou None se: não houver parada pendente, endereço sem coordenadas,
       routing service indisponível, ou trip não encontrada.
     """
-    pass  # type: ignore[return-value]
+    try:
+        trip_uuid = uuid.UUID(trip_id)
+    except Exception:
+        return None
+
+    trip_service = _get_trip_service()
+    try:
+        next_stop = _get_next_stop_with_coordinates(trip_service, trip_uuid)
+        if not next_stop:
+            return None
+
+        stop_lat = next_stop.get("lat")
+        stop_lng = next_stop.get("lng")
+        if stop_lat is None or stop_lng is None:
+            return None
+
+        routing_service = _get_routing_service()
+        if routing_service is None:
+            return None
+
+        route_info = routing_service.get_route_info(
+            origin={"lat": float(driver_lat), "lng": float(driver_lng)},
+            waypoints=[],
+            destination={"lat": float(stop_lat), "lng": float(stop_lng)},
+        )
+        if route_info is None:
+            return None
+
+        eta_minutes = getattr(route_info, "estimated_duration_min", None)
+        distance_km = getattr(route_info, "total_distance_km", None)
+        if eta_minutes is None or distance_km is None:
+            return None
+
+        return {
+            "stop_id": next_stop.get("stop_id"),
+            "eta_minutes": int(eta_minutes),
+            "distance_km": float(distance_km),
+        }
+    except Exception:
+        return None
+    finally:
+        session = getattr(trip_service.trip_repository, "session", None)
+        if session is not None:
+            try:
+                session.close()
+            except Exception:
+                pass
 
 
 def _validate_tracker(user_id: str, trip_id: str) -> bool:
