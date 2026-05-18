@@ -234,7 +234,7 @@ async def test_location_update_non_tracker_ignored():
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US10-TK05")
+
 @pytest.mark.asyncio
 async def test_disconnect_tracker_emits_tracker_disconnected():
     """disconnect do tracker deve emitir tracker_disconnected para followers."""
@@ -254,7 +254,7 @@ async def test_disconnect_tracker_emits_tracker_disconnected():
     tracking_sessions.pop(trip_id, None)
 
 
-@pytest.mark.skip(reason="US10-TK05")
+
 @pytest.mark.asyncio
 async def test_disconnect_tracker_clears_tracker_sid():
     """disconnect do tracker deve setar tracker_sid para None na sessão."""
@@ -272,7 +272,7 @@ async def test_disconnect_tracker_clears_tracker_sid():
     tracking_sessions.pop(trip_id, None)
 
 
-@pytest.mark.skip(reason="US10-TK05")
+
 @pytest.mark.asyncio
 async def test_disconnect_removes_empty_session():
     """disconnect com sessão sem tracker e sem followers deve remover da memória."""
