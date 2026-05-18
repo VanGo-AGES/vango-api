@@ -247,9 +247,19 @@ class FirebaseNotificationService(INotificationService):
     def notify_passanger_driver_arrived(self, user_id: str, route_id: str) -> None:
         try:
             message = messaging.Message(
-                notification=messaging.Notification(title="Motorista chegou", body="Seu motorista chegou à sua parada!"),
+                notification=messaging.Notification(
+                    title="Motorista chegou",
+                    body="Seu motorista chegou à sua parada!",
+                ),
                 topic=f"user_{user_id}",
             )
+
             messaging.send(message)
-        except Exception:
-            pass
+
+        except Exception as e:
+            logger.warning(
+                "FIREBASE: falha ao enviar push de chegada user_id=%s route_id=%s: %s",
+                user_id,
+                route_id,
+                e,
+            )

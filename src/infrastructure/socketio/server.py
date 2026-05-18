@@ -63,6 +63,14 @@ PROXIMITY_THRESHOLD_KM: float = 0.5
 ARRIVAL_THRESHOLD_KM: float = 0.05
 
 
+def _get_notification_service() -> object:
+    from src.infrastructure.notifications.firebase_notification_service import (
+        FirebaseNotificationService,
+    )
+
+    return FirebaseNotificationService()
+
+
 # ---------------------------------------------------------------------------
 # Socket.IO event stubs — implementados nas TKs seguintes
 # ---------------------------------------------------------------------------
@@ -232,6 +240,27 @@ async def location_update(sid: str, data: dict) -> None:
         skip_sid=sid,
     )
 
+    # US10-TK08 / US12-TK06 / US12-TK07 — ETA + push por follower
+    try:
+        driver_lat = data["lat"]
+        driver_lng = data["lng"]
+
+        followers = tracking_sessions[trip_id].get("followers", [])
+        for follower_sid in followers:
+            try:
+                eta_info = await _calculate_eta_for_follower(driver_lat, driver_lng, follower_sid)
+                if eta_info:
+                    await sio.emit("driver_eta", eta_info, to=follower_sid)
+
+                    distance_km = eta_info.get("distance_km")
+                    if distance_km is not None:
+                        await _notify_proximity_if_needed(follower_sid, distance_km)  # TK06
+                        await _notify_arrival_if_needed(follower_sid, distance_km)  # TK07 ← aqui
+            except Exception:
+                pass
+    except Exception:
+        pass
+
 
 # US11-TK05
 async def emit_passenger_boarded(trip_id: str, trip_passanger_id: str, user_name: str) -> None:
@@ -298,7 +327,28 @@ async def _notify_arrival_if_needed(follower_sid: str, distance_km: float) -> No
     INotificationService.notify_passanger_driver_arrived sem acesso ao DB.
     Silenciosamente ignorado se follower_sid não estiver em sid_meta.
     """
-    pass
+    meta = sid_meta.get(follower_sid)
+    if not meta:
+        return
+
+    if distance_km >= ARRIVAL_THRESHOLD_KM:
+        return
+
+    if meta.get("arrived_notified"):
+        return
+
+    user_id = meta.get("user_id")
+    route_id = meta.get("route_id")
+
+    if not user_id or not route_id:
+        return
+
+    _get_notification_service().notify_passanger_driver_arrived(
+        user_id=str(user_id),
+        route_id=str(route_id),
+    )
+
+    meta["arrived_notified"] = True
 
 
 # US10-TK08
