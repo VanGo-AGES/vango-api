@@ -403,7 +403,10 @@ class RoutePassangerService:
         if route.status == "em_andamento":
             raise RouteInProgressError()
 
-        rp = self.route_passanger_repository.find_active_by_user_and_route(user_id, dependent_id, route_id)
+        if dependent_id is not None:
+            rp = self.route_passanger_repository.find_active_by_user_and_route(user_id, dependent_id, route_id)
+        else:
+            rp = self.route_passanger_repository.find_active_for_user_or_as_guardian(user_id, route_id)
         if rp is None:
             raise RoutePassangerNotFoundError()
 
@@ -492,7 +495,7 @@ class RoutePassangerService:
 
             dependent_name: str | None = None
             if rp.dependent_id is not None:
-                dependent = self.dependent_repository.find_by_id(rp.dependent_id)
+                dependent = self.dependent_repository.get_by_id(rp.dependent_id)
                 if dependent is not None:
                     dependent_name = dependent.name
 
@@ -546,7 +549,15 @@ class RoutePassangerService:
         if route is None:
             raise RouteNotFoundError()
 
-        rp = self.route_passanger_repository.find_active_by_user_and_route(user_id, dependent_id, route_id)
+        # Se o caller passou dependent_id explicitamente, usa o lookup direto
+        # (mantém compatibilidade com guardians que querem desambiguar entre
+        # múltiplos dependentes na mesma rota). Senão, busca qualquer vínculo
+        # ativo onde o user é passageiro direto OU guardian de um dependente
+        # vinculado à rota.
+        if dependent_id is not None:
+            rp = self.route_passanger_repository.find_active_by_user_and_route(user_id, dependent_id, route_id)
+        else:
+            rp = self.route_passanger_repository.find_active_for_user_or_as_guardian(user_id, route_id)
         if rp is None:
             raise NotRoutePassangerError()
 
@@ -554,9 +565,14 @@ class RoutePassangerService:
         if driver is None:
             raise RouteNotFoundError()
 
+        # Resolve dependent_name a partir do rp encontrado: se o caller passou
+        # dependent_id, usa esse; senão, usa o rp.dependent_id (que pode ser
+        # None para vínculo direto, ou o uuid do dependente quando o user é
+        # guardian).
         dependent_name: str | None = None
-        if dependent_id is not None:
-            dep = self.dependent_repository.find_by_id(dependent_id)
+        effective_dependent_id = dependent_id if dependent_id is not None else rp.dependent_id
+        if effective_dependent_id is not None:
+            dep = self.dependent_repository.get_by_id(effective_dependent_id)
             if dep is not None:
                 dependent_name = dep.name
 
@@ -609,7 +625,7 @@ class RoutePassangerService:
             driver_phone=driver.phone,
             driver_plate=driver_plate,
             membership_status=rp.status,
-            dependent_id=dependent_id,
+            dependent_id=effective_dependent_id,
             dependent_name=dependent_name,
             my_pickup_address=pickup,
             my_schedules=schedules_list,
