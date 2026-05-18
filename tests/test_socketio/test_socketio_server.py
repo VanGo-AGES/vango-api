@@ -867,7 +867,7 @@ async def test_emit_passenger_absent_no_error_when_session_not_found():
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US12-TK06")
+
 @pytest.mark.asyncio
 async def test_proximity_notification_sent_when_below_threshold():
     """_notify_proximity_if_needed deve chamar notify_passanger_driver_approaching quando distance_km < threshold."""
@@ -898,7 +898,7 @@ async def test_proximity_notification_sent_when_below_threshold():
     sid_meta.pop(follower_sid, None)
 
 
-@pytest.mark.skip(reason="US12-TK06")
+
 @pytest.mark.asyncio
 async def test_proximity_notification_not_sent_when_above_threshold():
     """_notify_proximity_if_needed não deve notificar quando distance_km >= threshold."""
@@ -929,7 +929,7 @@ async def test_proximity_notification_not_sent_when_above_threshold():
     sid_meta.pop(follower_sid, None)
 
 
-@pytest.mark.skip(reason="US12-TK06")
+
 @pytest.mark.asyncio
 async def test_proximity_notification_sent_only_once_per_session():
     """_notify_proximity_if_needed não deve reenviar o push se proximity_notified já for True."""
@@ -960,7 +960,7 @@ async def test_proximity_notification_sent_only_once_per_session():
     sid_meta.pop(follower_sid, None)
 
 
-@pytest.mark.skip(reason="US12-TK06")
+
 @pytest.mark.asyncio
 async def test_proximity_notification_sets_flag_after_sending():
     """_notify_proximity_if_needed deve setar proximity_notified=True após enviar o push."""
