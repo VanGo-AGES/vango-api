@@ -485,6 +485,10 @@ class RoutePassangerService:
             destination_address = route_data.get("destination_address") or route_data.get("destination")
             origin_label = getattr(origin_address, "label", "")
             destination_label = getattr(destination_address, "label", "")
+            origin_latitude: float | None = getattr(origin_address, "latitude", None)
+            origin_longitude: float | None = getattr(origin_address, "longitude", None)
+            destination_latitude: float | None = getattr(destination_address, "latitude", None)
+            destination_longitude: float | None = getattr(destination_address, "longitude", None)
 
             dependent_name: str | None = None
             if rp.dependent_id is not None:
@@ -511,6 +515,10 @@ class RoutePassangerService:
                     driver_phone=driver.phone,
                     origin_label=origin_label,
                     destination_label=destination_label,
+                    origin_latitude=origin_latitude,
+                    origin_longitude=origin_longitude,
+                    destination_latitude=destination_latitude,
+                    destination_longitude=destination_longitude,
                     expected_time=route.expected_time,
                     recurrence=recurrence_list,
                     status=route.status,

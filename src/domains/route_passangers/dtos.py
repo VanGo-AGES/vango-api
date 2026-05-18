@@ -108,6 +108,10 @@ class PassangerRouteResponse(BaseModel):
     driver_phone: str
     origin_label: str
     destination_label: str
+    origin_latitude: float | None = None
+    origin_longitude: float | None = None
+    destination_latitude: float | None = None
+    destination_longitude: float | None = None
     expected_time: time
     recurrence: list[str]
     status: str

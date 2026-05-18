@@ -1239,9 +1239,13 @@ def make_rp_with_route_mock(
     origin = Mock(spec=AddressModel)
     origin.id = uuid.uuid4()
     origin.label = origin_label
+    origin.latitude = None
+    origin.longitude = None
     destination = Mock(spec=AddressModel)
     destination.id = uuid.uuid4()
     destination.label = destination_label
+    destination.latitude = None
+    destination.longitude = None
 
     route = Mock(spec=RouteModel)
     route.id = route_id

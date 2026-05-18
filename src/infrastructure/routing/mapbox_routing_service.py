@@ -7,6 +7,8 @@ Implementação concreta usando a Mapbox API:
 - MapboxGeocodingService.geocode_address   → Mapbox Geocoding API v5/v6
 """
 
+from urllib.parse import quote
+
 import requests
 
 from src.domains.routing.dtos import GeocodeResult, RouteInfoResult
@@ -132,7 +134,7 @@ class MapboxGeocodingService(IGeocodingService):
         ]
         query = ", ".join(part for part in query_parts if part)
 
-        url = f"https://api.mapbox.com/geocoding/v5/mapbox.places/{query}.json"
+        url = f"https://api.mapbox.com/geocoding/v5/mapbox.places/{quote(query, safe='')}.json"
         params = {
             "access_token": self.api_key,
             "country": "BR",
@@ -154,18 +156,6 @@ class MapboxGeocodingService(IGeocodingService):
             center = feature.get("center")
             if isinstance(center, list) and len(center) >= 2:
                 return GeocodeResult(latitude=center[1], longitude=center[0])
-
-            geometry = feature.get("geometry", {})
-            if isinstance(geometry, dict):
-                coordinates = geometry.get("coordinates")
-                if isinstance(coordinates, list) and len(coordinates) >= 2:
-                    return GeocodeResult(latitude=coordinates[1], longitude=coordinates[0])
-
-            properties = feature.get("properties", {})
-            if isinstance(properties, dict):
-                coordinates = properties.get("coordinates")
-                if isinstance(coordinates, list) and len(coordinates) >= 2:
-                    return GeocodeResult(latitude=coordinates[1], longitude=coordinates[0])
 
             return None
         except Exception:
