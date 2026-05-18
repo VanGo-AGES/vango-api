@@ -18,6 +18,7 @@ from urllib.parse import parse_qs
 
 import socketio
 from src.infrastructure.database import SessionLocal
+from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 from src.infrastructure.repositories.trip_repository import TripRepositoryImpl
 
 # ---------------------------------------------------------------------------
@@ -88,6 +89,13 @@ async def connect(sid: str, environ: dict, auth: dict | None = None) -> None:  #
         valid = _validate_tracker(user_id, trip_id)
         if not valid:
             await sio.emit("error", {"message": "unauthorized"}, to=sid)
+            await sio.disconnect(sid)
+            return
+
+    if role == "follower":
+        valid = _validate_follower(user_id, trip_id)
+        if not valid:
+            await sio.emit("error", {"message": "session_not_found"}, to=sid)
             await sio.disconnect(sid)
             return
 
@@ -325,6 +333,31 @@ def _validate_tracker(user_id: str, trip_id: str) -> bool:
             return False
 
         return str(driver_id) == str(user_id)
+    except Exception:
+        return False
+    finally:
+        session.close()
+
+
+def _validate_follower(user_id: str, trip_id: str) -> bool:
+    """Abre sessão de DB e verifica vínculo pending/accepted do user na rota da trip."""
+    try:
+        trip_uuid = uuid.UUID(trip_id)
+        user_uuid = uuid.UUID(user_id)
+    except Exception:
+        return False
+
+    session = SessionLocal()
+    try:
+        trip_repo = TripRepositoryImpl(session)
+        rp_repo = RoutePassangerRepositoryImpl(session)
+
+        trip = trip_repo.find_by_id(trip_uuid)
+        if trip is None or getattr(trip, "route_id", None) is None:
+            return False
+
+        route_passangers = rp_repo.find_by_user_and_route_id(user_uuid, trip.route_id)
+        return any(rp.status in ("pending", "accepted") for rp in route_passangers)
     except Exception:
         return False
     finally:
