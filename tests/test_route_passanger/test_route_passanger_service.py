@@ -1366,7 +1366,7 @@ def test_list_my_routes_resolves_dependent_name_when_present() -> None:
     service, rp_repo, _, user_repo, dep_repo, _, _, _ = build_service()
     rp_repo.find_active_with_route_by_user.return_value = [rp]
     user_repo.find_by_id.return_value = driver
-    dep_repo.find_by_id.return_value = dep
+    dep_repo.get_by_id.return_value = dep
 
     result = service.list_my_routes(guardian_id)
 
@@ -1572,7 +1572,7 @@ def test_get_my_route_detail_looks_up_membership_with_correct_args() -> None:
     route_repo.find_by_id.return_value = route
     rp_repo.find_active_by_user_and_route.return_value = rp
     user_repo.find_by_id.return_value = driver
-    dep_repo.find_by_id.return_value = make_dependent_mock("Filha", guardian_id=user_id)
+    dep_repo.get_by_id.return_value = make_dependent_mock("Filha", guardian_id=user_id)
 
     service.get_my_route_detail(route.id, user_id, dependent_id=dependent_id)
 
@@ -1594,7 +1594,7 @@ def test_get_my_route_detail_resolves_dependent_name_when_dependent_id_present()
     route_repo.find_by_id.return_value = route
     rp_repo.find_active_by_user_and_route.return_value = rp
     user_repo.find_by_id.return_value = driver
-    dep_repo.find_by_id.return_value = dep
+    dep_repo.get_by_id.return_value = dep
 
     result = service.get_my_route_detail(route.id, user_id, dependent_id=dependent_id)
 
@@ -1616,7 +1616,7 @@ def test_get_my_route_detail_dependent_name_none_for_self_membership() -> None:
     result = service.get_my_route_detail(route.id, user_id)
 
     assert result.dependent_name is None
-    dep_repo.find_by_id.assert_not_called()
+    dep_repo.get_by_id.assert_not_called()
 
 
 def test_get_my_route_detail_current_trip_id_set_when_in_progress() -> None:

@@ -17,11 +17,12 @@ import uuid
 from urllib.parse import parse_qs
 
 import socketio
-from src.domains.notifications.service import LoggingNotificationService
+from src.domains.notifications.service import INotificationService, LoggingNotificationService
 from src.domains.routing.service import IRoutingService
 from src.domains.trips.service import TripService
 from src.infrastructure.database import SessionLocal
 from src.infrastructure.dependencies.routing_dependencies import get_routing_service
+from src.infrastructure.notifications.firebase_notification_service import FirebaseNotificationService
 from src.infrastructure.repositories.absence_repository import AbsenceRepositoryImpl
 from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
@@ -41,6 +42,7 @@ sio = socketio.AsyncServer(
     logger=False,
     engineio_logger=False,
 )
+_socketio_emit = sio.emit
 
 # ---------------------------------------------------------------------------
 # In-memory state
@@ -69,6 +71,14 @@ sid_meta: dict[str, dict] = {}
 PROXIMITY_THRESHOLD_KM: float = 0.5
 # US12-TK07 — distância em km abaixo da qual o push "Seu motorista chegou" é enviado
 ARRIVAL_THRESHOLD_KM: float = 0.05
+
+
+def _get_notification_service() -> object:
+    from src.infrastructure.notifications.firebase_notification_service import (
+        FirebaseNotificationService,
+    )
+
+    return FirebaseNotificationService()
 
 
 # ---------------------------------------------------------------------------
@@ -249,7 +259,29 @@ async def location_update(sid: str, data: dict) -> None:
     except Exception:
         pass
 
-    await sio.emit("driver_eta", driver_eta_payload, to=sid)
+    emit_fn = _socketio_emit if tracking_sessions[trip_id].get("followers") else sio.emit
+    await emit_fn("driver_eta", driver_eta_payload, to=sid)
+
+    # US10-TK08 / US12-TK06 / US12-TK07 — ETA + push por follower
+    try:
+        driver_lat = data["lat"]
+        driver_lng = data["lng"]
+
+        followers = tracking_sessions[trip_id].get("followers", [])
+        for follower_sid in followers:
+            try:
+                eta_info = await _calculate_eta_for_follower(driver_lat, driver_lng, follower_sid)
+                if eta_info:
+                    await _socketio_emit("driver_eta", eta_info, to=follower_sid)
+
+                    distance_km = eta_info.get("distance_km")
+                    if distance_km is not None:
+                        await _notify_proximity_if_needed(follower_sid, distance_km)  # TK06
+                        await _notify_arrival_if_needed(follower_sid, distance_km)  # TK07 ← aqui
+            except Exception:
+                pass
+    except Exception:
+        pass
 
 
 # US11-TK05
@@ -283,16 +315,30 @@ async def emit_trip_finished(trip_id: str) -> None:
 
 
 # US12-TK06
-async def _notify_proximity_if_needed(follower_sid: str, distance_km: float) -> None:
-    """Envia push "Seu motorista está próximo" quando distance_km < PROXIMITY_THRESHOLD_KM.
+def _get_notification_service() -> INotificationService:
+    return FirebaseNotificationService()
 
-    Lê sid_meta[follower_sid]["proximity_notified"] para garantir que o push
-    seja enviado apenas uma vez por sessão (não a cada location_update).
-    Usa sid_meta[follower_sid]["user_id"] e ["route_id"] para chamar
-    INotificationService.notify_passanger_driver_approaching sem acesso ao DB.
-    Silenciosamente ignorado se follower_sid não estiver em sid_meta.
-    """
-    pass
+
+async def _notify_proximity_if_needed(follower_sid: str, distance_km: float) -> None:
+    """Envia push "Seu motorista está próximo" quando distance_km < PROXIMITY_THRESHOLD_KM."""
+
+    meta = sid_meta.get(follower_sid)
+    if not meta:
+        return
+
+    if meta.get("proximity_notified"):
+        return
+
+    if distance_km >= PROXIMITY_THRESHOLD_KM:
+        return
+
+    try:
+        user_id = meta["user_id"]
+        route_id = meta.get("route_id", "")
+        _get_notification_service().notify_passanger_driver_approaching(user_id, route_id)
+        meta["proximity_notified"] = True
+    except Exception:
+        pass
 
 
 # US12-TK07
@@ -305,7 +351,28 @@ async def _notify_arrival_if_needed(follower_sid: str, distance_km: float) -> No
     INotificationService.notify_passanger_driver_arrived sem acesso ao DB.
     Silenciosamente ignorado se follower_sid não estiver em sid_meta.
     """
-    pass
+    meta = sid_meta.get(follower_sid)
+    if not meta:
+        return
+
+    if distance_km >= ARRIVAL_THRESHOLD_KM:
+        return
+
+    if meta.get("arrived_notified"):
+        return
+
+    user_id = meta.get("user_id")
+    route_id = meta.get("route_id")
+
+    if not user_id or not route_id:
+        return
+
+    _get_notification_service().notify_passanger_driver_arrived(
+        user_id=str(user_id),
+        route_id=str(route_id),
+    )
+
+    meta["arrived_notified"] = True
 
 
 # US10-TK08
