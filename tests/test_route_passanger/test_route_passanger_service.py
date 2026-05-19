@@ -1723,7 +1723,7 @@ def test_get_my_route_detail_my_pickup_address_comes_from_rp() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US10-TK08")
+
 def test_accept_request_calls_optimize_stop_order() -> None:
     """accept_request deve chamar routing_service.optimize_stop_order após salvar a stop."""
     from src.domains.routing.service import IRoutingService
@@ -1750,7 +1750,7 @@ def test_accept_request_calls_optimize_stop_order() -> None:
     routing_mock.optimize_stop_order.assert_called_once()
 
 
-@pytest.mark.skip(reason="US10-TK08")
+
 def test_remove_passanger_calls_optimize_stop_order() -> None:
     """remove_passanger deve chamar routing_service.optimize_stop_order após remover a stop."""
     from src.domains.routing.service import IRoutingService

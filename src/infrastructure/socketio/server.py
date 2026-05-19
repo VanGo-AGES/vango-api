@@ -17,7 +17,9 @@ import uuid
 from urllib.parse import parse_qs
 
 import socketio
+from src.domains.routing.service import IRoutingService
 from src.infrastructure.database import SessionLocal
+from src.infrastructure.dependencies.routing_dependencies import get_routing_service
 from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 from src.infrastructure.repositories.trip_repository import TripRepositoryImpl
 from src.infrastructure.notifications.firebase_notification_service import FirebaseNotificationService
@@ -232,13 +234,36 @@ async def location_update(sid: str, data: dict) -> None:
     # Salvar a última localização conhecida
     tracking_sessions[trip_id]["last_location"] = data
 
-    # Fazer broadcast para o room da sessão
-    await sio.emit(
-        "location_update",
-        data,
-        room=f"trip:{trip_id}",
-        skip_sid=sid,
-    )
+    # Enviar update individualizado para cada follower, enriquecido com o ETA
+    # até a parada associada ao próprio follower.
+    followers = tracking_sessions[trip_id].get("followers", [])
+    has_untracked_followers = False
+    for follower_sid in followers:
+        if follower_sid not in sid_meta:
+            has_untracked_followers = True
+            continue
+
+        eta = await _calculate_eta_for_follower(
+            data.get("lat"),
+            data.get("lng"),
+            follower_sid,
+        )
+        follower_payload = {
+            **data,
+            "eta_minutes": eta["eta_minutes"] if eta is not None else None,
+            "distance_km": eta["distance_km"] if eta is not None else None,
+        }
+        await sio.emit("location_update", follower_payload, to=follower_sid)
+
+    # Compatibilidade com sessões antigas/inconsistentes onde o follower ainda
+    # existe no room, mas não há metadata suficiente para calcular ETA.
+    if has_untracked_followers:
+        await sio.emit(
+            "location_update",
+            data,
+            room=f"trip:{trip_id}",
+            skip_sid=sid,
+        )
 
     # US10-TK08 / US12-TK06 / US12-TK07 — ETA + push por follower
     try:
@@ -368,7 +393,33 @@ async def _calculate_eta_for_follower(
     Retorna {"eta_minutes": int, "distance_km": float} ou None se routing
     service não estiver disponível ou se stop não estiver configurada.
     """
-    pass  # type: ignore[return-value]
+    meta = sid_meta.get(follower_sid)
+    if meta is None:
+        return None
+
+    stop_lat = meta.get("stop_lat")
+    stop_lng = meta.get("stop_lng")
+    if stop_lat is None or stop_lng is None:
+        return None
+
+    try:
+        route_info = _get_routing_service().get_route_info(
+            origin={"lat": driver_lat, "lng": driver_lng},
+            waypoints=[],
+            destination={"lat": stop_lat, "lng": stop_lng},
+        )
+    except Exception:
+        return None
+
+    return {
+        "eta_minutes": route_info.estimated_duration_min,
+        "distance_km": route_info.total_distance_km,
+    }
+
+
+def _get_routing_service() -> IRoutingService:
+    """Retorna o serviço de roteamento para uso fora do ciclo de DI do FastAPI."""
+    return get_routing_service()
 
 
 # US10-TK17
