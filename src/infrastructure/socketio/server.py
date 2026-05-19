@@ -24,6 +24,12 @@ from src.infrastructure.database import SessionLocal
 from src.infrastructure.dependencies.routing_dependencies import get_routing_service
 from src.infrastructure.notifications.firebase_notification_service import FirebaseNotificationService
 from src.infrastructure.repositories.absence_repository import AbsenceRepositoryImpl
+from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
+from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
+from src.infrastructure.repositories.stop_repository import StopRepositoryImpl
+from src.infrastructure.repositories.trip_passanger_repository import TripPassangerRepositoryImpl
+from src.infrastructure.repositories.trip_repository import TripRepositoryImpl
+from src.infrastructure.repositories.vehicle_repository import VehicleRepositoryImpl
 
 # ---------------------------------------------------------------------------
 # Socket.IO server
