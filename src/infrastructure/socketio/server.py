@@ -14,6 +14,7 @@ Montagem em main.py (US10-TK01):
 """
 
 import uuid
+from typing import Any
 from urllib.parse import parse_qs
 
 import socketio
@@ -42,7 +43,22 @@ sio = socketio.AsyncServer(
     logger=False,
     engineio_logger=False,
 )
-_socketio_emit = sio.emit
+_original_socketio_emit = sio.emit
+
+
+async def _socketio_emit(event: str, data: object | None = None, **kwargs: Any) -> None:
+    """Wrapper que agenda o emit original sem aguardar, evitando reentrância.
+
+    Usa `asyncio.create_task` para que o envio ocorra em background e não
+    execute handlers reentrantes no mesmo loop de execução síncrono.
+    """
+    try:
+        import asyncio as _asyncio
+
+        _asyncio.create_task(_original_socketio_emit(event, data, **kwargs))
+    except Exception:
+        pass
+
 
 # ---------------------------------------------------------------------------
 # In-memory state
