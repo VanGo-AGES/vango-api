@@ -403,10 +403,7 @@ class RoutePassangerService:
         if route.status == "em_andamento":
             raise RouteInProgressError()
 
-        if dependent_id is not None:
-            rp = self.route_passanger_repository.find_active_by_user_and_route(user_id, dependent_id, route_id)
-        else:
-            rp = self.route_passanger_repository.find_active_for_user_or_as_guardian(user_id, route_id)
+        rp = self.route_passanger_repository.find_active_by_user_and_route(user_id, dependent_id, route_id)
         if rp is None:
             raise RoutePassangerNotFoundError()
 
@@ -554,10 +551,7 @@ class RoutePassangerService:
         # múltiplos dependentes na mesma rota). Senão, busca qualquer vínculo
         # ativo onde o user é passageiro direto OU guardian de um dependente
         # vinculado à rota.
-        if dependent_id is not None:
-            rp = self.route_passanger_repository.find_active_by_user_and_route(user_id, dependent_id, route_id)
-        else:
-            rp = self.route_passanger_repository.find_active_for_user_or_as_guardian(user_id, route_id)
+        rp = self.route_passanger_repository.find_active_by_user_and_route(user_id, dependent_id, route_id)
         if rp is None:
             raise NotRoutePassangerError()
 
