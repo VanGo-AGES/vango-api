@@ -503,7 +503,7 @@ async def test_trip_finished_no_error_when_session_not_found():
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US10-TK08")
+
 @pytest.mark.asyncio
 async def test_location_update_broadcast_includes_eta_fields():
     """location_update broadcast para cada follower deve incluir eta_minutes e distance_km."""
@@ -544,7 +544,7 @@ async def test_location_update_broadcast_includes_eta_fields():
     sid_meta.pop(follower_sid, None)
 
 
-@pytest.mark.skip(reason="US10-TK08")
+
 @pytest.mark.asyncio
 async def test_location_update_eta_uses_follower_stop_coordinates():
     """_calculate_eta_for_follower é chamado com o sid do follower para obter suas stop coords."""
@@ -586,7 +586,7 @@ async def test_location_update_eta_uses_follower_stop_coordinates():
     sid_meta.pop(follower_sid, None)
 
 
-@pytest.mark.skip(reason="US10-TK08")
+
 @pytest.mark.asyncio
 async def test_location_update_eta_gracefully_none_when_routing_unavailable():
     """Se routing service não disponível, eta_minutes e distance_km devem ser None no broadcast."""
@@ -636,7 +636,7 @@ async def test_location_update_eta_gracefully_none_when_routing_unavailable():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US10-TK08")
+
 @pytest.mark.asyncio
 async def test_calculate_eta_for_follower_returns_dict_when_stop_coordinates_present():
     """Quando sid_meta[follower_sid] tem stop_lat/stop_lng e routing responde,
@@ -672,7 +672,7 @@ async def test_calculate_eta_for_follower_returns_dict_when_stop_coordinates_pre
     sid_meta.pop(follower_sid, None)
 
 
-@pytest.mark.skip(reason="US10-TK08")
+
 @pytest.mark.asyncio
 async def test_calculate_eta_for_follower_returns_none_when_stop_coordinates_missing():
     """Se sid_meta[follower_sid] não tem stop_lat/stop_lng (ou está com None),
@@ -702,7 +702,7 @@ async def test_calculate_eta_for_follower_returns_none_when_stop_coordinates_mis
     sid_meta.pop(follower_sid, None)
 
 
-@pytest.mark.skip(reason="US10-TK08")
+
 @pytest.mark.asyncio
 async def test_calculate_eta_for_follower_returns_none_when_follower_not_in_sid_meta():
     """Se o follower_sid não existir em sid_meta, o helper retorna None
@@ -722,7 +722,7 @@ async def test_calculate_eta_for_follower_returns_none_when_follower_not_in_sid_
     routing_mock.get_route_info.assert_not_called()
 
 
-@pytest.mark.skip(reason="US10-TK08")
+
 @pytest.mark.asyncio
 async def test_calculate_eta_for_follower_passes_correct_origin_and_destination():
     """O helper deve chamar IRoutingService.get_route_info com origin =
@@ -770,7 +770,7 @@ async def test_calculate_eta_for_follower_passes_correct_origin_and_destination(
     sid_meta.pop(follower_sid, None)
 
 
-@pytest.mark.skip(reason="US10-TK08")
+
 @pytest.mark.asyncio
 async def test_calculate_eta_for_follower_returns_none_when_routing_raises():
     """Se IRoutingService.get_route_info levantar exceção, o helper devolve
