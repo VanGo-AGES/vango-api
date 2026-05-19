@@ -1266,3 +1266,89 @@ def test_update_route_works_without_geocoding_service() -> None:
     )
 
     assert result is not None
+
+
+# ===========================================================================
+# US10-TK19 — RouteService.get_route_totals (helper público usado pelo
+# controller no model_copy do RouteResponse)
+# ===========================================================================
+
+
+@pytest.mark.skip(reason="US10-TK19")
+def test_get_route_totals_returns_tuple_when_routing_service_available() -> None:
+    """get_route_totals deve devolver (km, min) quando routing_service
+    devolve um RouteInfoResult válido."""
+    from src.domains.routes.service import RouteService
+    from src.domains.routing.dtos import RouteInfoResult
+
+    routing_mock = Mock()
+    routing_mock.get_route_info.return_value = RouteInfoResult(
+        total_distance_km=10.0, estimated_duration_min=32
+    )
+
+    service = RouteService(Mock(), Mock(), Mock(), routing_service=routing_mock)
+    route = Mock()
+    route.origin_address = Mock(latitude=-30.0, longitude=-51.0)
+    route.destination_address = Mock(latitude=-30.1, longitude=-51.1)
+    route.stops = []
+
+    distance, duration = service.get_route_totals(route)
+
+    assert distance == pytest.approx(10.0)
+    assert duration == 32
+
+
+@pytest.mark.skip(reason="US10-TK19")
+def test_get_route_totals_returns_none_when_routing_service_none() -> None:
+    """Sem routing_service injetado, get_route_totals retorna (None, None)."""
+    from src.domains.routes.service import RouteService
+
+    service = RouteService(Mock(), Mock(), Mock())  # sem routing_service
+    route = Mock()
+    route.origin_address = Mock(latitude=-30.0, longitude=-51.0)
+    route.destination_address = Mock(latitude=-30.1, longitude=-51.1)
+    route.stops = []
+
+    distance, duration = service.get_route_totals(route)
+
+    assert distance is None
+    assert duration is None
+
+
+@pytest.mark.skip(reason="US10-TK19")
+def test_get_route_totals_returns_none_when_address_missing_coords() -> None:
+    """Endereço sem lat/lng → (None, None) sem chamar routing."""
+    from src.domains.routes.service import RouteService
+
+    routing_mock = Mock()
+    service = RouteService(Mock(), Mock(), Mock(), routing_service=routing_mock)
+    route = Mock()
+    route.origin_address = Mock(latitude=None, longitude=None)
+    route.destination_address = Mock(latitude=-30.1, longitude=-51.1)
+    route.stops = []
+
+    distance, duration = service.get_route_totals(route)
+
+    assert distance is None
+    assert duration is None
+    routing_mock.get_route_info.assert_not_called()
+
+
+@pytest.mark.skip(reason="US10-TK19")
+def test_get_route_totals_never_raises_on_routing_failure() -> None:
+    """Falha do routing (network, credencial) absorvida em (None, None)."""
+    from src.domains.routes.service import RouteService
+
+    routing_mock = Mock()
+    routing_mock.get_route_info.side_effect = RuntimeError("mapbox down")
+
+    service = RouteService(Mock(), Mock(), Mock(), routing_service=routing_mock)
+    route = Mock()
+    route.origin_address = Mock(latitude=-30.0, longitude=-51.0)
+    route.destination_address = Mock(latitude=-30.1, longitude=-51.1)
+    route.stops = []
+
+    distance, duration = service.get_route_totals(route)
+
+    assert distance is None
+    assert duration is None

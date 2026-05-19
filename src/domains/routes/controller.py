@@ -82,6 +82,8 @@ def list_routes(
 ) -> list[RouteResponse]:
     driver_id = UUID(x_user_id)
     routes = service.get_routes(driver_id)
+    # US10-TK19: enriquecer cada RouteResponse com total_distance_km e
+    # estimated_duration_min via service.get_route_totals(route).model_copy(update={...}).
     return [RouteResponse.from_orm(route) for route in routes]
 
 
@@ -181,6 +183,8 @@ def get_route(
     try:
         route = service.get_route(route_id, driver_id)
         accepted_count = service.get_accepted_count(route_id)
+        # US10-TK19: incluir total_distance_km e estimated_duration_min no model_copy
+        # via service.get_route_totals(route).
         return RouteResponse.from_orm(route).model_copy(update={"accepted_count": accepted_count})
     except RouteNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
