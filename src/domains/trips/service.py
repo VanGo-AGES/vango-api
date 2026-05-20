@@ -14,6 +14,7 @@ IRouteRepository, IVehicleRepository (ou cheque equivalente), IStopRepository
 e INotificationService.
 """
 
+import asyncio
 from datetime import UTC, datetime
 from uuid import UUID
 
@@ -354,7 +355,7 @@ class TripService:
         return self._build_trip_passanger_response(updated)
 
     # US09-TK13
-    async def finish_trip(self, trip_id: UUID, driver_id: UUID, data: FinishTripRequest) -> TripResponse:
+    def finish_trip(self, trip_id: UUID, driver_id: UUID, data: FinishTripRequest) -> TripResponse:
         """Finaliza a viagem.
 
         - Valida ownership.
@@ -392,7 +393,7 @@ class TripService:
         self.notification_service.notify_trip_finished(finished)
 
         # US11-TK04 — emitir evento Socket.IO trip_finished para followers
-        await emit_trip_finished(str(trip_id))  # wiring completo em US11-TK04
+        asyncio.run(emit_trip_finished(str(trip_id)))
 
         return TripResponse(
             id=finished.id,

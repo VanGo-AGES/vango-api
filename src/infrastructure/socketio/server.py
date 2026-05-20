@@ -253,7 +253,7 @@ async def emit_passenger_absent(trip_id: str, trip_passanger_id: str, user_name:
 
 
 # US11-TK04
-async def emit_trip_finished(trip_id: str) -> None:
+async def _emit_trip_finished(trip_id: str) -> None:
     """Emite trip_finished para todos no room da sessão e remove o estado em memória.
 
     Chamado pelo TripService após finalizar a viagem.
@@ -262,9 +262,13 @@ async def emit_trip_finished(trip_id: str) -> None:
     if trip_id not in tracking_sessions:
         return
 
-    sio.emit("trip_finished", {}, room=trip_id)
+    await sio.emit("trip_finished", {}, room=f"trip:{trip_id}")
 
-    tracking_sessions.pop(trip_id)
+    tracking_sessions.pop(trip_id, None)
+
+
+async def emit_trip_finished(trip_id: str) -> None:
+    await _emit_trip_finished(trip_id)
 
 
 # US12-TK06
