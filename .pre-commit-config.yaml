@@ -11,7 +11,28 @@ repos:
       # Roda o Formatter para garantir aspas e espaços padronizados
       - id: ruff-format
 
-  # 2. COMMITS E BRANCHES: Padronização e Segurança
+  # 2. Mypy para checagem de tipos em src/
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.20.2
+    hooks:
+      - id: mypy
+        args: [src]
+        pass_filenames: false
+        additional_dependencies:
+          - fastapi==0.135.1
+          - firebase_admin==7.2.0
+          - pydantic==2.12.5
+          - pydantic-settings==2.13.1
+          - python-socketio==5.14.0
+          - SQLAlchemy==2.0.48
+
+  # 3. Gitleaks para bloquear secrets antes do commit
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.24.2
+    hooks:
+      - id: gitleaks
+
+  # 4. COMMITS E BRANCHES: Padronização e Segurança
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0
     hooks:
@@ -22,7 +43,7 @@ repos:
       - id: no-commit-to-branch      # Protege as branches principais
         args: [--branch, main, --branch, dev]
 
-  # 3. CONVENTIONAL COMMITS: Força o padrão feat:, fix:, etc.
+  # 5. CONVENTIONAL COMMITS: Força o padrão feat:, fix:, etc.
   - repo: https://github.com/compilerla/conventional-pre-commit
     rev: v3.1.0
     hooks:
@@ -30,7 +51,7 @@ repos:
         stages: [commit-msg]
         args: ["feat", "fix", "chore", "docs", "style", "refactor", "test"]
 
-  # 4. LOCAL: Validação Customizada de Nomes de Branch
+  # 6. LOCAL: Validação Customizada de Nomes de Branch e scanners do projeto
   - repo: local
     hooks:
       - id: check-branch-name
@@ -46,4 +67,24 @@ repos:
           sys.exit(0)
           '
         language: system
+        pass_filenames: false
+      - id: regen-openapi
+        name: Regenerate OpenAPI schema
+        entry: bash -c 'python scripts/regen_openapi.py && git add openapi.json'
+        language: system
+        pass_filenames: false
+      - id: bandit
+        name: Bandit security scan
+        entry: bandit -c pyproject.toml -r src
+        language: python
+        additional_dependencies: [bandit==1.9.4]
+        pass_filenames: false
+
+      # PYSEC-2025-183 / CVE-2025-45768: PyJWT weak encryption disputed;
+      # key strength is controlled by application config and there is no fixed version.
+      - id: pip-audit
+        name: pip-audit dependency scan
+        entry: pip-audit -r requirements.txt --no-deps --disable-pip --cache-dir .cache/pip-audit --ignore-vuln PYSEC-2025-183
+        language: python
+        additional_dependencies: [pip-audit==2.10.0]
         pass_filenames: false

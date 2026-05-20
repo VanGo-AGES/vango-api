@@ -24,3 +24,42 @@ quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
 line-ending = "auto"
+
+[tool.mypy]
+python_version = "3.12"
+plugins = ["pydantic.mypy", "sqlalchemy.ext.mypy.plugin"]
+strict = false
+ignore_missing_imports = true
+explicit_package_bases = true
+warn_unused_configs = true
+show_error_codes = true
+pretty = true
+
+[tool.pydantic-mypy]
+init_forbid_extra = false
+init_typed = true
+warn_required_dynamic_aliases = true
+
+[tool.bandit]
+exclude_dirs = ["tests", "migrations"]
+skips = ["B101"]
+
+[[tool.mypy.overrides]]
+module = [
+    "src.domains.dependents.controller",
+    "src.domains.dependents.service",
+    "src.domains.route_passangers.service",
+    "src.domains.routes.controller",
+    "src.domains.routes.service",
+    "src.domains.routing.route_totals",
+    "src.domains.trips.service",
+    "src.domains.users.controller",
+    "src.domains.users.dtos",
+    "src.domains.users.service",
+    "src.domains.vehicles.controller",
+    "src.domains.vehicles.service",
+    "src.infrastructure.repositories.trip_passanger_repository",
+    "src.infrastructure.routing.mapbox_routing_service",
+    "src.infrastructure.socketio.server",
+]
+ignore_errors = true

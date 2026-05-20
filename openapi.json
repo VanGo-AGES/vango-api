@@ -1,0 +1,4594 @@
+{
+  "components": {
+    "schemas": {
+      "AbsenceResponse": {
+        "description": "Representação de uma ausência persistida.",
+        "properties": {
+          "absence_date": {
+            "format": "date-time",
+            "title": "Absence Date",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "route_passanger_id": {
+            "format": "uuid",
+            "title": "Route Passanger Id",
+            "type": "string"
+          },
+          "trip_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Trip Id"
+          }
+        },
+        "required": [
+          "id",
+          "route_passanger_id",
+          "absence_date",
+          "created_at"
+        ],
+        "title": "AbsenceResponse",
+        "type": "object"
+      },
+      "AddressCreate": {
+        "properties": {
+          "city": {
+            "minLength": 1,
+            "title": "City",
+            "type": "string"
+          },
+          "label": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Label",
+            "type": "string"
+          },
+          "neighborhood": {
+            "minLength": 1,
+            "title": "Neighborhood",
+            "type": "string"
+          },
+          "number": {
+            "minLength": 1,
+            "title": "Number",
+            "type": "string"
+          },
+          "state": {
+            "maxLength": 2,
+            "minLength": 2,
+            "title": "State",
+            "type": "string"
+          },
+          "street": {
+            "minLength": 1,
+            "title": "Street",
+            "type": "string"
+          },
+          "zip": {
+            "pattern": "^\\d{5}-\\d{3}$",
+            "title": "Zip",
+            "type": "string"
+          }
+        },
+        "required": [
+          "label",
+          "street",
+          "number",
+          "neighborhood",
+          "zip",
+          "city",
+          "state"
+        ],
+        "title": "AddressCreate",
+        "type": "object"
+      },
+      "AddressResponse": {
+        "properties": {
+          "city": {
+            "title": "City",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "latitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latitude"
+          },
+          "longitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Longitude"
+          },
+          "neighborhood": {
+            "title": "Neighborhood",
+            "type": "string"
+          },
+          "number": {
+            "title": "Number",
+            "type": "string"
+          },
+          "state": {
+            "title": "State",
+            "type": "string"
+          },
+          "street": {
+            "title": "Street",
+            "type": "string"
+          },
+          "zip": {
+            "title": "Zip",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "street",
+          "number",
+          "neighborhood",
+          "zip",
+          "city",
+          "state"
+        ],
+        "title": "AddressResponse",
+        "type": "object"
+      },
+      "Body_upload_photo_uploads_photo_post": {
+        "properties": {
+          "file": {
+            "contentMediaType": "application/octet-stream",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_photo_uploads_photo_post",
+        "type": "object"
+      },
+      "CreateAbsenceRequest": {
+        "description": "Payload enviado pelo passageiro (ou guardian) pra avisar ausência numa rota.",
+        "properties": {
+          "absence_date": {
+            "format": "date",
+            "title": "Absence Date",
+            "type": "string"
+          },
+          "dependent_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dependent Id"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "route_id": {
+            "format": "uuid",
+            "title": "Route Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "route_id",
+          "absence_date"
+        ],
+        "title": "CreateAbsenceRequest",
+        "type": "object"
+      },
+      "CurrentTripResponse": {
+        "description": "Resposta mínima exposta ao passageiro para acompanhamento da viagem.\n\nRetornada por GET /routes/{route_id}/trips/current.\nPermite ao app do passageiro descobrir o trip_id e conectar ao Socket.IO.\nRetorna None (204/null) quando não há viagem em andamento na rota.\n\nFields:\n- trip_id: UUID — identificador da viagem em andamento\n- status: str   — sempre \"iniciada\" enquanto em andamento\n- started_at: datetime | None — horário de início da viagem",
+        "properties": {
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "trip_id": {
+            "format": "uuid",
+            "title": "Trip Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "trip_id",
+          "status"
+        ],
+        "title": "CurrentTripResponse",
+        "type": "object"
+      },
+      "DependentCreate": {
+        "properties": {
+          "name": {
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "DependentCreate",
+        "type": "object"
+      },
+      "DependentResponse": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "guardian_id": {
+            "format": "uuid",
+            "title": "Guardian Id",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "guardian_id",
+          "name",
+          "created_at"
+        ],
+        "title": "DependentResponse",
+        "type": "object"
+      },
+      "DependentUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "title": "DependentUpdate",
+        "type": "object"
+      },
+      "FinishTripRequest": {
+        "description": "Payload enviado pelo motorista ao finalizar a viagem.\n\nFields esperados:\n- total_km: float | None — distância total percorrida (opcional)",
+        "properties": {
+          "total_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Distância total percorrida",
+            "title": "Total Km"
+          }
+        },
+        "title": "FinishTripRequest",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "JoinRouteRequest": {
+        "description": "Payload para um passageiro solicitar entrada em uma rota.\n\nO campo `address` define o endereço de embarque que será criado inline pelo\nbackend — o frontend não precisa fazer um POST /addresses separado.\nO mesmo endereço é usado como pickup_address em todos os dias da recorrência.",
+        "properties": {
+          "address": {
+            "$ref": "#/components/schemas/AddressCreate",
+            "description": "Endereço de embarque do passageiro (criado inline)"
+          },
+          "dependent_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "UUID do dependente, se guardian solicita em seu nome",
+            "title": "Dependent Id"
+          },
+          "schedules": {
+            "description": "Pelo menos um dia de agendamento",
+            "items": {
+              "$ref": "#/components/schemas/JoinRouteScheduleRequest"
+            },
+            "minItems": 1,
+            "title": "Schedules",
+            "type": "array"
+          }
+        },
+        "required": [
+          "address",
+          "schedules"
+        ],
+        "title": "JoinRouteRequest",
+        "type": "object"
+      },
+      "JoinRouteScheduleRequest": {
+        "description": "Item de agendamento no payload de entrada na rota.\n\nO endereço de embarque é informado uma única vez em JoinRouteRequest.address\ne é reutilizado em todos os dias — por isso este DTO não carrega address_id.",
+        "properties": {
+          "day_of_week": {
+            "description": "Dia da semana em inglês",
+            "enum": [
+              "monday",
+              "tuesday",
+              "wednesday",
+              "thursday",
+              "friday",
+              "saturday",
+              "sunday"
+            ],
+            "title": "Day Of Week",
+            "type": "string"
+          }
+        },
+        "required": [
+          "day_of_week"
+        ],
+        "title": "JoinRouteScheduleRequest",
+        "type": "object"
+      },
+      "LoginRequest": {
+        "properties": {
+          "email": {
+            "example": "john.doe@example.com",
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          },
+          "password": {
+            "example": "senha_segura123",
+            "minLength": 1,
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "LoginRequest",
+        "type": "object"
+      },
+      "PassangerRouteDetailResponse": {
+        "description": "Detalhe completo da rota do ponto de vista do passageiro (tela 2.3).\n\nProjeção passageiro-facing — NÃO expõe invite_code, max_passengers nem\ndriver_id. Retornada por GET /routes/{route_id}/me.",
+        "properties": {
+          "current_trip_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Current Trip Id"
+          },
+          "dependent_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dependent Id"
+          },
+          "dependent_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dependent Name"
+          },
+          "destination_address": {
+            "$ref": "#/components/schemas/AddressResponse"
+          },
+          "driver_name": {
+            "title": "Driver Name",
+            "type": "string"
+          },
+          "driver_phone": {
+            "title": "Driver Phone",
+            "type": "string"
+          },
+          "driver_plate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Driver Plate"
+          },
+          "estimated_duration_min": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Duração estimada planejada origem→stops→destino em minutos",
+            "title": "Estimated Duration Min"
+          },
+          "expected_time": {
+            "format": "time",
+            "title": "Expected Time",
+            "type": "string"
+          },
+          "membership_status": {
+            "title": "Membership Status",
+            "type": "string"
+          },
+          "my_pickup_address": {
+            "$ref": "#/components/schemas/AddressResponse"
+          },
+          "my_schedules": {
+            "items": {
+              "$ref": "#/components/schemas/RoutePassangerScheduleResponse"
+            },
+            "title": "My Schedules",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "origin_address": {
+            "$ref": "#/components/schemas/AddressResponse"
+          },
+          "recurrence": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Recurrence",
+            "type": "array"
+          },
+          "route_id": {
+            "format": "uuid",
+            "title": "Route Id",
+            "type": "string"
+          },
+          "route_type": {
+            "title": "Route Type",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "stops": {
+            "items": {
+              "$ref": "#/components/schemas/StopResponse"
+            },
+            "title": "Stops",
+            "type": "array"
+          },
+          "total_distance_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Distância total planejada origem→stops→destino em km",
+            "title": "Total Distance Km"
+          }
+        },
+        "required": [
+          "route_id",
+          "name",
+          "route_type",
+          "status",
+          "recurrence",
+          "expected_time",
+          "origin_address",
+          "destination_address",
+          "stops",
+          "driver_name",
+          "driver_phone",
+          "membership_status",
+          "my_pickup_address",
+          "my_schedules"
+        ],
+        "title": "PassangerRouteDetailResponse",
+        "type": "object"
+      },
+      "PassangerRouteResponse": {
+        "description": "Item da lista 'Minhas Rotas' da home do passageiro.",
+        "properties": {
+          "dependent_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dependent Name"
+          },
+          "destination_label": {
+            "title": "Destination Label",
+            "type": "string"
+          },
+          "destination_latitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destination Latitude"
+          },
+          "destination_longitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destination Longitude"
+          },
+          "driver_name": {
+            "title": "Driver Name",
+            "type": "string"
+          },
+          "driver_phone": {
+            "title": "Driver Phone",
+            "type": "string"
+          },
+          "estimated_duration_min": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Duração estimada planejada origem→stops→destino em minutos",
+            "title": "Estimated Duration Min"
+          },
+          "expected_time": {
+            "format": "time",
+            "title": "Expected Time",
+            "type": "string"
+          },
+          "joined_at": {
+            "format": "date-time",
+            "title": "Joined At",
+            "type": "string"
+          },
+          "membership_status": {
+            "title": "Membership Status",
+            "type": "string"
+          },
+          "origin_label": {
+            "title": "Origin Label",
+            "type": "string"
+          },
+          "origin_latitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin Latitude"
+          },
+          "origin_longitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin Longitude"
+          },
+          "recurrence": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Recurrence",
+            "type": "array"
+          },
+          "route_id": {
+            "format": "uuid",
+            "title": "Route Id",
+            "type": "string"
+          },
+          "route_name": {
+            "title": "Route Name",
+            "type": "string"
+          },
+          "schedules": {
+            "items": {
+              "$ref": "#/components/schemas/RoutePassangerScheduleResponse"
+            },
+            "title": "Schedules",
+            "type": "array"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "total_distance_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Distância total planejada origem→stops→destino em km",
+            "title": "Total Distance Km"
+          }
+        },
+        "required": [
+          "route_id",
+          "route_name",
+          "driver_name",
+          "driver_phone",
+          "origin_label",
+          "destination_label",
+          "expected_time",
+          "recurrence",
+          "status",
+          "membership_status",
+          "schedules",
+          "joined_at"
+        ],
+        "title": "PassangerRouteResponse",
+        "type": "object"
+      },
+      "RegisterPushTokenRequest": {
+        "description": "Payload para registrar o FCM push token do dispositivo do usuário.\n\nFields:\n- token: str — token FCM gerado pelo Firebase SDK no app mobile",
+        "properties": {
+          "token": {
+            "description": "FCM push token do dispositivo",
+            "minLength": 1,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "title": "RegisterPushTokenRequest",
+        "type": "object"
+      },
+      "RouteAbsenceResponse": {
+        "description": "Ausência de um passageiro numa rota, vista pelo motorista.",
+        "properties": {
+          "absence_date": {
+            "format": "date-time",
+            "title": "Absence Date",
+            "type": "string"
+          },
+          "dependent_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dependent Id"
+          },
+          "dependent_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dependent Name"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "route_passanger_id": {
+            "format": "uuid",
+            "title": "Route Passanger Id",
+            "type": "string"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          },
+          "user_name": {
+            "title": "User Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "route_passanger_id",
+          "user_id",
+          "user_name",
+          "dependent_id",
+          "dependent_name",
+          "absence_date",
+          "reason"
+        ],
+        "title": "RouteAbsenceResponse",
+        "type": "object"
+      },
+      "RouteCreate": {
+        "properties": {
+          "destination": {
+            "$ref": "#/components/schemas/AddressCreate"
+          },
+          "expected_time": {
+            "format": "time",
+            "title": "Expected Time",
+            "type": "string"
+          },
+          "name": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "origin": {
+            "$ref": "#/components/schemas/AddressCreate"
+          },
+          "recurrence": {
+            "title": "Recurrence",
+            "type": "string"
+          },
+          "route_type": {
+            "pattern": "^(outbound|inbound)$",
+            "title": "Route Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "route_type",
+          "origin",
+          "destination",
+          "expected_time",
+          "recurrence"
+        ],
+        "title": "RouteCreate",
+        "type": "object"
+      },
+      "RouteInviteSummaryResponse": {
+        "description": "Resumo da rota retornado ao passageiro durante a busca por invite_code.\n\nExpõe apenas o que o passageiro precisa para decidir se quer solicitar\nentrada: dados básicos da rota + capacidade e quantos já foram aceitos.\nNão expõe lista de passageiros nem stops.",
+        "properties": {
+          "accepted_count": {
+            "description": "Contagem de passageiros aceitos (injetado pelo service)",
+            "title": "Accepted Count",
+            "type": "integer"
+          },
+          "destination_address": {
+            "$ref": "#/components/schemas/AddressResponse"
+          },
+          "expected_time": {
+            "format": "time",
+            "title": "Expected Time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "max_passengers": {
+            "title": "Max Passengers",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "origin_address": {
+            "$ref": "#/components/schemas/AddressResponse"
+          },
+          "recurrence": {
+            "title": "Recurrence",
+            "type": "string"
+          },
+          "route_type": {
+            "title": "Route Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "route_type",
+          "recurrence",
+          "expected_time",
+          "max_passengers",
+          "accepted_count",
+          "origin_address",
+          "destination_address"
+        ],
+        "title": "RouteInviteSummaryResponse",
+        "type": "object"
+      },
+      "RoutePassangerResponse": {
+        "properties": {
+          "dependent_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dependent Id"
+          },
+          "dependent_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dependent Name"
+          },
+          "guardian_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Guardian Name"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "joined_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Joined At"
+          },
+          "photo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Photo Url"
+          },
+          "pickup_address_id": {
+            "format": "uuid",
+            "title": "Pickup Address Id",
+            "type": "string"
+          },
+          "requested_at": {
+            "format": "date-time",
+            "title": "Requested At",
+            "type": "string"
+          },
+          "route_id": {
+            "format": "uuid",
+            "title": "Route Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "user_id": {
+            "format": "uuid",
+            "title": "User Id",
+            "type": "string"
+          },
+          "user_name": {
+            "title": "User Name",
+            "type": "string"
+          },
+          "user_phone": {
+            "title": "User Phone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "route_id",
+          "status",
+          "requested_at",
+          "user_id",
+          "user_name",
+          "user_phone",
+          "pickup_address_id"
+        ],
+        "title": "RoutePassangerResponse",
+        "type": "object"
+      },
+      "RoutePassangerScheduleRequest": {
+        "description": "Item de agendamento enviado pelo passageiro: dia + endereço de embarque.\n\nUsado pelo UpdateSchedulesRequest (PATCH schedules).",
+        "properties": {
+          "address_id": {
+            "description": "Endereço de embarque neste dia",
+            "format": "uuid",
+            "title": "Address Id",
+            "type": "string"
+          },
+          "day_of_week": {
+            "description": "Dia da semana em inglês",
+            "enum": [
+              "monday",
+              "tuesday",
+              "wednesday",
+              "thursday",
+              "friday",
+              "saturday",
+              "sunday"
+            ],
+            "title": "Day Of Week",
+            "type": "string"
+          }
+        },
+        "required": [
+          "day_of_week",
+          "address_id"
+        ],
+        "title": "RoutePassangerScheduleRequest",
+        "type": "object"
+      },
+      "RoutePassangerScheduleResponse": {
+        "description": "Representação de um agendamento persistido.",
+        "properties": {
+          "address_id": {
+            "format": "uuid",
+            "title": "Address Id",
+            "type": "string"
+          },
+          "day_of_week": {
+            "title": "Day Of Week",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "day_of_week",
+          "address_id"
+        ],
+        "title": "RoutePassangerScheduleResponse",
+        "type": "object"
+      },
+      "RouteResponse": {
+        "properties": {
+          "accepted_count": {
+            "default": 0,
+            "description": "Quantidade de passageiros aceitos na rota",
+            "title": "Accepted Count",
+            "type": "integer"
+          },
+          "destination_address": {
+            "$ref": "#/components/schemas/AddressResponse"
+          },
+          "estimated_duration_min": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Duração estimada planejada origem→stops→destino em minutos",
+            "title": "Estimated Duration Min"
+          },
+          "expected_time": {
+            "format": "time",
+            "title": "Expected Time",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "invite_code": {
+            "title": "Invite Code",
+            "type": "string"
+          },
+          "max_passengers": {
+            "title": "Max Passengers",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "origin_address": {
+            "$ref": "#/components/schemas/AddressResponse"
+          },
+          "recurrence": {
+            "title": "Recurrence",
+            "type": "string"
+          },
+          "route_type": {
+            "title": "Route Type",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "stops": {
+            "items": {
+              "$ref": "#/components/schemas/StopResponse"
+            },
+            "title": "Stops",
+            "type": "array"
+          },
+          "total_distance_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Distância total planejada origem→stops→destino em km",
+            "title": "Total Distance Km"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "route_type",
+          "status",
+          "recurrence",
+          "expected_time",
+          "invite_code",
+          "max_passengers",
+          "origin_address",
+          "destination_address"
+        ],
+        "title": "RouteResponse",
+        "type": "object"
+      },
+      "RouteUpdate": {
+        "description": "DTO de atualização parcial de rota. Todos os campos são opcionais.\n\nRegras:\n- route_type: \"outbound\" ou \"inbound\"\n- recurrence: mesma validação de RouteCreate (dias válidos, sem duplicatas, >=1 dia)\n- origin != destination quando AMBOS estão presentes",
+        "properties": {
+          "destination": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AddressCreate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "expected_time": {
+            "anyOf": [
+              {
+                "format": "time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected Time"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "origin": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AddressCreate"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "recurrence": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recurrence"
+          },
+          "route_type": {
+            "anyOf": [
+              {
+                "pattern": "^(outbound|inbound)$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Route Type"
+          }
+        },
+        "title": "RouteUpdate",
+        "type": "object"
+      },
+      "StartTripRequest": {
+        "description": "Payload enviado pelo motorista para iniciar a viagem.\n\nFields esperados:\n- vehicle_id: UUID — veículo que vai executar a viagem (precisa pertencer\n  ao motorista dono da rota)\n- trip_date: datetime | None — data/hora da viagem. Default: now()",
+        "properties": {
+          "trip_date": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Data/hora da viagem",
+            "title": "Trip Date"
+          },
+          "vehicle_id": {
+            "description": "Veículo que vai executar a viagem",
+            "format": "uuid",
+            "title": "Vehicle Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "vehicle_id"
+        ],
+        "title": "StartTripRequest",
+        "type": "object"
+      },
+      "StopResponse": {
+        "properties": {
+          "address": {
+            "$ref": "#/components/schemas/AddressResponse"
+          },
+          "address_id": {
+            "format": "uuid",
+            "title": "Address Id",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "order_index": {
+            "title": "Order Index",
+            "type": "integer"
+          },
+          "route_id": {
+            "format": "uuid",
+            "title": "Route Id",
+            "type": "string"
+          },
+          "route_passanger_id": {
+            "format": "uuid",
+            "title": "Route Passanger Id",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "route_id",
+          "route_passanger_id",
+          "address_id",
+          "order_index",
+          "type",
+          "updated_at",
+          "address"
+        ],
+        "title": "StopResponse",
+        "type": "object"
+      },
+      "TripNextStopResponse": {
+        "description": "Próxima parada da viagem em andamento.\n\nFields esperados:\n- stop_id: UUID\n- order_index: int\n- address_label: str\n- passanger_name: str\n- passanger_phone: str          — telefone pra contato direto (US13)\n- trip_passanger_id: UUID\n- trip_passanger_status: str    — \"pendente\" | \"presente\" | \"ausente\"",
+        "properties": {
+          "address_label": {
+            "title": "Address Label",
+            "type": "string"
+          },
+          "order_index": {
+            "title": "Order Index",
+            "type": "integer"
+          },
+          "passanger_name": {
+            "title": "Passanger Name",
+            "type": "string"
+          },
+          "passanger_phone": {
+            "title": "Passanger Phone",
+            "type": "string"
+          },
+          "stop_id": {
+            "format": "uuid",
+            "title": "Stop Id",
+            "type": "string"
+          },
+          "trip_passanger_id": {
+            "format": "uuid",
+            "title": "Trip Passanger Id",
+            "type": "string"
+          },
+          "trip_passanger_status": {
+            "title": "Trip Passanger Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "stop_id",
+          "order_index",
+          "address_label",
+          "passanger_name",
+          "passanger_phone",
+          "trip_passanger_id",
+          "trip_passanger_status"
+        ],
+        "title": "TripNextStopResponse",
+        "type": "object"
+      },
+      "TripPassangerResponse": {
+        "description": "Representação do vínculo (passageiro x trip) durante/após a execução.\n\nFields esperados:\n- id: UUID\n- route_passanger_id: UUID\n- passanger_name: str          — nome do usuário ou dependente\n- status: str                  — \"pendente\" | \"presente\" | \"ausente\"\n- pickup_address_label: str    — endereço esperado de embarque\n- boarded_at: datetime | None\n- alighted_at: datetime | None\n- user_phone: str              — usado pelo FE para deeplink (US13)",
+        "properties": {
+          "alighted_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alighted At"
+          },
+          "boarded_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Boarded At"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "passanger_name": {
+            "title": "Passanger Name",
+            "type": "string"
+          },
+          "pickup_address_label": {
+            "title": "Pickup Address Label",
+            "type": "string"
+          },
+          "route_passanger_id": {
+            "format": "uuid",
+            "title": "Route Passanger Id",
+            "type": "string"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "user_phone": {
+            "title": "User Phone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "route_passanger_id",
+          "passanger_name",
+          "status",
+          "pickup_address_label",
+          "user_phone"
+        ],
+        "title": "TripPassangerResponse",
+        "type": "object"
+      },
+      "TripResponse": {
+        "description": "Representação completa da viagem em andamento.\n\nFields esperados:\n- id: UUID\n- route_id: UUID\n- route_name: str\n- vehicle_id: UUID\n- trip_date: datetime\n- status: str                  — \"iniciada\" | \"finalizada\" | \"cancelada\"\n- total_km: float | None\n- started_at: datetime | None\n- finished_at: datetime | None\n- trip_passangers: list[TripPassangerResponse]",
+        "properties": {
+          "finished_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finished At"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "route_id": {
+            "format": "uuid",
+            "title": "Route Id",
+            "type": "string"
+          },
+          "route_name": {
+            "title": "Route Name",
+            "type": "string"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "total_km": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Km"
+          },
+          "trip_date": {
+            "format": "date-time",
+            "title": "Trip Date",
+            "type": "string"
+          },
+          "trip_passangers": {
+            "items": {
+              "$ref": "#/components/schemas/TripPassangerResponse"
+            },
+            "title": "Trip Passangers",
+            "type": "array"
+          },
+          "vehicle_id": {
+            "format": "uuid",
+            "title": "Vehicle Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "route_id",
+          "route_name",
+          "vehicle_id",
+          "trip_date",
+          "status"
+        ],
+        "title": "TripResponse",
+        "type": "object"
+      },
+      "UpdateSchedulesRequest": {
+        "description": "Payload para o passageiro atualizar seus dias de participação.",
+        "properties": {
+          "schedules": {
+            "description": "Pelo menos um dia de agendamento",
+            "items": {
+              "$ref": "#/components/schemas/RoutePassangerScheduleRequest"
+            },
+            "minItems": 1,
+            "title": "Schedules",
+            "type": "array"
+          }
+        },
+        "required": [
+          "schedules"
+        ],
+        "title": "UpdateSchedulesRequest",
+        "type": "object"
+      },
+      "UserCreate": {
+        "properties": {
+          "cpf": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "example": "999.999.999-99",
+            "title": "Cpf"
+          },
+          "email": {
+            "example": "john.doe@example.com",
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          },
+          "name": {
+            "example": "John Doe",
+            "maxLength": 255,
+            "minLength": 3,
+            "title": "Name",
+            "type": "string"
+          },
+          "password": {
+            "example": "senha_segura123",
+            "minLength": 6,
+            "title": "Password",
+            "type": "string"
+          },
+          "phone": {
+            "example": "54999999999",
+            "maxLength": 20,
+            "minLength": 8,
+            "title": "Phone",
+            "type": "string"
+          },
+          "photo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Photo Url"
+          },
+          "role": {
+            "default": "guardian",
+            "pattern": "^(driver|passenger|guardian)$",
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "email",
+          "phone",
+          "password"
+        ],
+        "title": "UserCreate",
+        "type": "object"
+      },
+      "UserResponse": {
+        "properties": {
+          "cpf": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cpf"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "phone": {
+            "title": "Phone",
+            "type": "string"
+          },
+          "photo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Photo Url"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "phone",
+          "role",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "UserResponse",
+        "type": "object"
+      },
+      "UserUpdate": {
+        "additionalProperties": false,
+        "properties": {
+          "cpf": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "example": "999.999.999-99",
+            "title": "Cpf"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "format": "email",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "example": "john.doe@example.com",
+            "title": "Email"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 3,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "example": "John Doe",
+            "title": "Name"
+          },
+          "password": {
+            "anyOf": [
+              {
+                "minLength": 6,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "example": "senha_segura123",
+            "title": "Password"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "maxLength": 20,
+                "minLength": 8,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "example": "54999999999",
+            "title": "Phone"
+          },
+          "photo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Photo Url"
+          }
+        },
+        "title": "UserUpdate",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      },
+      "VehicleCreate": {
+        "properties": {
+          "capacity": {
+            "exclusiveMinimum": 0.0,
+            "maximum": 20.0,
+            "title": "Capacity",
+            "type": "integer"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "plate": {
+            "minLength": 1,
+            "title": "Plate",
+            "type": "string"
+          }
+        },
+        "required": [
+          "plate",
+          "capacity"
+        ],
+        "title": "VehicleCreate",
+        "type": "object"
+      },
+      "VehicleResponse": {
+        "properties": {
+          "capacity": {
+            "title": "Capacity",
+            "type": "integer"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "driver_id": {
+            "format": "uuid",
+            "title": "Driver Id",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "plate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plate"
+          },
+          "status": {
+            "title": "Status",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "driver_id",
+          "plate",
+          "capacity",
+          "notes",
+          "status",
+          "created_at"
+        ],
+        "title": "VehicleResponse",
+        "type": "object"
+      },
+      "VehicleUpdate": {
+        "properties": {
+          "capacity": {
+            "anyOf": [
+              {
+                "exclusiveMinimum": 0.0,
+                "maximum": 20.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "plate": {
+            "anyOf": [
+              {
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plate"
+          }
+        },
+        "title": "VehicleUpdate",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "description": "API para gestão de transporte escolar (VanGo)",
+    "title": "VanGO API",
+    "version": "0.1.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/": {
+      "get": {
+        "operationId": "read_root__get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Read Root  Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Read Root"
+      }
+    },
+    "/absences": {
+      "post": {
+        "description": "Passageiro (ou guardian em nome de dependente) registra o aviso de ausência numa data específica da rota. Erros: 404 se a rota não existir; 403 se o usuário não tiver vínculo ativo; 409 se já houver ausência pro mesmo RP na data ou se a data for inválida.",
+        "operationId": "create_absence_absences_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAbsenceRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AbsenceResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Avisar ausência numa rota",
+        "tags": [
+          "Absences"
+        ]
+      }
+    },
+    "/dependents/": {
+      "get": {
+        "description": "Retorna todos os dependentes cadastrados pelo usuário logado.",
+        "operationId": "list_dependents_dependents__get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Role",
+            "required": true,
+            "schema": {
+              "title": "X-User-Role",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DependentResponse"
+                  },
+                  "title": "Response List Dependents Dependents  Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Listar dependentes do usuário",
+        "tags": [
+          "Dependents"
+        ]
+      },
+      "post": {
+        "description": "Permite que um passageiro ou responsável adicione um dependente ao seu perfil.",
+        "operationId": "create_dependent_dependents__post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Role",
+            "required": true,
+            "schema": {
+              "title": "X-User-Role",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DependentCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DependentResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Adicionar dependente",
+        "tags": [
+          "Dependents"
+        ]
+      }
+    },
+    "/dependents/{dependent_id}": {
+      "delete": {
+        "description": "Remove um dependente do perfil do usuário logado.",
+        "operationId": "delete_dependent_dependents__dependent_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "dependent_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Dependent Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Role",
+            "required": true,
+            "schema": {
+              "title": "X-User-Role",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Excluir dependente",
+        "tags": [
+          "Dependents"
+        ]
+      },
+      "get": {
+        "description": "Retorna um dependente específico do usuário logado.",
+        "operationId": "get_dependent_dependents__dependent_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "dependent_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Dependent Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Role",
+            "required": true,
+            "schema": {
+              "title": "X-User-Role",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DependentResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Buscar dependente por ID",
+        "tags": [
+          "Dependents"
+        ]
+      },
+      "put": {
+        "description": "Atualiza os dados de um dependente do usuário logado.",
+        "operationId": "update_dependent_dependents__dependent_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "dependent_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Dependent Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Role",
+            "required": true,
+            "schema": {
+              "title": "X-User-Role",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DependentUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DependentResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Atualizar dependente",
+        "tags": [
+          "Dependents"
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "health_check_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Health Check Health Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health Check",
+        "tags": [
+          "Infrastructure"
+        ]
+      }
+    },
+    "/routes/": {
+      "get": {
+        "description": "Retorna todas as rotas cadastradas pelo motorista, independente de status.",
+        "operationId": "list_routes_routes__get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RouteResponse"
+                  },
+                  "title": "Response List Routes Routes  Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Listar todas as rotas do motorista",
+        "tags": [
+          "Routes"
+        ]
+      },
+      "post": {
+        "description": "Cria uma rota para o motorista com origem, destino, horário e recorrência. Gera automaticamente o código de convite e salva com status inativa.",
+        "operationId": "create_route_routes__post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RouteCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RouteResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Criar uma nova rota",
+        "tags": [
+          "Routes"
+        ]
+      }
+    },
+    "/routes/invite/{invite_code}": {
+      "get": {
+        "description": "Retorna o resumo público da rota identificada pelo invite_code, para que o passageiro decida se solicita entrada. Inclui accepted_count (quantidade de passageiros já aceitos) mas não expõe invite_code, status nem stops.",
+        "operationId": "get_route_by_invite_code_routes_invite__invite_code__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "invite_code",
+            "required": true,
+            "schema": {
+              "title": "Invite Code",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RouteInviteSummaryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Resumo de rota por código de convite",
+        "tags": [
+          "Routes"
+        ]
+      }
+    },
+    "/routes/me": {
+      "get": {
+        "description": "Retorna todos os vínculos ativos (pending + accepted) do usuário autenticado, incluindo vínculos em que ele é guardian de um dependente. Ordenado por joined_at desc. Usado pela home do passageiro.",
+        "operationId": "list_my_routes_routes_me_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PassangerRouteResponse"
+                  },
+                  "title": "Response List My Routes Routes Me Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Listar minhas rotas (home do passageiro)",
+        "tags": [
+          "RoutePassangers"
+        ]
+      }
+    },
+    "/routes/{route_id}": {
+      "delete": {
+        "description": "Exclui uma rota do motorista. Apenas o motorista dono pode excluir. Rotas com status='em_andamento' não podem ser excluídas. Passageiros ativos (pending/accepted) são notificados antes da exclusão. A remoção é em cascata: route_passangers, schedules e stops associadas também são apagados.",
+        "operationId": "delete_route_routes__route_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "route_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Route Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Excluir rota",
+        "tags": [
+          "Routes"
+        ]
+      },
+      "get": {
+        "description": "Retorna os dados completos de uma rota, incluindo endereços de origem e destino.",
+        "operationId": "get_route_routes__route_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "route_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Route Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RouteResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Detalhe de uma rota",
+        "tags": [
+          "Routes"
+        ]
+      },
+      "put": {
+        "description": "Atualiza uma rota existente do motorista. Permite alteração parcial (name, route_type, origin, destination, expected_time, recurrence). Rotas com status='em_andamento' não podem ser editadas.",
+        "operationId": "update_route_routes__route_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "route_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Route Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RouteUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RouteResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Editar rota",
+        "tags": [
+          "Routes"
+        ]
+      }
+    },
+    "/routes/{route_id}/absences": {
+      "get": {
+        "description": "Retorna os passageiros que avisaram ausência na data informada. Usado pelo motorista para separar stops presentes de ausentes na próxima partida. date padrão: hoje (UTC). 403 se não for dono da rota. 404 se a rota não existir.",
+        "operationId": "list_route_absences_routes__route_id__absences_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "route_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Route Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date",
+            "required": false,
+            "schema": {
+              "format": "date",
+              "title": "Date",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RouteAbsenceResponse"
+                  },
+                  "title": "Response List Route Absences Routes  Route Id  Absences Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Ausências da rota numa data",
+        "tags": [
+          "Routes"
+        ]
+      }
+    },
+    "/routes/{route_id}/invite-code/regenerate": {
+      "post": {
+        "description": "Invalida o código de convite atual e gera um novo. Apenas o motorista dono da rota pode realizar esta ação.",
+        "operationId": "regenerate_invite_code_routes__route_id__invite_code_regenerate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "route_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Route Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RouteResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Revogar e gerar novo código de convite",
+        "tags": [
+          "Routes"
+        ]
+      }
+    },
+    "/routes/{route_id}/me": {
+      "get": {
+        "description": "Retorna o detalhe completo da rota do ponto de vista do passageiro autenticado. Aceita dependent_id opcional quando guardian está vendo em nome do dependente. Não expõe invite_code/max_passengers/driver_id. Erros: 404 se a rota não existir, 403 se o usuário não tiver vínculo ativo com a rota.",
+        "operationId": "get_my_route_detail_routes__route_id__me_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "route_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Route Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "dependent_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Dependent Id"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PassangerRouteDetailResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Detalhe da rota para o passageiro",
+        "tags": [
+          "RoutePassangers"
+        ]
+      }
+    },
+    "/routes/{route_id}/passangers": {
+      "get": {
+        "description": "Lista vínculos de passageiros da rota. Aceita filtro opcional por status (pending, accepted, rejected). Sem filtro retorna todos.",
+        "operationId": "list_passangers_routes__route_id__passangers_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "route_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Route Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/RoutePassangerResponse"
+                  },
+                  "title": "Response List Passangers Routes  Route Id  Passangers Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Listar passageiros/solicitações da rota",
+        "tags": [
+          "RoutePassangers"
+        ]
+      },
+      "post": {
+        "description": "Passageiro (ou guardian em nome de dependente) solicita entrada na rota informando schedules (dias + endereço de embarque). Cria vínculo pending.",
+        "operationId": "join_route_routes__route_id__passangers_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "route_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Route Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinRouteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoutePassangerResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Solicitar entrada em rota",
+        "tags": [
+          "RoutePassangers"
+        ]
+      }
+    },
+    "/routes/{route_id}/passangers/me": {
+      "delete": {
+        "description": "Passageiro sai da rota. Aceita dependent_id opcional quando guardian está saindo em nome do dependente. Bloqueado se rota está em andamento.",
+        "operationId": "leave_route_routes__route_id__passangers_me_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "route_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Route Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "dependent_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Dependent Id"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Sair de uma rota",
+        "tags": [
+          "RoutePassangers"
+        ]
+      },
+      "patch": {
+        "description": "Substitui completamente os schedules atuais do passageiro pelos fornecidos. Aceita dependent_id opcional para guardian em nome de dep.",
+        "operationId": "update_schedules_routes__route_id__passangers_me_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "route_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Route Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "dependent_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Dependent Id"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSchedulesRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoutePassangerResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Atualizar schedules de participação",
+        "tags": [
+          "RoutePassangers"
+        ]
+      }
+    },
+    "/routes/{route_id}/passangers/{rp_id}": {
+      "delete": {
+        "description": "Remove um passageiro da rota. Bloqueado se a rota estiver em andamento.",
+        "operationId": "remove_passanger_routes__route_id__passangers__rp_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "route_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Route Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "rp_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Rp Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Remover passageiro da rota",
+        "tags": [
+          "RoutePassangers"
+        ]
+      }
+    },
+    "/routes/{route_id}/passangers/{rp_id}/accept": {
+      "post": {
+        "description": "Aprova uma solicitação pending. Valida ownership, bloqueio de rota em andamento e capacidade máxima do veículo.",
+        "operationId": "accept_request_routes__route_id__passangers__rp_id__accept_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "route_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Route Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "rp_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Rp Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoutePassangerResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Aceitar solicitação de passageiro",
+        "tags": [
+          "RoutePassangers"
+        ]
+      }
+    },
+    "/routes/{route_id}/passangers/{rp_id}/reject": {
+      "post": {
+        "description": "Recusa uma solicitação pending. Valida ownership e bloqueio de rota em andamento. Não valida capacidade.",
+        "operationId": "reject_request_routes__route_id__passangers__rp_id__reject_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "route_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Route Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "rp_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Rp Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RoutePassangerResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Recusar solicitação de passageiro",
+        "tags": [
+          "RoutePassangers"
+        ]
+      }
+    },
+    "/routes/{route_id}/trips": {
+      "post": {
+        "operationId": "start_trip_routes__route_id__trips_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "route_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Route Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartTripRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Motorista inicia a execução da rota",
+        "tags": [
+          "Trips"
+        ]
+      }
+    },
+    "/routes/{route_id}/trips/current": {
+      "get": {
+        "description": "Retorna o trip_id e status da viagem iniciada na rota, se existir. Qualquer usuário com vínculo ativo (pending ou accepted) pode consultar — não é restrito ao motorista. Aceita dependent_id opcional para guardian consultando em nome do dependente. Retorna null quando não há viagem em andamento. 404 se a rota não existir. 403 se o usuário não tiver vínculo ativo.",
+        "operationId": "get_current_trip_for_passanger_routes__route_id__trips_current_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "route_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Route Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "dependent_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Dependent Id"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/CurrentTripResponse"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Get Current Trip For Passanger Routes  Route Id  Trips Current Get"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Passageiro consulta viagem em andamento da sua rota",
+        "tags": [
+          "Trips"
+        ]
+      }
+    },
+    "/trips/{trip_id}": {
+      "get": {
+        "operationId": "get_trip_trips__trip_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "trip_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Trip Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Detalhes da viagem em andamento (motorista)",
+        "tags": [
+          "Trips"
+        ]
+      }
+    },
+    "/trips/{trip_id}/finish": {
+      "post": {
+        "operationId": "finish_trip_trips__trip_id__finish_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "trip_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Trip Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinishTripRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Motorista finaliza a viagem",
+        "tags": [
+          "Trips"
+        ]
+      }
+    },
+    "/trips/{trip_id}/next-stop": {
+      "get": {
+        "operationId": "get_next_stop_trips__trip_id__next_stop_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "trip_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Trip Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/TripNextStopResponse"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Get Next Stop Trips  Trip Id  Next Stop Get"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Próxima parada pendente + info do passageiro",
+        "tags": [
+          "Trips"
+        ]
+      }
+    },
+    "/trips/{trip_id}/passangers/{trip_passanger_id}/absent": {
+      "post": {
+        "operationId": "mark_passanger_absent_trips__trip_id__passangers__trip_passanger_id__absent_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "trip_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Trip Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "trip_passanger_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Trip Passanger Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripPassangerResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Motorista marca passageiro como não embarcado",
+        "tags": [
+          "Trips"
+        ]
+      }
+    },
+    "/trips/{trip_id}/passangers/{trip_passanger_id}/alight": {
+      "post": {
+        "operationId": "alight_passanger_trips__trip_id__passangers__trip_passanger_id__alight_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "trip_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Trip Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "trip_passanger_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Trip Passanger Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripPassangerResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Motorista registra desembarque manual de um passageiro",
+        "tags": [
+          "Trips"
+        ]
+      }
+    },
+    "/trips/{trip_id}/passangers/{trip_passanger_id}/board": {
+      "post": {
+        "operationId": "board_passanger_trips__trip_id__passangers__trip_passanger_id__board_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "trip_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Trip Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "trip_passanger_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Trip Passanger Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TripPassangerResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Motorista confirma embarque de um passageiro",
+        "tags": [
+          "Trips"
+        ]
+      }
+    },
+    "/trips/{trip_id}/stops/{stop_id}/skip": {
+      "post": {
+        "operationId": "skip_stop_trips__trip_id__stops__stop_id__skip_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "trip_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Trip Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "stop_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Stop Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/TripPassangerResponse"
+                  },
+                  "title": "Response Skip Stop Trips  Trip Id  Stops  Stop Id  Skip Post",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Motorista pula uma parada (marca passageiros como ausente)",
+        "tags": [
+          "Trips"
+        ]
+      }
+    },
+    "/uploads/photo": {
+      "post": {
+        "description": "Recebe uma imagem, faz o upload para o serviço de armazenamento e retorna a URL pública.",
+        "operationId": "upload_photo_uploads_photo_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_photo_uploads_photo_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Upload Photo Uploads Photo Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upload de foto de perfil",
+        "tags": [
+          "Uploads"
+        ]
+      }
+    },
+    "/users/": {
+      "get": {
+        "description": "Retorna a lista de todos os usuários cadastrados.",
+        "operationId": "list_users_users__get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/UserResponse"
+                  },
+                  "title": "Response List Users Users  Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Listar todos os usuários",
+        "tags": [
+          "Users"
+        ]
+      },
+      "post": {
+        "description": "Cria um usuário no banco e retorna os dados sem a senha.",
+        "operationId": "register_user_users__post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Registrar um novo usuário",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/users/login": {
+      "post": {
+        "description": "Valida e-mail e senha. Retorna o UserResponse em sucesso. 404 quando o e-mail não está cadastrado, 401 quando a senha está incorreta. Sem emissão de token — autenticação completa será adicionada em US futura.",
+        "operationId": "login_user_users_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Login intermediário (email + senha)",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/users/me/push-token": {
+      "post": {
+        "description": "Associa o token FCM do dispositivo ao usuário autenticado. Usado pelo app mobile logo após o login para habilitar notificações push. 404 se o usuário não existir.",
+        "operationId": "register_push_token_users_me_push_token_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterPushTokenRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Registrar FCM push token do dispositivo",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/users/{user_id}": {
+      "delete": {
+        "description": "Remove a conta do usuário e todos os dados associados em cascata.",
+        "operationId": "delete_user_users__user_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Excluir usuário",
+        "tags": [
+          "Users"
+        ]
+      },
+      "get": {
+        "description": "Retorna os dados de um usuário específico pelo seu ID.",
+        "operationId": "get_user_users__user_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Buscar usuário por ID",
+        "tags": [
+          "Users"
+        ]
+      },
+      "put": {
+        "description": "Atualiza os campos de um usuário existente.",
+        "operationId": "update_user_users__user_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "user_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "User Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Atualizar usuário",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/vehicles/": {
+      "get": {
+        "description": "Retorna todos os veículos cadastrados pelo motorista logado.",
+        "operationId": "list_vehicles_vehicles__get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Role",
+            "required": true,
+            "schema": {
+              "title": "X-User-Role",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/VehicleResponse"
+                  },
+                  "title": "Response List Vehicles Vehicles  Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Listar veículos do usuário",
+        "tags": [
+          "Vehicles"
+        ]
+      },
+      "post": {
+        "description": "Permite que um motorista adicione um veículo ao seu perfil.",
+        "operationId": "create_vehicle_vehicles__post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Role",
+            "required": true,
+            "schema": {
+              "title": "X-User-Role",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VehicleCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehicleResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Adicionar veículo",
+        "tags": [
+          "Vehicles"
+        ]
+      }
+    },
+    "/vehicles/{vehicle_id}": {
+      "delete": {
+        "description": "Remove um veículo do perfil do motorista logado.",
+        "operationId": "delete_vehicle_vehicles__vehicle_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vehicle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vehicle Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Role",
+            "required": true,
+            "schema": {
+              "title": "X-User-Role",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Excluir veículo",
+        "tags": [
+          "Vehicles"
+        ]
+      },
+      "get": {
+        "description": "Retorna um veículo específico do motorista logado.",
+        "operationId": "get_vehicle_vehicles__vehicle_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vehicle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vehicle Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Role",
+            "required": true,
+            "schema": {
+              "title": "X-User-Role",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehicleResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Buscar veículo por ID",
+        "tags": [
+          "Vehicles"
+        ]
+      },
+      "put": {
+        "description": "Atualiza os dados de um veículo do motorista logado.",
+        "operationId": "update_vehicle_vehicles__vehicle_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "vehicle_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Vehicle Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Role",
+            "required": true,
+            "schema": {
+              "title": "X-User-Role",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VehicleUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehicleResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Atualizar veículo",
+        "tags": [
+          "Vehicles"
+        ]
+      }
+    }
+  }
+}
