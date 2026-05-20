@@ -41,6 +41,7 @@ from src.domains.route_passangers.schedule_repository import (
     IRoutePassangerScheduleRepository,
 )
 from src.domains.routes.dtos import AddressResponse
+from src.domains.routes.entity import RouteModel
 from src.domains.routes.errors import RouteInProgressError, RouteNotFoundError, RouteOwnershipError
 from src.domains.routes.repository import IAddressRepository, IRouteRepository
 from src.domains.routing.service import IGeocodingService, IRoutingService
@@ -286,6 +287,21 @@ class RoutePassangerService:
         address.latitude = result.latitude
         address.longitude = result.longitude
 
+    # US10-TK19
+    def _compute_route_totals(self, route: RouteModel) -> tuple[float | None, int | None]:
+        """Devolve (total_distance_km, estimated_duration_min) da rota planejada.
+
+        Usado pelos endpoints GET /routes/me e GET /routes/{id}/me na hora de
+        montar PassangerRouteResponse e PassangerRouteDetailResponse com os
+        totais planejados (origem → stops → destino).
+
+        Delega pro helper compartilhado
+        src/domains/routing/route_totals.compute_route_totals usando o
+        self.routing_service injetado. Retorna (None, None) se routing_service
+        for None ou se algum endereço estiver sem lat/lng — nunca propaga.
+        """
+        pass  # type: ignore[return-value]
+
     # Helper interno (sem @abstractmethod — não está na interface)
     def _to_response(self, rp: RoutePassangerModel) -> RoutePassangerResponse:
         """Constrói RoutePassangerResponse resolvendo nomes de user/dependent/guardian.
@@ -527,6 +543,8 @@ class RoutePassangerService:
                 except Exception:  # noqa: BLE001
                     pass
 
+            # US10-TK19: chamar self._compute_route_totals(route) e passar
+            # total_distance_km / estimated_duration_min no construtor abaixo.
             results.append(
                 PassangerRouteResponse(
                     route_id=route.id,
@@ -625,6 +643,8 @@ class RoutePassangerService:
             except Exception:  # noqa: BLE001
                 pass
 
+        # US10-TK19: chamar self._compute_route_totals(route) e passar
+        # total_distance_km / estimated_duration_min no construtor abaixo.
         return PassangerRouteDetailResponse(
             route_id=route.id,
             name=route.name,

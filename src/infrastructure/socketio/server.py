@@ -18,6 +18,7 @@ from contextlib import contextmanager
 from urllib.parse import parse_qs
 
 import socketio
+from src.domains.notifications.service import INotificationService
 from src.domains.routing.service import IRoutingService
 from src.domains.trips.service import TripService
 from src.infrastructure.database import SessionLocal
@@ -72,17 +73,11 @@ PROXIMITY_THRESHOLD_KM: float = 0.5
 ARRIVAL_THRESHOLD_KM: float = 0.05
 
 
-def _get_notification_service() -> object:
-    from src.infrastructure.notifications.firebase_notification_service import (
-        FirebaseNotificationService,
-    )
-
-    return FirebaseNotificationService()
-
-
 # ---------------------------------------------------------------------------
 # Socket.IO event stubs — implementados nas TKs seguintes
 # ---------------------------------------------------------------------------
+# (a função _get_notification_service está definida mais abaixo, junto com
+#  os outros helpers de DI — _get_routing_service, _get_trip_service)
 
 
 # US10-TK02
@@ -241,33 +236,51 @@ async def location_update(sid: str, data: dict) -> None:
     # Salvar a última localização conhecida
     tracking_sessions[trip_id]["last_location"] = data
 
+    # Para cada follower: calcular ETA UMA VEZ e reaproveitar nos 3 emits:
+    #   - US10-TK04+TK16: location_update enriquecido com eta_minutes/distance_km
+    #   - US12-TK06/TK07: driver_eta + push de proximity/arrival
+    # Falha no cálculo (ex.: follower sem stop_lat/lng, Mapbox indisponível)
+    # vira ETA=None — o location_update enriquecido ainda sai com campos
+    # null, e os emits/pushes ficam de fora.
     followers = tracking_sessions[trip_id].get("followers", [])
     has_untracked_followers = False
-    follower_eta: dict[str, dict | None] = {}
     for follower_sid in followers:
         if follower_sid not in sid_meta:
             has_untracked_followers = True
             continue
 
-        eta = await _calculate_eta_for_follower(
-            data.get("lat"),
-            data.get("lng"),
-            follower_sid,
-        )
-        if eta is None:
-            has_untracked_followers = True
-            continue
+        try:
+            eta = await _calculate_eta_for_follower(
+                data.get("lat"),
+                data.get("lng"),
+                follower_sid,
+            )
+        except Exception:
+            eta = None
 
+        # location_update enriquecido (sempre emitido, ETA pode ser null)
         follower_payload = {
             **data,
-            "eta_minutes": eta["eta_minutes"],
-            "distance_km": eta["distance_km"],
+            "eta_minutes": eta["eta_minutes"] if eta is not None else None,
+            "distance_km": eta["distance_km"] if eta is not None else None,
         }
         await sio.emit("location_update", follower_payload, to=follower_sid)
 
-    # Sempre fazer broadcast para o room da sessão quando houver followers
-    # que não receberam um update personalizado.
-    if has_untracked_followers or not followers:
+        # driver_eta dedicado + push triggers (só quando temos ETA real)
+        if eta is not None:
+            try:
+                await sio.emit("driver_eta", eta, to=follower_sid)
+                distance_km = eta.get("distance_km")
+                if distance_km is not None:
+                    await _notify_proximity_if_needed(follower_sid, distance_km)  # TK06
+                    await _notify_arrival_if_needed(follower_sid, distance_km)  # TK07
+            except Exception:
+                # Falha em push/driver_eta não pode interromper o handler
+                pass
+
+    # Compatibilidade com sessões antigas/inconsistentes onde o follower ainda
+    # existe no room, mas não há metadata suficiente para calcular ETA.
+    if has_untracked_followers:
         await sio.emit(
             "location_update",
             data,
@@ -275,35 +288,23 @@ async def location_update(sid: str, data: dict) -> None:
             skip_sid=sid,
         )
 
-    # US10-TK17 — ETA do motorista para a próxima parada pendente
-    if not followers:
-        try:
-            tracker_eta = await _calculate_eta_for_tracker(data.get("lat"), data.get("lng"), trip_id)
-            tracker_payload = {
-                "stop_id": tracker_eta["stop_id"] if tracker_eta is not None else None,
-                "eta_minutes": tracker_eta["eta_minutes"] if tracker_eta is not None else None,
-                "distance_km": tracker_eta["distance_km"] if tracker_eta is not None else None,
-            }
-            await sio.emit("driver_eta", tracker_payload, to=sid)
-        except Exception:
-            pass
-
-    # US10-TK08 / US12-TK06 / US12-TK07 — ETA + push por follower
+    # US10-TK17 — ETA do motorista até a próxima parada pendente, emitido
+    # sempre para o tracker_sid (independente de ter followers). Qualquer
+    # falha no cálculo (sem parada pendente, sem coords, routing/DB indisponível)
+    # vira payload com campos null — driver_eta é best-effort e nunca propaga
+    # exceção para o handler.
     try:
-        for follower_sid in followers:
-            try:
-                eta_info = follower_eta.get(follower_sid)
-                if not eta_info:
-                    continue
+        tracker_eta = await _calculate_eta_for_tracker(data.get("lat"), data.get("lng"), trip_id)
+    except Exception:
+        tracker_eta = None
 
-                await sio.emit("driver_eta", eta_info, to=follower_sid)
-
-                distance_km = eta_info.get("distance_km")
-                if distance_km is not None:
-                    await _notify_proximity_if_needed(follower_sid, distance_km)  # TK06
-                    await _notify_arrival_if_needed(follower_sid, distance_km)  # TK07 ← aqui
-            except Exception:
-                pass
+    tracker_payload = {
+        "stop_id": tracker_eta["stop_id"] if tracker_eta is not None else None,
+        "eta_minutes": tracker_eta["eta_minutes"] if tracker_eta is not None else None,
+        "distance_km": tracker_eta["distance_km"] if tracker_eta is not None else None,
+    }
+    try:
+        await sio.emit("driver_eta", tracker_payload, to=sid)
     except Exception:
         pass
 
@@ -339,7 +340,7 @@ async def emit_trip_finished(trip_id: str) -> None:
 
 
 # US12-TK06
-def _get_notification_service() -> object:
+def _get_notification_service() -> INotificationService:
     return FirebaseNotificationService()
 
 

@@ -7,7 +7,7 @@ Cobre:
 
 import uuid
 from datetime import date, datetime, time, timezone, timedelta
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -18,6 +18,10 @@ from src.domains.route_passangers.entity import RoutePassangerModel
 from src.domains.routes.entity import RouteModel
 from src.domains.users.entity import UserModel
 from src.infrastructure.database import get_db
+from src.infrastructure.dependencies.routing_dependencies import (
+    get_geocoding_service,
+    get_routing_service,
+)
 from src.infrastructure.dependencies.absence_dependencies import get_absence_service
 from src.main import fastapi_app as app
 
@@ -160,6 +164,12 @@ def integration_client(db_session):
         yield db_session
 
     app.dependency_overrides[get_db] = override_db
+    # US10-TK19: routing_service e geocoding_service são injetados em vários
+    # services agora; em CI sem internet/credencial Mapbox o caminho real
+    # quebra. Override por Mocks neutros — testes que precisam de routing
+    # com return específico devem mockar explicitamente.
+    app.dependency_overrides[get_routing_service] = lambda: MagicMock()
+    app.dependency_overrides[get_geocoding_service] = lambda: MagicMock()
     yield TestClient(app, raise_server_exceptions=False)
     app.dependency_overrides.clear()
 

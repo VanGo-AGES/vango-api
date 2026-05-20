@@ -80,6 +80,15 @@ class RouteResponse(BaseModel):
     destination_address: AddressResponse
     # US07-TK-S05 — paradas da rota (geradas a partir de passageiros aceitos)
     stops: list[StopResponse] = Field(default_factory=list)
+    # US10-TK19 — totais planejados da rota (calculados via Mapbox Directions)
+    total_distance_km: float | None = Field(
+        default=None,
+        description="Distância total planejada origem→stops→destino em km",
+    )
+    estimated_duration_min: int | None = Field(
+        default=None,
+        description="Duração estimada planejada origem→stops→destino em minutos",
+    )
 
 
 # US08-TK01
