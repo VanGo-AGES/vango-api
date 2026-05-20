@@ -17,12 +17,13 @@ import uuid
 from urllib.parse import parse_qs
 
 import socketio
+from src.domains.notifications.service import INotificationService
 from src.domains.routing.service import IRoutingService
 from src.infrastructure.database import SessionLocal
 from src.infrastructure.dependencies.routing_dependencies import get_routing_service
+from src.infrastructure.notifications.firebase_notification_service import FirebaseNotificationService
 from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 from src.infrastructure.repositories.trip_repository import TripRepositoryImpl
-from src.infrastructure.notifications.firebase_notification_service import FirebaseNotificationService
 
 # ---------------------------------------------------------------------------
 # Socket.IO server
@@ -234,8 +235,12 @@ async def location_update(sid: str, data: dict) -> None:
     # Salvar a última localização conhecida
     tracking_sessions[trip_id]["last_location"] = data
 
-    # Enviar update individualizado para cada follower, enriquecido com o ETA
-    # até a parada associada ao próprio follower.
+    # Para cada follower: calcular ETA uma única vez e reaproveitar nos
+    # três emits abaixo:
+    #   - US10-TK04 + US10-TK08: location_update enriquecido com eta_minutes/distance_km
+    #   - US12-TK06/TK07: driver_eta + push de proximity/arrival
+    # Iterar uma vez só evita chamar _calculate_eta_for_follower (e
+    # consequentemente a Mapbox Directions API) duas vezes por follower.
     followers = tracking_sessions[trip_id].get("followers", [])
     has_untracked_followers = False
     for follower_sid in followers:
@@ -243,17 +248,34 @@ async def location_update(sid: str, data: dict) -> None:
             has_untracked_followers = True
             continue
 
-        eta = await _calculate_eta_for_follower(
-            data.get("lat"),
-            data.get("lng"),
-            follower_sid,
-        )
+        try:
+            eta = await _calculate_eta_for_follower(
+                data.get("lat"),
+                data.get("lng"),
+                follower_sid,
+            )
+        except Exception:
+            eta = None
+
+        # location_update enriquecido (sempre emitido, ETA pode ser null)
         follower_payload = {
             **data,
             "eta_minutes": eta["eta_minutes"] if eta is not None else None,
             "distance_km": eta["distance_km"] if eta is not None else None,
         }
         await sio.emit("location_update", follower_payload, to=follower_sid)
+
+        # driver_eta dedicado + push triggers (só quando temos ETA real)
+        if eta is not None:
+            try:
+                await sio.emit("driver_eta", eta, to=follower_sid)
+                distance_km = eta.get("distance_km")
+                if distance_km is not None:
+                    await _notify_proximity_if_needed(follower_sid, distance_km)  # TK06
+                    await _notify_arrival_if_needed(follower_sid, distance_km)  # TK07
+            except Exception:
+                # Falha em push/driver_eta não pode interromper o handler
+                pass
 
     # Compatibilidade com sessões antigas/inconsistentes onde o follower ainda
     # existe no room, mas não há metadata suficiente para calcular ETA.
@@ -264,27 +286,6 @@ async def location_update(sid: str, data: dict) -> None:
             room=f"trip:{trip_id}",
             skip_sid=sid,
         )
-
-    # US10-TK08 / US12-TK06 / US12-TK07 — ETA + push por follower
-    try:
-        driver_lat = data["lat"]
-        driver_lng = data["lng"]
-
-        followers = tracking_sessions[trip_id].get("followers", [])
-        for follower_sid in followers:
-            try:
-                eta_info = await _calculate_eta_for_follower(driver_lat, driver_lng, follower_sid)
-                if eta_info:
-                    await sio.emit("driver_eta", eta_info, to=follower_sid)
-
-                    distance_km = eta_info.get("distance_km")
-                    if distance_km is not None:
-                        await _notify_proximity_if_needed(follower_sid, distance_km)  # TK06
-                        await _notify_arrival_if_needed(follower_sid, distance_km)  # TK07 ← aqui
-            except Exception:
-                pass
-    except Exception:
-        pass
 
 
 # US11-TK05
@@ -318,8 +319,9 @@ async def emit_trip_finished(trip_id: str) -> None:
 
 
 # US12-TK06
-def _get_notification_service():
+def _get_notification_service() -> INotificationService:
     return FirebaseNotificationService()
+
 
 async def _notify_proximity_if_needed(follower_sid: str, distance_km: float) -> None:
     """Envia push "Seu motorista está próximo" quando distance_km < PROXIMITY_THRESHOLD_KM."""
@@ -341,6 +343,7 @@ async def _notify_proximity_if_needed(follower_sid: str, distance_km: float) -> 
         meta["proximity_notified"] = True
     except Exception:
         pass
+
 
 # US12-TK07
 async def _notify_arrival_if_needed(follower_sid: str, distance_km: float) -> None:
