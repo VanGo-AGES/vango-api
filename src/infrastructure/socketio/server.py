@@ -14,15 +14,22 @@ Montagem em main.py (US10-TK01):
 """
 
 import uuid
+from contextlib import contextmanager
 from urllib.parse import parse_qs
 
 import socketio
 from src.domains.routing.service import IRoutingService
+from src.domains.trips.service import TripService
 from src.infrastructure.database import SessionLocal
 from src.infrastructure.dependencies.routing_dependencies import get_routing_service
-from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
-from src.infrastructure.repositories.trip_repository import TripRepositoryImpl
 from src.infrastructure.notifications.firebase_notification_service import FirebaseNotificationService
+from src.infrastructure.repositories.absence_repository import AbsenceRepositoryImpl
+from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
+from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
+from src.infrastructure.repositories.stop_repository import StopRepositoryImpl
+from src.infrastructure.repositories.trip_passanger_repository import TripPassangerRepositoryImpl
+from src.infrastructure.repositories.trip_repository import TripRepositoryImpl
+from src.infrastructure.repositories.vehicle_repository import VehicleRepositoryImpl
 
 # ---------------------------------------------------------------------------
 # Socket.IO server
@@ -234,10 +241,9 @@ async def location_update(sid: str, data: dict) -> None:
     # Salvar a última localização conhecida
     tracking_sessions[trip_id]["last_location"] = data
 
-    # Enviar update individualizado para cada follower, enriquecido com o ETA
-    # até a parada associada ao próprio follower.
     followers = tracking_sessions[trip_id].get("followers", [])
     has_untracked_followers = False
+    follower_eta: dict[str, dict | None] = {}
     for follower_sid in followers:
         if follower_sid not in sid_meta:
             has_untracked_followers = True
@@ -248,16 +254,20 @@ async def location_update(sid: str, data: dict) -> None:
             data.get("lng"),
             follower_sid,
         )
+        if eta is None:
+            has_untracked_followers = True
+            continue
+
         follower_payload = {
             **data,
-            "eta_minutes": eta["eta_minutes"] if eta is not None else None,
-            "distance_km": eta["distance_km"] if eta is not None else None,
+            "eta_minutes": eta["eta_minutes"],
+            "distance_km": eta["distance_km"],
         }
         await sio.emit("location_update", follower_payload, to=follower_sid)
 
-    # Compatibilidade com sessões antigas/inconsistentes onde o follower ainda
-    # existe no room, mas não há metadata suficiente para calcular ETA.
-    if has_untracked_followers:
+    # Sempre fazer broadcast para o room da sessão quando houver followers
+    # que não receberam um update personalizado.
+    if has_untracked_followers or not followers:
         await sio.emit(
             "location_update",
             data,
@@ -265,22 +275,33 @@ async def location_update(sid: str, data: dict) -> None:
             skip_sid=sid,
         )
 
+    # US10-TK17 — ETA do motorista para a próxima parada pendente
+    if not followers:
+        try:
+            tracker_eta = await _calculate_eta_for_tracker(data.get("lat"), data.get("lng"), trip_id)
+            tracker_payload = {
+                "stop_id": tracker_eta["stop_id"] if tracker_eta is not None else None,
+                "eta_minutes": tracker_eta["eta_minutes"] if tracker_eta is not None else None,
+                "distance_km": tracker_eta["distance_km"] if tracker_eta is not None else None,
+            }
+            await sio.emit("driver_eta", tracker_payload, to=sid)
+        except Exception:
+            pass
+
     # US10-TK08 / US12-TK06 / US12-TK07 — ETA + push por follower
     try:
-        driver_lat = data["lat"]
-        driver_lng = data["lng"]
-
-        followers = tracking_sessions[trip_id].get("followers", [])
         for follower_sid in followers:
             try:
-                eta_info = await _calculate_eta_for_follower(driver_lat, driver_lng, follower_sid)
-                if eta_info:
-                    await sio.emit("driver_eta", eta_info, to=follower_sid)
+                eta_info = follower_eta.get(follower_sid)
+                if not eta_info:
+                    continue
 
-                    distance_km = eta_info.get("distance_km")
-                    if distance_km is not None:
-                        await _notify_proximity_if_needed(follower_sid, distance_km)  # TK06
-                        await _notify_arrival_if_needed(follower_sid, distance_km)  # TK07 ← aqui
+                await sio.emit("driver_eta", eta_info, to=follower_sid)
+
+                distance_km = eta_info.get("distance_km")
+                if distance_km is not None:
+                    await _notify_proximity_if_needed(follower_sid, distance_km)  # TK06
+                    await _notify_arrival_if_needed(follower_sid, distance_km)  # TK07 ← aqui
             except Exception:
                 pass
     except Exception:
@@ -318,8 +339,9 @@ async def emit_trip_finished(trip_id: str) -> None:
 
 
 # US12-TK06
-def _get_notification_service():
+def _get_notification_service() -> object:
     return FirebaseNotificationService()
+
 
 async def _notify_proximity_if_needed(follower_sid: str, distance_km: float) -> None:
     """Envia push "Seu motorista está próximo" quando distance_km < PROXIMITY_THRESHOLD_KM."""
@@ -341,6 +363,7 @@ async def _notify_proximity_if_needed(follower_sid: str, distance_km: float) -> 
         meta["proximity_notified"] = True
     except Exception:
         pass
+
 
 # US12-TK07
 async def _notify_arrival_if_needed(follower_sid: str, distance_km: float) -> None:
@@ -423,6 +446,7 @@ def _get_routing_service() -> IRoutingService:
 
 
 # US10-TK17
+@contextmanager
 def _get_trip_service():  # type: ignore[no-untyped-def]
     """Retorna uma instância de TripService para uso dentro dos handlers Socket.IO.
 
@@ -435,7 +459,28 @@ def _get_trip_service():  # type: ignore[no-untyped-def]
     uma instância configurada. Cuidar do ciclo da sessão (with/finally).
     Os testes substituem essa função via patch.
     """
-    pass  # type: ignore[return-value]
+    session = SessionLocal()
+    try:
+        trip_repo = TripRepositoryImpl(session)
+        tp_repo = TripPassangerRepositoryImpl(session)
+        absence_repo = AbsenceRepositoryImpl(session)
+        route_repo = RouteRepositoryImpl(session)
+        route_passanger_repo = RoutePassangerRepositoryImpl(session)
+        stop_repo = StopRepositoryImpl(session)
+        vehicle_repo = VehicleRepositoryImpl(session)
+        service = TripService(
+            trip_repository=trip_repo,
+            trip_passanger_repository=tp_repo,
+            absence_repository=absence_repo,
+            route_repository=route_repo,
+            route_passanger_repository=route_passanger_repo,
+            stop_repository=stop_repo,
+            vehicle_repository=vehicle_repo,
+            notification_service=_get_notification_service(),
+        )
+        yield service
+    finally:
+        session.close()
 
 
 # US10-TK17
@@ -467,7 +512,44 @@ async def _calculate_eta_for_tracker(
       ou None se: não houver parada pendente, endereço sem coordenadas,
       routing service indisponível, ou trip não encontrada.
     """
-    pass  # type: ignore[return-value]
+    if driver_lat is None or driver_lng is None or trip_id is None:
+        return None
+
+    try:
+        trip_uuid = uuid.UUID(trip_id)
+    except Exception:
+        return None
+
+    try:
+        trip_service_context = _get_trip_service()
+        if type(trip_service_context).__name__ == "_GeneratorContextManager":
+            with trip_service_context as trip_service:
+                next_stop = trip_service.get_next_stop_with_coordinates(trip_uuid)
+        else:
+            trip_service = trip_service_context
+            next_stop = trip_service.get_next_stop_with_coordinates(trip_uuid)
+
+        if next_stop is None:
+            return None
+
+        stop_lat = next_stop.get("lat")
+        stop_lng = next_stop.get("lng")
+        if stop_lat is None or stop_lng is None:
+            return None
+
+        route_info = _get_routing_service().get_route_info(
+            origin={"lat": driver_lat, "lng": driver_lng},
+            waypoints=[],
+            destination={"lat": stop_lat, "lng": stop_lng},
+        )
+
+        return {
+            "stop_id": str(next_stop["stop_id"]),
+            "eta_minutes": route_info.estimated_duration_min,
+            "distance_km": route_info.total_distance_km,
+        }
+    except Exception:
+        return None
 
 
 def _validate_tracker(user_id: str, trip_id: str) -> bool:
