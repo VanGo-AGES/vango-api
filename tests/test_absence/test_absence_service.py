@@ -271,7 +271,7 @@ def test_create_absence_does_not_notify_on_validation_error() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US10-TK08")
+
 def test_create_absence_calls_optimize_stop_order() -> None:
     """create_absence deve chamar routing_service.optimize_stop_order após registrar ausência."""
     from src.domains.absences.dtos import CreateAbsenceRequest

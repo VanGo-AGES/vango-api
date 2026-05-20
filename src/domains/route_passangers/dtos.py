@@ -119,6 +119,15 @@ class PassangerRouteResponse(BaseModel):
     schedules: list[RoutePassangerScheduleResponse]
     joined_at: datetime
     dependent_name: str | None = None
+    # US10-TK19 — totais planejados da rota (calculados via Mapbox Directions)
+    total_distance_km: float | None = Field(
+        default=None,
+        description="Distância total planejada origem→stops→destino em km",
+    )
+    estimated_duration_min: int | None = Field(
+        default=None,
+        description="Duração estimada planejada origem→stops→destino em minutos",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -157,3 +166,13 @@ class PassangerRouteDetailResponse(BaseModel):
     my_schedules: list[RoutePassangerScheduleResponse]
 
     current_trip_id: UUID | None = None
+
+    # US10-TK19 — totais planejados da rota (calculados via Mapbox Directions)
+    total_distance_km: float | None = Field(
+        default=None,
+        description="Distância total planejada origem→stops→destino em km",
+    )
+    estimated_duration_min: int | None = Field(
+        default=None,
+        description="Duração estimada planejada origem→stops→destino em minutos",
+    )

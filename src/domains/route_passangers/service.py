@@ -41,6 +41,7 @@ from src.domains.route_passangers.schedule_repository import (
     IRoutePassangerScheduleRepository,
 )
 from src.domains.routes.dtos import AddressResponse
+from src.domains.routes.entity import RouteModel
 from src.domains.routes.errors import RouteInProgressError, RouteNotFoundError, RouteOwnershipError
 from src.domains.routes.repository import IAddressRepository, IRouteRepository
 from src.domains.routing.service import IGeocodingService, IRoutingService
@@ -237,7 +238,27 @@ class RoutePassangerService:
         cada stop de acordo com a nova ordem.
         Silenciosamente ignorado se routing_service for None.
         """
-        pass
+        if self.routing_service is None:
+            return
+
+        stops = self.stop_repository.find_by_route_id(route_id)
+        coordinates = []
+        optimizable_stops = []
+        for stop in stops:
+            address = getattr(stop, "address", None)
+            latitude = getattr(address, "latitude", None)
+            longitude = getattr(address, "longitude", None)
+            if latitude is None or longitude is None:
+                continue
+            coordinates.append({"id": stop.id, "lat": latitude, "lng": longitude})
+            optimizable_stops.append(stop)
+
+        optimized_order = self.routing_service.optimize_stop_order(coordinates)
+        for order_index, original_index in enumerate(optimized_order):
+            if 0 <= original_index < len(optimizable_stops):
+                stop = optimizable_stops[original_index]
+                stop.order_index = order_index
+                self.stop_repository.save(stop)
 
     # US10-TK18
     def _geocode_address(self, address: AddressModel) -> None:
@@ -265,6 +286,21 @@ class RoutePassangerService:
 
         address.latitude = result.latitude
         address.longitude = result.longitude
+
+    # US10-TK19
+    def _compute_route_totals(self, route: RouteModel) -> tuple[float | None, int | None]:
+        """Devolve (total_distance_km, estimated_duration_min) da rota planejada.
+
+        Usado pelos endpoints GET /routes/me e GET /routes/{id}/me na hora de
+        montar PassangerRouteResponse e PassangerRouteDetailResponse com os
+        totais planejados (origem → stops → destino).
+
+        Delega pro helper compartilhado
+        src/domains/routing/route_totals.compute_route_totals usando o
+        self.routing_service injetado. Retorna (None, None) se routing_service
+        for None ou se algum endereço estiver sem lat/lng — nunca propaga.
+        """
+        pass  # type: ignore[return-value]
 
     # Helper interno (sem @abstractmethod — não está na interface)
     def _to_response(self, rp: RoutePassangerModel) -> RoutePassangerResponse:
@@ -492,7 +528,7 @@ class RoutePassangerService:
 
             dependent_name: str | None = None
             if rp.dependent_id is not None:
-                dependent = self.dependent_repository.find_by_id(rp.dependent_id)
+                dependent = self.dependent_repository.get_by_id(rp.dependent_id)
                 if dependent is not None:
                     dependent_name = dependent.name
 
@@ -507,6 +543,8 @@ class RoutePassangerService:
                 except Exception:  # noqa: BLE001
                     pass
 
+            # US10-TK19: chamar self._compute_route_totals(route) e passar
+            # total_distance_km / estimated_duration_min no construtor abaixo.
             results.append(
                 PassangerRouteResponse(
                     route_id=route.id,
@@ -546,6 +584,11 @@ class RoutePassangerService:
         if route is None:
             raise RouteNotFoundError()
 
+        # Se o caller passou dependent_id explicitamente, usa o lookup direto
+        # (mantém compatibilidade com guardians que querem desambiguar entre
+        # múltiplos dependentes na mesma rota). Senão, busca qualquer vínculo
+        # ativo onde o user é passageiro direto OU guardian de um dependente
+        # vinculado à rota.
         rp = self.route_passanger_repository.find_active_by_user_and_route(user_id, dependent_id, route_id)
         if rp is None:
             raise NotRoutePassangerError()
@@ -554,9 +597,14 @@ class RoutePassangerService:
         if driver is None:
             raise RouteNotFoundError()
 
+        # Resolve dependent_name a partir do rp encontrado: se o caller passou
+        # dependent_id, usa esse; senão, usa o rp.dependent_id (que pode ser
+        # None para vínculo direto, ou o uuid do dependente quando o user é
+        # guardian).
         dependent_name: str | None = None
-        if dependent_id is not None:
-            dep = self.dependent_repository.find_by_id(dependent_id)
+        effective_dependent_id = dependent_id if dependent_id is not None else rp.dependent_id
+        if effective_dependent_id is not None:
+            dep = self.dependent_repository.get_by_id(effective_dependent_id)
             if dep is not None:
                 dependent_name = dep.name
 
@@ -595,6 +643,8 @@ class RoutePassangerService:
             except Exception:  # noqa: BLE001
                 pass
 
+        # US10-TK19: chamar self._compute_route_totals(route) e passar
+        # total_distance_km / estimated_duration_min no construtor abaixo.
         return PassangerRouteDetailResponse(
             route_id=route.id,
             name=route.name,
@@ -609,7 +659,7 @@ class RoutePassangerService:
             driver_phone=driver.phone,
             driver_plate=driver_plate,
             membership_status=rp.status,
-            dependent_id=dependent_id,
+            dependent_id=effective_dependent_id,
             dependent_name=dependent_name,
             my_pickup_address=pickup,
             my_schedules=schedules_list,

@@ -1,6 +1,6 @@
 import uuid
 from datetime import time
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -284,6 +284,10 @@ def test_get_route_wrong_owner_returns_403() -> None:
 from src.domains.users.entity import UserModel
 from src.domains.vehicles.entity import VehicleModel
 from src.infrastructure.database import get_db
+from src.infrastructure.dependencies.routing_dependencies import (
+    get_geocoding_service,
+    get_routing_service,
+)
 from src.infrastructure.repositories.vehicle_repository import VehicleRepositoryImpl
 from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
 
@@ -325,6 +329,12 @@ def integration_client(db_session):
         yield db_session
 
     app.dependency_overrides[get_db] = override_db
+    # US10-TK19: routing_service e geocoding_service viraram dependências
+    # injetadas em RouteService e RoutePassangerService. Em CI sem
+    # credencial Mapbox o caminho real quebra (e create_route chama
+    # _geocode_address). Override por Mocks neutros.
+    app.dependency_overrides[get_routing_service] = lambda: MagicMock()
+    app.dependency_overrides[get_geocoding_service] = lambda: MagicMock()
     yield TestClient(app, raise_server_exceptions=False)
     app.dependency_overrides.clear()
 
