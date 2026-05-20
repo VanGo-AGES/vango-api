@@ -859,7 +859,7 @@ async def test_emit_passenger_boarded_no_error_when_session_not_found():
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US11-TK06")
+
 @pytest.mark.asyncio
 async def test_emit_passenger_absent_emits_to_room():
     """emit_passenger_absent deve emitir evento passenger_absent para o room da sessão."""
@@ -877,7 +877,7 @@ async def test_emit_passenger_absent_emits_to_room():
     tracking_sessions.pop(trip_id, None)
 
 
-@pytest.mark.skip(reason="US11-TK06")
+
 @pytest.mark.asyncio
 async def test_emit_passenger_absent_payload_contains_user_name():
     """Payload de passenger_absent deve conter trip_passanger_id e user_name."""
@@ -896,7 +896,7 @@ async def test_emit_passenger_absent_payload_contains_user_name():
     tracking_sessions.pop(trip_id, None)
 
 
-@pytest.mark.skip(reason="US11-TK06")
+
 @pytest.mark.asyncio
 async def test_emit_passenger_absent_no_error_when_session_not_found():
     """emit_passenger_absent com trip_id sem sessão ativa não deve levantar exceção."""

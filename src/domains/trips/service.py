@@ -51,7 +51,6 @@ from src.domains.trips.repository import (
     ITripRepository,
 )
 from src.domains.vehicles.repository import IVehicleRepository
-from src.infrastructure.socketio import server as _socketio_server
 
 
 class TripService:
@@ -289,6 +288,8 @@ class TripService:
         # US11-TK06 — Extrair o nome do usuário/dependente e emitir o evento
         rp = updated.route_passanger
         passanger_name = str(rp.dependent.name if rp.dependent_id else rp.user.name)
+        from src.infrastructure.socketio import server as _socketio_server
+
         asyncio.ensure_future(_socketio_server.emit_passenger_absent(str(trip.id), str(updated.id), passanger_name))
 
         return self._build_trip_passanger_response(updated)
@@ -332,6 +333,8 @@ class TripService:
             # US11-TK06 — Extrair o nome do usuário/dependente e emitir o evento
             rp = updated.route_passanger
             passanger_name = str(rp.dependent.name if rp.dependent_id else rp.user.name)
+            from src.infrastructure.socketio import server as _socketio_server
+
             asyncio.ensure_future(_socketio_server.emit_passenger_absent(str(trip.id), str(updated.id), passanger_name))
 
             updated_responses.append(self._build_trip_passanger_response(updated))
