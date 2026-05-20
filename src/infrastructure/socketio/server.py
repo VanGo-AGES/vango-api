@@ -259,7 +259,12 @@ async def emit_trip_finished(trip_id: str) -> None:
     Chamado pelo TripService após finalizar a viagem.
     Silenciosamente ignorado se não houver sessão ativa para o trip_id.
     """
-    pass
+    if trip_id not in tracking_sessions:
+        return
+
+    sio.emit("trip_finished", {}, room=trip_id)
+
+    tracking_sessions.pop(trip_id)
 
 
 # US12-TK06

@@ -50,6 +50,7 @@ from src.domains.trips.repository import (
     ITripRepository,
 )
 from src.domains.vehicles.repository import IVehicleRepository
+from src.infrastructure.socketio.server import emit_trip_finished
 
 
 class TripService:
@@ -353,7 +354,7 @@ class TripService:
         return self._build_trip_passanger_response(updated)
 
     # US09-TK13
-    def finish_trip(self, trip_id: UUID, driver_id: UUID, data: FinishTripRequest) -> TripResponse:
+    async def finish_trip(self, trip_id: UUID, driver_id: UUID, data: FinishTripRequest) -> TripResponse:
         """Finaliza a viagem.
 
         - Valida ownership.
@@ -391,7 +392,7 @@ class TripService:
         self.notification_service.notify_trip_finished(finished)
 
         # US11-TK04 — emitir evento Socket.IO trip_finished para followers
-        # await emit_trip_finished(str(trip_id))  # wiring completo em US11-TK04
+        await emit_trip_finished(str(trip_id))  # wiring completo em US11-TK04
 
         return TripResponse(
             id=finished.id,
