@@ -37,7 +37,7 @@ class MapboxRoutingService(IRoutingService):
         url = f"https://api.mapbox.com/optimized-trips/v1/mapbox/driving/{coords}"
         params = {"access_token": self.api_key}
 
-        response = requests.get(url, params=params)
+        response = requests.get(url, params=params, timeout=5)
         response.raise_for_status()
         data = response.json()
 
@@ -69,7 +69,10 @@ class MapboxRoutingService(IRoutingService):
         url = f"https://api.mapbox.com/directions/v5/mapbox/driving/{coords}"
         params = {"access_token": self.api_key}
 
-        response = requests.get(url, params=params)
+        # timeout=5: evita worker travado se a Mapbox ficar lenta/indisponível.
+        # Timeout/ConnectionError viram RequestException, propagam para o caller,
+        # que já trata via try/except (best-effort no helper de routing).
+        response = requests.get(url, params=params, timeout=5)
         response.raise_for_status()
         data = response.json()
 
