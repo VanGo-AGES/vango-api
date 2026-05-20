@@ -190,7 +190,13 @@ async def test_location_update_saves_last_location():
 
 @pytest.mark.asyncio
 async def test_location_update_broadcasts_to_room():
-    """location_update deve fazer broadcast para o room da sessão."""
+    """location_update deve fazer broadcast para o room da sessão.
+
+    Nota: TK17 acrescentou um emit adicional de "driver_eta" para o tracker_sid
+    no mesmo handler, então não dá mais para assertar `called_once`. O que
+    importa neste teste é que UM dos emits seja location_update com room
+    contendo o trip_id.
+    """
     from src.infrastructure.socketio.server import sio, tracking_sessions, sid_meta
 
     trip_id = _make_trip_id()
@@ -202,9 +208,16 @@ async def test_location_update_broadcasts_to_room():
 
     with patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock) as mock_emit:
         await sio.handlers["/"]["location_update"](sid, payload)
-        mock_emit.assert_called_once()
-        call_room = mock_emit.call_args[1].get("room") or mock_emit.call_args[0][2]
-        assert trip_id in call_room
+
+        # Procurar o emit de location_update para o room
+        room_broadcasts = [
+            call for call in mock_emit.call_args_list
+            if len(call.args) > 0
+            and call.args[0] == "location_update"
+            and call.kwargs.get("room")
+        ]
+        assert len(room_broadcasts) >= 1
+        assert trip_id in room_broadcasts[0].kwargs.get("room")
 
     tracking_sessions.pop(trip_id, None)
     sid_meta.pop(sid, None)
@@ -589,7 +602,13 @@ async def test_location_update_eta_uses_follower_stop_coordinates():
 
 @pytest.mark.asyncio
 async def test_location_update_eta_gracefully_none_when_routing_unavailable():
-    """Se routing service não disponível, eta_minutes e distance_km devem ser None no broadcast."""
+    """Se routing service não disponível, eta_minutes e distance_km devem ser None no broadcast.
+
+    Nota: TK17 acrescentou um emit adicional de "driver_eta" no mesmo handler,
+    então não dá mais para assertar `called_once`. O contrato aqui é: mesmo
+    sem ETA, o evento "location_update" deve ter sido emitido pelo menos uma
+    vez para o follower (não pode suprimir o evento).
+    """
     from src.infrastructure.socketio.server import sio, tracking_sessions, sid_meta
 
     trip_id = _make_trip_id()
@@ -617,7 +636,11 @@ async def test_location_update_eta_gracefully_none_when_routing_unavailable():
         await sio.handlers["/"]["location_update"](tracker_sid, payload)
 
         # broadcast deve ocorrer mesmo sem ETA (não pode suprimir o evento)
-        mock_emit.assert_called_once()
+        location_update_calls = [
+            call for call in mock_emit.call_args_list
+            if len(call.args) > 0 and call.args[0] == "location_update"
+        ]
+        assert len(location_update_calls) >= 1
 
     tracking_sessions.pop(trip_id, None)
     sid_meta.pop(tracker_sid, None)
@@ -1178,7 +1201,7 @@ async def test_arrival_threshold_smaller_than_proximity_threshold():
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US10-TK17")
+
 @pytest.mark.asyncio
 async def test_location_update_emits_driver_eta_to_tracker():
     """location_update deve emitir 'driver_eta' diretamente para o tracker_sid."""
@@ -1216,7 +1239,7 @@ async def test_location_update_emits_driver_eta_to_tracker():
     sid_meta.pop(tracker_sid, None)
 
 
-@pytest.mark.skip(reason="US10-TK17")
+
 @pytest.mark.asyncio
 async def test_driver_eta_payload_contains_eta_and_distance_fields():
     """driver_eta payload deve conter eta_minutes e distance_km vindos do calculo."""
@@ -1247,7 +1270,7 @@ async def test_driver_eta_payload_contains_eta_and_distance_fields():
     sid_meta.pop(tracker_sid, None)
 
 
-@pytest.mark.skip(reason="US10-TK17")
+
 @pytest.mark.asyncio
 async def test_driver_eta_emitted_with_null_when_no_pending_stop():
     """Se _calculate_eta_for_tracker retornar None, emit ocorre com eta_minutes e
@@ -1279,7 +1302,7 @@ async def test_driver_eta_emitted_with_null_when_no_pending_stop():
     sid_meta.pop(tracker_sid, None)
 
 
-@pytest.mark.skip(reason="US10-TK17")
+
 @pytest.mark.asyncio
 async def test_driver_eta_failure_does_not_block_follower_broadcast():
     """Falha em _calculate_eta_for_tracker (exceção) não pode interromper o
@@ -1306,19 +1329,22 @@ async def test_driver_eta_failure_does_not_block_follower_broadcast():
         # location_update não deve propagar a exceção
         await sio.handlers["/"]["location_update"](tracker_sid, payload)
 
-        # broadcast pro room dos followers deve ter ocorrido normalmente
-        room_calls = [
+        # broadcast pro follower deve ter ocorrido normalmente — pode ser
+        # via room (followers fora de sid_meta) OU emit per-follower
+        # (followers em sid_meta com ou sem stop coords). O essencial é
+        # que pelo menos um evento "location_update" tenha sido emitido.
+        location_update_calls = [
             call for call in mock_emit.call_args_list
-            if call.kwargs.get("room") and "trip" in str(call.kwargs.get("room"))
+            if len(call.args) > 0 and call.args[0] == "location_update"
         ]
-        assert len(room_calls) >= 1
+        assert len(location_update_calls) >= 1
 
     tracking_sessions.pop(trip_id, None)
     sid_meta.pop(tracker_sid, None)
     sid_meta.pop(follower_sid, None)
 
 
-@pytest.mark.skip(reason="US10-TK17")
+
 @pytest.mark.asyncio
 async def test_calculate_eta_for_tracker_returns_dict_when_pending_stop_exists():
     """_calculate_eta_for_tracker deve devolver dict com eta_minutes/distance_km
@@ -1355,7 +1381,7 @@ async def test_calculate_eta_for_tracker_returns_dict_when_pending_stop_exists()
     assert result.get("stop_id") == "stop-pending-001"
 
 
-@pytest.mark.skip(reason="US10-TK17")
+
 @pytest.mark.asyncio
 async def test_calculate_eta_for_tracker_returns_none_when_no_pending_stop():
     """Se não houver parada pendente (todos embarcados/ausentes), retorna None."""
@@ -1370,7 +1396,7 @@ async def test_calculate_eta_for_tracker_returns_none_when_no_pending_stop():
     assert result is None
 
 
-@pytest.mark.skip(reason="US10-TK17")
+
 @pytest.mark.asyncio
 async def test_calculate_eta_for_tracker_returns_none_when_address_missing_coordinates():
     """Se a próxima parada pendente tiver address.latitude/longitude None, retorna None."""
@@ -1389,7 +1415,7 @@ async def test_calculate_eta_for_tracker_returns_none_when_address_missing_coord
     assert result is None
 
 
-@pytest.mark.skip(reason="US10-TK17")
+
 @pytest.mark.asyncio
 async def test_calculate_eta_for_tracker_returns_none_when_routing_unavailable():
     """Se routing_service não estiver disponível (ou levantar exceção), retorna None."""

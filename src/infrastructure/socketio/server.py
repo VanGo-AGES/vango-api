@@ -14,16 +14,23 @@ Montagem em main.py (US10-TK01):
 """
 
 import uuid
+from contextlib import contextmanager
 from urllib.parse import parse_qs
 
 import socketio
 from src.domains.notifications.service import INotificationService
 from src.domains.routing.service import IRoutingService
+from src.domains.trips.service import TripService
 from src.infrastructure.database import SessionLocal
 from src.infrastructure.dependencies.routing_dependencies import get_routing_service
 from src.infrastructure.notifications.firebase_notification_service import FirebaseNotificationService
+from src.infrastructure.repositories.absence_repository import AbsenceRepositoryImpl
 from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
+from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
+from src.infrastructure.repositories.stop_repository import StopRepositoryImpl
+from src.infrastructure.repositories.trip_passanger_repository import TripPassangerRepositoryImpl
 from src.infrastructure.repositories.trip_repository import TripRepositoryImpl
+from src.infrastructure.repositories.vehicle_repository import VehicleRepositoryImpl
 
 # ---------------------------------------------------------------------------
 # Socket.IO server
@@ -66,17 +73,11 @@ PROXIMITY_THRESHOLD_KM: float = 0.5
 ARRIVAL_THRESHOLD_KM: float = 0.05
 
 
-def _get_notification_service() -> object:
-    from src.infrastructure.notifications.firebase_notification_service import (
-        FirebaseNotificationService,
-    )
-
-    return FirebaseNotificationService()
-
-
 # ---------------------------------------------------------------------------
 # Socket.IO event stubs — implementados nas TKs seguintes
 # ---------------------------------------------------------------------------
+# (a função _get_notification_service está definida mais abaixo, junto com
+#  os outros helpers de DI — _get_routing_service, _get_trip_service)
 
 
 # US10-TK02
@@ -235,12 +236,12 @@ async def location_update(sid: str, data: dict) -> None:
     # Salvar a última localização conhecida
     tracking_sessions[trip_id]["last_location"] = data
 
-    # Para cada follower: calcular ETA uma única vez e reaproveitar nos
-    # três emits abaixo:
-    #   - US10-TK04 + US10-TK08: location_update enriquecido com eta_minutes/distance_km
+    # Para cada follower: calcular ETA UMA VEZ e reaproveitar nos 3 emits:
+    #   - US10-TK04+TK16: location_update enriquecido com eta_minutes/distance_km
     #   - US12-TK06/TK07: driver_eta + push de proximity/arrival
-    # Iterar uma vez só evita chamar _calculate_eta_for_follower (e
-    # consequentemente a Mapbox Directions API) duas vezes por follower.
+    # Falha no cálculo (ex.: follower sem stop_lat/lng, Mapbox indisponível)
+    # vira ETA=None — o location_update enriquecido ainda sai com campos
+    # null, e os emits/pushes ficam de fora.
     followers = tracking_sessions[trip_id].get("followers", [])
     has_untracked_followers = False
     for follower_sid in followers:
@@ -286,6 +287,26 @@ async def location_update(sid: str, data: dict) -> None:
             room=f"trip:{trip_id}",
             skip_sid=sid,
         )
+
+    # US10-TK17 — ETA do motorista até a próxima parada pendente, emitido
+    # sempre para o tracker_sid (independente de ter followers). Qualquer
+    # falha no cálculo (sem parada pendente, sem coords, routing/DB indisponível)
+    # vira payload com campos null — driver_eta é best-effort e nunca propaga
+    # exceção para o handler.
+    try:
+        tracker_eta = await _calculate_eta_for_tracker(data.get("lat"), data.get("lng"), trip_id)
+    except Exception:
+        tracker_eta = None
+
+    tracker_payload = {
+        "stop_id": tracker_eta["stop_id"] if tracker_eta is not None else None,
+        "eta_minutes": tracker_eta["eta_minutes"] if tracker_eta is not None else None,
+        "distance_km": tracker_eta["distance_km"] if tracker_eta is not None else None,
+    }
+    try:
+        await sio.emit("driver_eta", tracker_payload, to=sid)
+    except Exception:
+        pass
 
 
 # US11-TK05
@@ -426,6 +447,7 @@ def _get_routing_service() -> IRoutingService:
 
 
 # US10-TK17
+@contextmanager
 def _get_trip_service():  # type: ignore[no-untyped-def]
     """Retorna uma instância de TripService para uso dentro dos handlers Socket.IO.
 
@@ -438,7 +460,28 @@ def _get_trip_service():  # type: ignore[no-untyped-def]
     uma instância configurada. Cuidar do ciclo da sessão (with/finally).
     Os testes substituem essa função via patch.
     """
-    pass  # type: ignore[return-value]
+    session = SessionLocal()
+    try:
+        trip_repo = TripRepositoryImpl(session)
+        tp_repo = TripPassangerRepositoryImpl(session)
+        absence_repo = AbsenceRepositoryImpl(session)
+        route_repo = RouteRepositoryImpl(session)
+        route_passanger_repo = RoutePassangerRepositoryImpl(session)
+        stop_repo = StopRepositoryImpl(session)
+        vehicle_repo = VehicleRepositoryImpl(session)
+        service = TripService(
+            trip_repository=trip_repo,
+            trip_passanger_repository=tp_repo,
+            absence_repository=absence_repo,
+            route_repository=route_repo,
+            route_passanger_repository=route_passanger_repo,
+            stop_repository=stop_repo,
+            vehicle_repository=vehicle_repo,
+            notification_service=_get_notification_service(),
+        )
+        yield service
+    finally:
+        session.close()
 
 
 # US10-TK17
@@ -470,7 +513,44 @@ async def _calculate_eta_for_tracker(
       ou None se: não houver parada pendente, endereço sem coordenadas,
       routing service indisponível, ou trip não encontrada.
     """
-    pass  # type: ignore[return-value]
+    if driver_lat is None or driver_lng is None or trip_id is None:
+        return None
+
+    try:
+        trip_uuid = uuid.UUID(trip_id)
+    except Exception:
+        return None
+
+    try:
+        trip_service_context = _get_trip_service()
+        if type(trip_service_context).__name__ == "_GeneratorContextManager":
+            with trip_service_context as trip_service:
+                next_stop = trip_service.get_next_stop_with_coordinates(trip_uuid)
+        else:
+            trip_service = trip_service_context
+            next_stop = trip_service.get_next_stop_with_coordinates(trip_uuid)
+
+        if next_stop is None:
+            return None
+
+        stop_lat = next_stop.get("lat")
+        stop_lng = next_stop.get("lng")
+        if stop_lat is None or stop_lng is None:
+            return None
+
+        route_info = _get_routing_service().get_route_info(
+            origin={"lat": driver_lat, "lng": driver_lng},
+            waypoints=[],
+            destination={"lat": stop_lat, "lng": stop_lng},
+        )
+
+        return {
+            "stop_id": str(next_stop["stop_id"]),
+            "eta_minutes": route_info.estimated_duration_min,
+            "distance_km": route_info.total_distance_km,
+        }
+    except Exception:
+        return None
 
 
 def _validate_tracker(user_id: str, trip_id: str) -> bool:
