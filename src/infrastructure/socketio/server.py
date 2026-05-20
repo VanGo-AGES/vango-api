@@ -243,13 +243,29 @@ async def emit_passenger_boarded(trip_id: str, trip_passanger_id: str, user_name
 
 
 # US11-TK06
-async def emit_passenger_absent(trip_id: str, trip_passanger_id: str, user_name: str) -> None:
+# US11-TK06
+async def emit_passenger_absent(
+    trip_id: str,
+    trip_passanger_id: str,
+    user_name: str,
+) -> None:
     """Emite passenger_absent para todos no room da sessão.
 
     Payload: {"trip_passanger_id": str, "user_name": str}
     Silenciosamente ignorado se não houver sessão ativa para o trip_id.
     """
-    pass
+
+    if trip_id not in tracking_sessions:
+        return
+
+    await sio.emit(
+        "passenger_absent",
+        {
+            "trip_passanger_id": trip_passanger_id,
+            "user_name": user_name,
+        },
+        room=f"trip:{trip_id}",
+    )
 
 
 # US11-TK04
