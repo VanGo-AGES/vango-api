@@ -14,6 +14,7 @@ IRouteRepository, IVehicleRepository (ou cheque equivalente), IStopRepository
 e INotificationService.
 """
 
+import asyncio
 from datetime import UTC, datetime
 from uuid import UUID
 
@@ -165,6 +166,8 @@ class TripService:
 
     def _build_trip_passanger_response(self, tp: TripPassangerModel) -> TripPassangerResponse:
         """Resolve nome, endereço e telefone a partir do RoutePassanger."""
+        from datetime import datetime as _datetime
+
         rp = tp.route_passanger
 
         passanger_name = rp.dependent.name if rp.dependent_id else rp.user.name
@@ -175,8 +178,8 @@ class TripService:
             passanger_name=str(passanger_name),
             status=tp.status,
             pickup_address_label=str(rp.pickup_address.label),
-            boarded_at=tp.boarded_at,
-            alighted_at=tp.alighted_at,
+            boarded_at=tp.boarded_at if isinstance(tp.boarded_at, _datetime) else None,
+            alighted_at=tp.alighted_at if isinstance(tp.alighted_at, _datetime) else None,
             user_phone=str(rp.user.phone),
         )
 
@@ -258,7 +261,6 @@ class TripService:
     # US09-TK10
     def mark_passanger_absent(self, trip_id: UUID, trip_passanger_id: UUID, driver_id: UUID) -> TripPassangerResponse:
         """Marca passageiro como não embarcado (ausente).
-
         Mesmas validações do board_passanger, mas:
         - Só pode marcar ausente quem está 'pendente'.
         - Atualiza status='ausente' (boarded_at permanece None).
@@ -279,16 +281,27 @@ class TripService:
             raise InvalidTripPassangerStatusError(f"Não é possível marcar ausente um passageiro com status '{tp.status}'.")
 
         updated = self.trip_passanger_repository.update_status(trip_passanger_id, "ausente")
+
         # US12-TK05
         self.notification_service.notify_passanger_absent(updated)
-        # US11-TK06 — chamar emit_passenger_absent(str(trip.id), str(updated.id), user_name)
+
+        # US11-TK06 — Extrair o nome do usuário/dependente e emitir o evento
+        rp = updated.route_passanger
+        passanger_name = str(rp.dependent.name if rp.dependent_id else rp.user.name)
+        from src.infrastructure.socketio import server as _socketio_server
+
+        coro = _socketio_server.emit_passenger_absent(str(trip.id), str(updated.id), passanger_name)
+        try:
+            asyncio.ensure_future(coro)
+        except RuntimeError:
+            coro.close()
+
         return self._build_trip_passanger_response(updated)
 
     # US09-TK11
     def skip_stop(self, trip_id: UUID, stop_id: UUID, driver_id: UUID) -> list[TripPassangerResponse]:
         """Pula uma parada inteira — marca todos os trip_passangers daquela
         parada como 'ausente'.
-
         - Valida ownership e status da trip.
         - Valida que o stop pertence à rota da trip (TripStopNotFoundError).
         - Identifica os trip_passangers associados à stop (via
@@ -320,7 +333,18 @@ class TripService:
         updated_responses = []
         for tp in pending_tps:
             updated = self.trip_passanger_repository.update_status(tp.id, "ausente")
-            # US11-TK06 — chamar emit_passenger_absent(str(trip.id), str(updated.id), user_name)
+
+            # US11-TK06 — Extrair o nome do usuário/dependente e emitir o evento
+            rp = updated.route_passanger
+            passanger_name = str(rp.dependent.name if rp.dependent_id else rp.user.name)
+            from src.infrastructure.socketio import server as _socketio_server
+
+            coro = _socketio_server.emit_passenger_absent(str(trip.id), str(updated.id), passanger_name)
+            try:
+                asyncio.ensure_future(coro)
+            except RuntimeError:
+                coro.close()
+
             updated_responses.append(self._build_trip_passanger_response(updated))
 
         return updated_responses

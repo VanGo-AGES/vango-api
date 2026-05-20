@@ -982,7 +982,7 @@ def test_board_passanger_emit_not_called_on_invalid_status() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US11-TK06")
+
 def test_mark_passanger_absent_calls_emit_passenger_absent() -> None:
     """mark_passanger_absent deve chamar emit_passenger_absent após atualizar o status."""
     from unittest.mock import patch, AsyncMock
@@ -1025,7 +1025,7 @@ def test_mark_passanger_absent_calls_emit_passenger_absent() -> None:
         assert str(trip.id) in call_args
 
 
-@pytest.mark.skip(reason="US11-TK06")
+
 def test_skip_stop_calls_emit_passenger_absent_for_each_pending_tp() -> None:
     """skip_stop deve chamar emit_passenger_absent para cada passageiro pendente na parada."""
     from unittest.mock import patch, AsyncMock
