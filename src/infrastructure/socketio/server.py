@@ -13,6 +13,7 @@ Montagem em main.py (US10-TK01):
   app = socketio.ASGIApp(sio, fastapi_app)
 """
 
+import logging
 import uuid
 from contextlib import contextmanager
 from urllib.parse import parse_qs
@@ -31,6 +32,8 @@ from src.infrastructure.repositories.stop_repository import StopRepositoryImpl
 from src.infrastructure.repositories.trip_passanger_repository import TripPassangerRepositoryImpl
 from src.infrastructure.repositories.trip_repository import TripRepositoryImpl
 from src.infrastructure.repositories.vehicle_repository import VehicleRepositoryImpl
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Socket.IO server
@@ -276,7 +279,11 @@ async def location_update(sid: str, data: dict) -> None:
                     await _notify_arrival_if_needed(follower_sid, distance_km)  # TK07
             except Exception:
                 # Falha em push/driver_eta não pode interromper o handler
-                pass
+                logger.warning(
+                    "SOCKETIO: falha em driver_eta/proximity/arrival follower_sid=%s",
+                    follower_sid,
+                    exc_info=True,
+                )
 
     # Compatibilidade com sessões antigas/inconsistentes onde o follower ainda
     # existe no room, mas não há metadata suficiente para calcular ETA.
@@ -306,7 +313,13 @@ async def location_update(sid: str, data: dict) -> None:
     try:
         await sio.emit("driver_eta", tracker_payload, to=sid)
     except Exception:
-        pass
+        # Emit best-effort — falha não pode propagar pro handler
+        logger.warning(
+            "SOCKETIO: falha em driver_eta para tracker_sid=%s trip_id=%s",
+            sid,
+            trip_id,
+            exc_info=True,
+        )
 
 
 # US11-TK05
@@ -363,7 +376,12 @@ async def _notify_proximity_if_needed(follower_sid: str, distance_km: float) -> 
         _get_notification_service().notify_passanger_driver_approaching(user_id, route_id)
         meta["proximity_notified"] = True
     except Exception:
-        pass
+        # Push best-effort — não derruba o handler de location_update
+        logger.warning(
+            "SOCKETIO: falha em proximity notification follower_sid=%s",
+            follower_sid,
+            exc_info=True,
+        )
 
 
 # US12-TK07

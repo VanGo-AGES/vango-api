@@ -13,6 +13,7 @@ Regras gerais:
 - Response resolve nomes de user, dependent e guardian.
 """
 
+import logging
 from datetime import UTC, datetime
 from uuid import UUID
 
@@ -49,6 +50,8 @@ from src.domains.stops.dtos import StopResponse
 from src.domains.stops.entity import StopModel
 from src.domains.stops.repository import IStopRepository
 from src.domains.users.repository import IUserRepository
+
+logger = logging.getLogger(__name__)
 
 
 class RoutePassangerService:
@@ -539,9 +542,12 @@ class RoutePassangerService:
             for schedule in getattr(rp, "schedules", []) or []:
                 try:
                     schedules_list.append(RoutePassangerScheduleResponse.model_validate(schedule))
-                # Sinalizando para o Ruff que o Exception genérico é intencional
                 except Exception:  # noqa: BLE001
-                    pass
+                    # Schedule malformado não derruba a listagem da rota
+                    logger.warning(
+                        "Falha ao serializar RoutePassangerSchedule (listagem)",
+                        exc_info=True,
+                    )
 
             # US10-TK19: chamar self._compute_route_totals(route) e passar
             # total_distance_km / estimated_duration_min no construtor abaixo.
@@ -634,14 +640,22 @@ class RoutePassangerService:
             try:
                 stops_list.append(StopResponse.model_validate(s))
             except Exception:  # noqa: BLE001
-                pass
+                # Stop malformado não derruba o detalhe da rota
+                logger.warning(
+                    "Falha ao serializar Stop (detalhe rota)",
+                    exc_info=True,
+                )
 
         schedules_list: list[RoutePassangerScheduleResponse] = []
         for sched in getattr(rp, "schedules", []) or []:
             try:
                 schedules_list.append(RoutePassangerScheduleResponse.model_validate(sched))
             except Exception:  # noqa: BLE001
-                pass
+                # Schedule malformado não derruba o detalhe da rota
+                logger.warning(
+                    "Falha ao serializar RoutePassangerSchedule (detalhe rota)",
+                    exc_info=True,
+                )
 
         # US10-TK19: chamar self._compute_route_totals(route) e passar
         # total_distance_km / estimated_duration_min no construtor abaixo.

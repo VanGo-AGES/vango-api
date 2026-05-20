@@ -1,4 +1,4 @@
-import random
+import secrets
 import string
 from datetime import datetime
 from uuid import UUID
@@ -114,7 +114,8 @@ class RouteService:
         return self.route_repository.update_invite_code(route_id, new_code)
 
     def _generate_invite_code(self) -> str:
-        return "".join(random.choices(string.ascii_uppercase + string.digits, k=5))
+        alphabet = string.ascii_uppercase + string.digits
+        return "".join(secrets.choice(alphabet) for _ in range(5))
 
     # US07 - TK03
 

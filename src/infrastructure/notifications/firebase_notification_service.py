@@ -241,8 +241,13 @@ class FirebaseNotificationService(INotificationService):
                 topic=f"user_{user_id}",
             )
             messaging.send(message)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(
+                "FIREBASE: falha ao enviar push de aproximação user_id=%s route_id=%s: %s",
+                user_id,
+                route_id,
+                e,
+            )
 
     def notify_passanger_driver_arrived(self, user_id: str, route_id: str) -> None:
         try:
