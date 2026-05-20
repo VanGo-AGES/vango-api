@@ -290,7 +290,11 @@ class TripService:
         passanger_name = str(rp.dependent.name if rp.dependent_id else rp.user.name)
         from src.infrastructure.socketio import server as _socketio_server
 
-        asyncio.ensure_future(_socketio_server.emit_passenger_absent(str(trip.id), str(updated.id), passanger_name))
+        coro = _socketio_server.emit_passenger_absent(str(trip.id), str(updated.id), passanger_name)
+        try:
+            asyncio.ensure_future(coro)
+        except RuntimeError:
+            coro.close()
 
         return self._build_trip_passanger_response(updated)
 
@@ -335,7 +339,11 @@ class TripService:
             passanger_name = str(rp.dependent.name if rp.dependent_id else rp.user.name)
             from src.infrastructure.socketio import server as _socketio_server
 
-            asyncio.ensure_future(_socketio_server.emit_passenger_absent(str(trip.id), str(updated.id), passanger_name))
+            coro = _socketio_server.emit_passenger_absent(str(trip.id), str(updated.id), passanger_name)
+            try:
+                asyncio.ensure_future(coro)
+            except RuntimeError:
+                coro.close()
 
             updated_responses.append(self._build_trip_passanger_response(updated))
 
