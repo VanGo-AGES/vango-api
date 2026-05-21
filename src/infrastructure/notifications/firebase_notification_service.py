@@ -43,6 +43,7 @@ class FirebaseNotificationService(INotificationService):
                 if push_token:
                     message = messaging.Message(
                         notification=messaging.Notification(title="Viagem iniciada", body="Sua viagem foi iniciada!"),
+                        data={"type": "trip_started", "routeId": str(trip.route_id), "passengerId": ""},
                         token=push_token,
                     )
                     messaging.send(message)
@@ -57,6 +58,7 @@ class FirebaseNotificationService(INotificationService):
                         if push_token:
                             message = messaging.Message(
                                 notification=messaging.Notification(title="Viagem iniciada", body="Seu motorista está chegando em breve!"),
+                                data={"type": "trip_started", "routeId": str(trip.route_id), "passengerId": ""},
                                 token=push_token,
                             )
                             messaging.send(message)
@@ -73,6 +75,11 @@ class FirebaseNotificationService(INotificationService):
             if push_token:
                 message = messaging.Message(
                     notification=messaging.Notification(title="Motorista chegando", body="Seu motorista está próximo da sua localização!"),
+                    data={
+                        "type": "trip_arriving",
+                        "routeId": str(trip_passanger.route_passanger.route_id),
+                        "passengerId": str(trip_passanger.route_passanger_id),
+                    },
                     token=push_token,
                 )
                 messaging.send(message)
@@ -85,6 +92,11 @@ class FirebaseNotificationService(INotificationService):
             if push_token:
                 message = messaging.Message(
                     notification=messaging.Notification(title="Motorista chegou", body="Seu motorista chegou à sua parada!"),
+                    data={
+                        "type": "trip_arrived",
+                        "routeId": str(trip_passanger.route_passanger.route_id),
+                        "passengerId": str(trip_passanger.route_passanger_id),
+                    },
                     token=push_token,
                 )
                 messaging.send(message)
@@ -99,6 +111,7 @@ class FirebaseNotificationService(INotificationService):
                 if push_token:
                     message = messaging.Message(
                         notification=messaging.Notification(title="Viagem finalizada", body="Sua viagem foi finalizada!"),
+                        data={"type": "trip_finished", "routeId": str(trip.route_id), "passengerId": ""},
                         token=push_token,
                     )
                     messaging.send(message)
@@ -113,6 +126,7 @@ class FirebaseNotificationService(INotificationService):
                         if push_token:
                             message = messaging.Message(
                                 notification=messaging.Notification(title="Viagem finalizada", body="Viagem concluída com sucesso!"),
+                                data={"type": "trip_finished", "routeId": str(trip.route_id), "passengerId": ""},
                                 token=push_token,
                             )
                             messaging.send(message)
@@ -129,6 +143,11 @@ class FirebaseNotificationService(INotificationService):
             if push_token:
                 message = messaging.Message(
                     notification=messaging.Notification(title="Embarque confirmado", body="Você foi embarcado com sucesso!"),
+                    data={
+                        "type": "passenger_boarded",
+                        "routeId": str(trip_passanger.route_passanger.route_id),
+                        "passengerId": str(trip_passanger.route_passanger_id),
+                    },
                     token=push_token,
                 )
                 messaging.send(message)
@@ -141,6 +160,11 @@ class FirebaseNotificationService(INotificationService):
             if push_token:
                 message = messaging.Message(
                     notification=messaging.Notification(title="Ausência registrada", body="Você foi registrado como ausente nesta viagem!"),
+                    data={
+                        "type": "passenger_absent",
+                        "routeId": str(trip_passanger.route_passanger.route_id),
+                        "passengerId": str(trip_passanger.route_passanger_id),
+                    },
                     token=push_token,
                 )
                 messaging.send(message)
@@ -153,6 +177,7 @@ class FirebaseNotificationService(INotificationService):
             if push_token:
                 message = messaging.Message(
                     notification=messaging.Notification(title="Aceito na rota", body="Parabéns! Você foi aceito na rota!"),
+                    data={"type": "passenger_accepted", "routeId": str(rp.route_id), "passengerId": str(rp.id)},
                     token=push_token,
                 )
                 messaging.send(message)
@@ -165,6 +190,7 @@ class FirebaseNotificationService(INotificationService):
             if push_token:
                 message = messaging.Message(
                     notification=messaging.Notification(title="Solicitação rejeitada", body="Sua solicitação foi rejeitada."),
+                    data={"type": "passenger_rejected", "routeId": str(rp.route_id), "passengerId": str(rp.id)},
                     token=push_token,
                 )
                 messaging.send(message)
@@ -177,6 +203,7 @@ class FirebaseNotificationService(INotificationService):
             if push_token:
                 message = messaging.Message(
                     notification=messaging.Notification(title="Removido da rota", body="Você foi removido da rota."),
+                    data={"type": "passenger_removed", "routeId": str(rp.route_id), "passengerId": str(rp.id)},
                     token=push_token,
                 )
                 messaging.send(message)
@@ -189,6 +216,7 @@ class FirebaseNotificationService(INotificationService):
             if push_token:
                 message = messaging.Message(
                     notification=messaging.Notification(title="Nova solicitação", body="Um novo passageiro solicitou entrada na rota!"),
+                    data={"type": "driver_passenger_requested", "routeId": str(rp.route_id), "passengerId": str(rp.id)},
                     token=push_token,
                 )
                 messaging.send(message)
@@ -201,6 +229,7 @@ class FirebaseNotificationService(INotificationService):
             if push_token:
                 message = messaging.Message(
                     notification=messaging.Notification(title="Passageiro saiu", body="Um passageiro saiu da rota."),
+                    data={"type": "driver_passenger_left", "routeId": str(rp.route_id), "passengerId": str(rp.id)},
                     token=push_token,
                 )
                 messaging.send(message)
@@ -216,6 +245,7 @@ class FirebaseNotificationService(INotificationService):
             if push_token:
                 message = messaging.Message(
                     notification=messaging.Notification(title="Rota cancelada", body="A rota foi cancelada."),
+                    data={"type": "route_cancelled", "routeId": str(rp.route_id), "passengerId": str(rp.id)},
                     token=push_token,
                 )
                 messaging.send(message)
@@ -228,6 +258,7 @@ class FirebaseNotificationService(INotificationService):
             if push_token:
                 message = messaging.Message(
                     notification=messaging.Notification(title="Ausência reportada", body="Um passageiro avisou ausência nesta data."),
+                    data={"type": "driver_passenger_absent", "routeId": str(rp.route_id), "passengerId": str(rp.id)},
                     token=push_token,
                 )
                 messaging.send(message)
@@ -238,6 +269,7 @@ class FirebaseNotificationService(INotificationService):
         try:
             message = messaging.Message(
                 notification=messaging.Notification(title="Motorista chegando", body="Seu motorista está próximo da sua parada!"),
+                data={"type": "trip_arriving", "routeId": route_id, "passengerId": ""},
                 topic=f"user_{user_id}",
             )
             messaging.send(message)
@@ -256,6 +288,7 @@ class FirebaseNotificationService(INotificationService):
                     title="Motorista chegou",
                     body="Seu motorista chegou à sua parada!",
                 ),
+                data={"type": "trip_arrived", "routeId": route_id, "passengerId": ""},
                 topic=f"user_{user_id}",
             )
 
