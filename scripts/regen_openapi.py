@@ -11,7 +11,7 @@ OPENAPI_PATH = REPO_ROOT / "openapi.json"
 
 
 def main() -> None:
-    os.environ.setdefault("DATABASE_URL", "sqlite:///./openapi-generation.db")
+    os.environ["DATABASE_URL"] = "sqlite:///./openapi-generation.db"
 
     from src.main import fastapi_app
 
