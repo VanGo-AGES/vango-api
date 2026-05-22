@@ -1,0 +1,6 @@
+# Ignorar arquivos locais e pesados do Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+.terraform.lock.hcl
