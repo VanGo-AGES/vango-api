@@ -329,7 +329,17 @@ async def emit_passenger_boarded(trip_id: str, trip_passanger_id: str, user_name
     Payload: {"trip_passanger_id": str, "user_name": str}
     Silenciosamente ignorado se não houver sessão ativa para o trip_id.
     """
-    pass
+    if not sio:
+        return
+
+    room_name = str(trip_id)
+
+    payload = {"trip_passanger_id": trip_passanger_id, "user_name": user_name}
+
+    try:
+        await sio.emit("passenger_boarded", payload, room=room_name)
+    except Exception:
+        pass
 
 
 # US11-TK06

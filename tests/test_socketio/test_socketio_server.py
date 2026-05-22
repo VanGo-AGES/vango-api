@@ -830,7 +830,7 @@ async def test_calculate_eta_for_follower_returns_none_when_routing_raises():
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US11-TK05")
+
 @pytest.mark.asyncio
 async def test_emit_passenger_boarded_emits_to_room():
     """emit_passenger_boarded deve emitir evento passenger_boarded para o room da sessão."""
@@ -848,7 +848,7 @@ async def test_emit_passenger_boarded_emits_to_room():
     tracking_sessions.pop(trip_id, None)
 
 
-@pytest.mark.skip(reason="US11-TK05")
+
 @pytest.mark.asyncio
 async def test_emit_passenger_boarded_payload_contains_user_name():
     """Payload de passenger_boarded deve conter trip_passanger_id e user_name."""
@@ -867,7 +867,7 @@ async def test_emit_passenger_boarded_payload_contains_user_name():
     tracking_sessions.pop(trip_id, None)
 
 
-@pytest.mark.skip(reason="US11-TK05")
+
 @pytest.mark.asyncio
 async def test_emit_passenger_boarded_no_error_when_session_not_found():
     """emit_passenger_boarded com trip_id sem sessão ativa não deve levantar exceção."""

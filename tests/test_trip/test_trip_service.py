@@ -901,7 +901,7 @@ def test_notification_service_interface_has_passanger_absent():
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US11-TK05")
+
 def test_board_passanger_calls_emit_passenger_boarded() -> None:
     """board_passanger deve chamar emit_passenger_boarded após atualizar o status."""
     from unittest.mock import patch, AsyncMock
@@ -944,7 +944,7 @@ def test_board_passanger_calls_emit_passenger_boarded() -> None:
         assert str(trip.id) in call_args
 
 
-@pytest.mark.skip(reason="US11-TK05")
+
 def test_board_passanger_emit_not_called_on_invalid_status() -> None:
     """board_passanger não deve chamar emit se o status do tp não for pendente."""
     from unittest.mock import patch, AsyncMock
