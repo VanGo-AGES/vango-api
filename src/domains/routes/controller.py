@@ -23,6 +23,14 @@ from .service import RouteService
 
 router = APIRouter(prefix="/routes", tags=["Routes"])
 
+
+def _safe_route_totals(service: RouteService, route: object) -> tuple[float | None, int | None]:
+    totals = service.get_route_totals(route)
+    if isinstance(totals, tuple) and len(totals) == 2:
+        return totals
+    return None, None
+
+
 _DESCRIPTION_CREATE = (
     "Cria uma rota para o motorista com origem, destino, horário e recorrência. "
     "Gera automaticamente o código de convite e salva com status inativa."
@@ -86,7 +94,7 @@ def list_routes(
     # estimated_duration_min via service.get_route_totals(route).model_copy(update={...}).
     responses: list[RouteResponse] = []
     for route in routes:
-        total_distance_km, estimated_duration_min = service.get_route_totals(route)
+        total_distance_km, estimated_duration_min = _safe_route_totals(service, route)
         responses.append(
             RouteResponse.from_orm(route).model_copy(
                 update={
@@ -194,7 +202,7 @@ def get_route(
     try:
         route = service.get_route(route_id, driver_id)
         accepted_count = service.get_accepted_count(route_id)
-        total_distance_km, estimated_duration_min = service.get_route_totals(route)
+        total_distance_km, estimated_duration_min = _safe_route_totals(service, route)
         # US10-TK19: incluir total_distance_km e estimated_duration_min no model_copy
         # via service.get_route_totals(route).
         return RouteResponse.from_orm(route).model_copy(
