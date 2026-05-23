@@ -256,6 +256,18 @@ class TripService:
         # US12-TK05
         self.notification_service.notify_passanger_boarded(updated)
         # US11-TK05 — chamar emit_passenger_boarded(str(trip.id), str(updated.id), user_name)
+        from src.infrastructure.socketio.server import emit_passenger_boarded
+
+        passenger_name = getattr(updated, "dependent_name", None) or getattr(updated, "user_name", "Passageiro")
+
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(emit_passenger_boarded(str(trip.id), str(updated.id), passenger_name))
+        except RuntimeError:
+            asyncio.run(emit_passenger_boarded(str(trip.id), str(updated.id), passenger_name))
+
+        updated.alighted_at = None
+
         return self._build_trip_passanger_response(updated)
 
     # US09-TK10
