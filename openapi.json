@@ -240,8 +240,23 @@
         "type": "object"
       },
       "CurrentTripResponse": {
-        "description": "Resposta mínima exposta ao passageiro para acompanhamento da viagem.\n\nRetornada por GET /routes/{route_id}/trips/current.\nPermite ao app do passageiro descobrir o trip_id e conectar ao Socket.IO.\nRetorna None (204/null) quando não há viagem em andamento na rota.\n\nFields:\n- trip_id: UUID — identificador da viagem em andamento\n- status: str   — sempre \"iniciada\" enquanto em andamento\n- started_at: datetime | None — horário de início da viagem",
+        "description": "Resposta mínima exposta ao passageiro para acompanhamento da viagem.\n\nRetornada por GET /routes/{route_id}/trips/current.\nPermite ao app do passageiro descobrir o trip_id e conectar ao Socket.IO,\nalém de exibir as informações básicas do motorista e do veículo.\nRetorna None (204/null) quando não há viagem em andamento na rota.\n\nFields:\n- trip_id: UUID — identificador da viagem em andamento\n- status: str   — sempre \"iniciada\" enquanto em andamento\n- started_at: datetime | None — horário de início da viagem\n- driver_name: str — nome do motorista da rota\n- driver_photo_url: str | None — foto do motorista (FE usa no card de info)\n- vehicle_plate: str | None — placa do veículo da viagem",
         "properties": {
+          "driver_name": {
+            "title": "Driver Name",
+            "type": "string"
+          },
+          "driver_photo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Driver Photo Url"
+          },
           "started_at": {
             "anyOf": [
               {
@@ -262,11 +277,23 @@
             "format": "uuid",
             "title": "Trip Id",
             "type": "string"
+          },
+          "vehicle_plate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vehicle Plate"
           }
         },
         "required": [
           "trip_id",
-          "status"
+          "status",
+          "driver_name"
         ],
         "title": "CurrentTripResponse",
         "type": "object"
@@ -1407,7 +1434,7 @@
         "type": "object"
       },
       "TripPassangerResponse": {
-        "description": "Representação do vínculo (passageiro x trip) durante/após a execução.\n\nFields esperados:\n- id: UUID\n- route_passanger_id: UUID\n- passanger_name: str          — nome do usuário ou dependente\n- status: str                  — \"pendente\" | \"presente\" | \"ausente\"\n- pickup_address_label: str    — endereço esperado de embarque\n- boarded_at: datetime | None\n- alighted_at: datetime | None\n- user_phone: str              — usado pelo FE para deeplink (US13)",
+        "description": "Representação do vínculo (passageiro x trip) durante/após a execução.\n\nFields esperados:\n- id: UUID\n- route_passanger_id: UUID\n- passanger_name: str          — nome do usuário ou dependente\n- status: str                  — \"pendente\" | \"presente\" | \"ausente\"\n- pickup_address_label: str    — endereço esperado de embarque\n- boarded_at: datetime | None\n- alighted_at: datetime | None\n- user_phone: str              — usado pelo FE para deeplink (US13)\n- photo_url: str | None        — foto do usuário (FE usa nos cards de passageiro)",
         "properties": {
           "alighted_at": {
             "anyOf": [
@@ -1441,6 +1468,17 @@
           "passanger_name": {
             "title": "Passanger Name",
             "type": "string"
+          },
+          "photo_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Photo Url"
           },
           "pickup_address_label": {
             "title": "Pickup Address Label",

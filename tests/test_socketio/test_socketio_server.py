@@ -462,6 +462,72 @@ async def test_join_session_follower_tracker_online_true_when_connected():
     sid_meta.pop(follower_sid, None)
 
 
+@pytest.mark.asyncio
+async def test_join_session_follower_populates_stop_coordinates():
+    """join_session de follower deve persistir stop_lat/stop_lng no sid_meta a
+    partir do payload recebido — necessário pro cálculo de ETA por follower."""
+    from src.infrastructure.socketio.server import sio, tracking_sessions, sid_meta
+
+    trip_id = _make_trip_id()
+    follower_sid = "follower-join-stop-001"
+
+    tracking_sessions[trip_id] = {"tracker_sid": "tracker-x", "followers": [], "last_location": None}
+    sid_meta[follower_sid] = {"trip_id": trip_id, "role": "follower", "user_id": _make_user_id()}
+
+    with patch("src.infrastructure.socketio.server.sio.enter_room", new_callable=AsyncMock), \
+         patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock):
+        await sio.handlers["/"]["join_session"](
+            follower_sid,
+            {"trip_id": trip_id, "role": "follower", "stop_lat": -30.0567, "stop_lng": -51.1734},
+        )
+
+    assert sid_meta[follower_sid]["stop_lat"] == pytest.approx(-30.0567)
+    assert sid_meta[follower_sid]["stop_lng"] == pytest.approx(-51.1734)
+    assert isinstance(sid_meta[follower_sid]["stop_lat"], float)
+    assert isinstance(sid_meta[follower_sid]["stop_lng"], float)
+
+    tracking_sessions.pop(trip_id, None)
+    sid_meta.pop(follower_sid, None)
+
+
+@pytest.mark.asyncio
+async def test_join_session_follower_defaults_missing_stop_coordinates_to_none():
+    """join_session sem stop_lat/stop_lng (ou com tipos inválidos) deve persistir
+    None no sid_meta — não pode crashar nem propagar valores inválidos."""
+    from src.infrastructure.socketio.server import sio, tracking_sessions, sid_meta
+
+    trip_id = _make_trip_id()
+    follower_sid = "follower-join-stop-002"
+
+    tracking_sessions[trip_id] = {"tracker_sid": "tracker-x", "followers": [], "last_location": None}
+    sid_meta[follower_sid] = {"trip_id": trip_id, "role": "follower", "user_id": _make_user_id()}
+
+    with patch("src.infrastructure.socketio.server.sio.enter_room", new_callable=AsyncMock), \
+         patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock):
+        # Sem stop_lat/stop_lng no payload
+        await sio.handlers["/"]["join_session"](follower_sid, {"trip_id": trip_id, "role": "follower"})
+
+    assert sid_meta[follower_sid]["stop_lat"] is None
+    assert sid_meta[follower_sid]["stop_lng"] is None
+
+    # Com tipos inválidos
+    sid_meta[follower_sid] = {"trip_id": trip_id, "role": "follower", "user_id": _make_user_id()}
+    tracking_sessions[trip_id] = {"tracker_sid": "tracker-x", "followers": [], "last_location": None}
+
+    with patch("src.infrastructure.socketio.server.sio.enter_room", new_callable=AsyncMock), \
+         patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock):
+        await sio.handlers["/"]["join_session"](
+            follower_sid,
+            {"trip_id": trip_id, "role": "follower", "stop_lat": "abc", "stop_lng": None},
+        )
+
+    assert sid_meta[follower_sid]["stop_lat"] is None
+    assert sid_meta[follower_sid]["stop_lng"] is None
+
+    tracking_sessions.pop(trip_id, None)
+    sid_meta.pop(follower_sid, None)
+
+
 # ===========================================================================
 # US11-TK04 — trip_finished event + TripService integration
 # ===========================================================================

@@ -70,7 +70,7 @@ repos:
         pass_filenames: false
       - id: regen-openapi
         name: Regenerate OpenAPI schema
-        entry: bash -c 'python scripts/regen_openapi.py && git add openapi.json'
+        entry: bash -c 'python3 scripts/regen_openapi.py && git add openapi.json'
         language: system
         pass_filenames: false
       - id: bandit

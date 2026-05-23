@@ -201,6 +201,12 @@ async def join_session(sid: str, data: dict) -> None:
 
         tracking_sessions[trip_id]["followers"].append(sid)
 
+        stop_lat_raw = data.get("stop_lat") if isinstance(data, dict) else None
+        stop_lng_raw = data.get("stop_lng") if isinstance(data, dict) else None
+
+        sid_meta[sid]["stop_lat"] = float(stop_lat_raw) if isinstance(stop_lat_raw, int | float) else None
+        sid_meta[sid]["stop_lng"] = float(stop_lng_raw) if isinstance(stop_lng_raw, int | float) else None
+
         await sio.enter_room(sid, f"trip:{trip_id}")
 
         await sio.emit(
@@ -329,17 +335,20 @@ async def emit_passenger_boarded(trip_id: str, trip_passanger_id: str, user_name
     Payload: {"trip_passanger_id": str, "user_name": str}
     Silenciosamente ignorado se não houver sessão ativa para o trip_id.
     """
-    if not sio:
+    if trip_id not in tracking_sessions:
         return
-
-    room_name = str(trip_id)
 
     payload = {"trip_passanger_id": trip_passanger_id, "user_name": user_name}
 
     try:
-        await sio.emit("passenger_boarded", payload, room=room_name)
+        await sio.emit("passenger_boarded", payload, room=f"trip:{trip_id}")
     except Exception:
-        pass
+        logger.warning(
+            "SOCKETIO: falha em passenger_boarded para trip_id=%s trip_passanger_id=%s",
+            trip_id,
+            trip_passanger_id,
+            exc_info=True,
+        )
 
 
 # US11-TK06

@@ -88,6 +88,9 @@ def make_route_mock(driver_id=None, status: str = "ativa") -> RouteModel:
     route.driver_id = driver_id or uuid.uuid4()
     route.status = status
     route.name = "PUCRS Manhã"
+    route.driver = Mock()
+    route.driver.name = "Motorista Teste"
+    route.driver.photo_url = None
     return route
 
 
@@ -119,6 +122,9 @@ def make_trip_mock(route_id=None, status: str = "iniciada") -> TripModel:
     trip.started_at = datetime.now(timezone.utc)
     trip.finished_at = None
     trip.total_km = None
+    # CurrentTripResponse precisa de vehicle_plate (str | None)
+    trip.vehicle = Mock()
+    trip.vehicle.plate = None
     return trip
 
 
@@ -130,6 +136,10 @@ def make_tp_mock(trip_id=None, status: str = "pendente") -> TripPassangerModel:
     tp.status = status
     tp.boarded_at = None
     tp.alighted_at = None
+    tp.route_passanger = Mock()
+    tp.route_passanger.dependent_id = None
+    tp.route_passanger.user = Mock()
+    tp.route_passanger.user.photo_url = None
     return tp
 
 
@@ -686,14 +696,20 @@ def test_finish_trip_raises_when_wrong_owner() -> None:
 
 
 def test_get_current_trip_for_passanger_returns_response_when_trip_in_progress() -> None:
-    """Passageiro com vínculo ativo e viagem em andamento recebe CurrentTripResponse."""
+    """Passageiro com vínculo ativo e viagem em andamento recebe CurrentTripResponse
+    com info do motorista e do veículo."""
     from src.domains.trips.dtos import CurrentTripResponse
     from src.domains.trips.errors import TripNotFoundError
 
     service, mocks = make_service()
     route = make_route_mock()
+    route.driver = Mock(name="João Silva", photo_url="https://cdn.vango.app/u/joao.jpg")
+    route.driver.name = "João Silva"
+    route.driver.photo_url = "https://cdn.vango.app/u/joao.jpg"
     rp = make_rp_mock(route_id=route.id, status="accepted")
     trip = make_trip_mock(route_id=route.id, status="iniciada")
+    trip.vehicle = Mock()
+    trip.vehicle.plate = "ABC-1234"
 
     mocks["route_repo"].find_by_id.return_value = route
     mocks["rp_repo"].find_active_by_user_and_route.return_value = rp
@@ -705,6 +721,36 @@ def test_get_current_trip_for_passanger_returns_response_when_trip_in_progress()
     assert result.trip_id == trip.id
     assert result.status == "iniciada"
     assert result.started_at == trip.started_at
+    assert result.driver_name == "João Silva"
+    assert result.driver_photo_url == "https://cdn.vango.app/u/joao.jpg"
+    assert result.vehicle_plate == "ABC-1234"
+
+
+def test_get_current_trip_for_passanger_handles_missing_photo_and_plate() -> None:
+    """driver_photo_url e vehicle_plate viram None quando o motorista não tem foto
+    e o veículo não tem placa."""
+    from src.domains.trips.dtos import CurrentTripResponse
+
+    service, mocks = make_service()
+    route = make_route_mock()
+    route.driver = Mock()
+    route.driver.name = "Maria Souza"
+    route.driver.photo_url = None
+    rp = make_rp_mock(route_id=route.id, status="accepted")
+    trip = make_trip_mock(route_id=route.id, status="iniciada")
+    trip.vehicle = Mock()
+    trip.vehicle.plate = None
+
+    mocks["route_repo"].find_by_id.return_value = route
+    mocks["rp_repo"].find_active_by_user_and_route.return_value = rp
+    mocks["trip_repo"].find_in_progress_by_route.return_value = trip
+
+    result = service.get_current_trip_for_passanger(route.id, rp.user_id)
+
+    assert isinstance(result, CurrentTripResponse)
+    assert result.driver_name == "Maria Souza"
+    assert result.driver_photo_url is None
+    assert result.vehicle_plate is None
 
 
 def test_get_current_trip_for_passanger_returns_none_when_no_trip() -> None:
@@ -812,6 +858,7 @@ def test_board_passanger_calls_notify_passanger_boarded():
     tp.route_passanger = Mock()
     tp.route_passanger.dependent_id = None
     tp.route_passanger.user = Mock(name="Alice", phone="51999990000")
+    tp.route_passanger.user.photo_url = None
     tp.route_passanger.pickup_address = Mock(label="Rua X")
     tp.boarded_at = None
     tp.alighted_at = None
@@ -858,6 +905,7 @@ def test_mark_passanger_absent_calls_notify_passanger_absent():
     tp.route_passanger = Mock()
     tp.route_passanger.dependent_id = None
     tp.route_passanger.user = Mock(name="Alice", phone="51999990000")
+    tp.route_passanger.user.photo_url = None
     tp.route_passanger.pickup_address = Mock(label="Rua X")
     tp.boarded_at = None
     tp.alighted_at = None
@@ -927,7 +975,12 @@ def test_board_passanger_calls_emit_passenger_boarded() -> None:
     updated_tp.trip_id = trip.id
     updated_tp.status = "presente"
     updated_tp.boarded_at = datetime.now(timezone.utc)
+    updated_tp.alighted_at = None
     updated_tp.route_passanger_id = tp.route_passanger_id
+    updated_tp.route_passanger = Mock()
+    updated_tp.route_passanger.dependent_id = None
+    updated_tp.route_passanger.user = Mock()
+    updated_tp.route_passanger.user.photo_url = None
 
     service, mocks = make_service()
     mocks["trip_repo"].find_by_id.return_value = trip
@@ -1008,7 +1061,12 @@ def test_mark_passanger_absent_calls_emit_passenger_absent() -> None:
     updated_tp.trip_id = trip.id
     updated_tp.status = "ausente"
     updated_tp.boarded_at = None
+    updated_tp.alighted_at = None
     updated_tp.route_passanger_id = tp.route_passanger_id
+    updated_tp.route_passanger = Mock()
+    updated_tp.route_passanger.dependent_id = None
+    updated_tp.route_passanger.user = Mock()
+    updated_tp.route_passanger.user.photo_url = None
 
     service, mocks = make_service()
     mocks["trip_repo"].find_by_id.return_value = trip
@@ -1063,7 +1121,12 @@ def test_skip_stop_calls_emit_passenger_absent_for_each_pending_tp() -> None:
     updated_tp.trip_id = trip.id
     updated_tp.status = "ausente"
     updated_tp.boarded_at = None
+    updated_tp.alighted_at = None
     updated_tp.route_passanger_id = rp_id
+    updated_tp.route_passanger = Mock()
+    updated_tp.route_passanger.dependent_id = None
+    updated_tp.route_passanger.user = Mock()
+    updated_tp.route_passanger.user.photo_url = None
 
     service, mocks = make_service()
     mocks["trip_repo"].find_by_id.return_value = trip
