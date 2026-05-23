@@ -428,7 +428,13 @@ class TripService:
         self.notification_service.notify_trip_finished(finished)
 
         # US11-TK04 — emitir evento Socket.IO trip_finished para followers
-        # await emit_trip_finished(str(trip_id))  # wiring completo em US11-TK04
+        from src.infrastructure.socketio.server import emit_trip_finished
+
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(emit_trip_finished(str(trip_id)))
+        except RuntimeError:
+            asyncio.run(emit_trip_finished(str(trip_id)))
 
         return TripResponse(
             id=finished.id,
