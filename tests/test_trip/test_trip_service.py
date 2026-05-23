@@ -88,6 +88,9 @@ def make_route_mock(driver_id=None, status: str = "ativa") -> RouteModel:
     route.driver_id = driver_id or uuid.uuid4()
     route.status = status
     route.name = "PUCRS Manhã"
+    route.driver = Mock()
+    route.driver.name = "Motorista Teste"
+    route.driver.photo_url = None
     return route
 
 
@@ -119,6 +122,9 @@ def make_trip_mock(route_id=None, status: str = "iniciada") -> TripModel:
     trip.started_at = datetime.now(timezone.utc)
     trip.finished_at = None
     trip.total_km = None
+    # CurrentTripResponse precisa de vehicle_plate (str | None)
+    trip.vehicle = Mock()
+    trip.vehicle.plate = None
     return trip
 
 
@@ -130,6 +136,10 @@ def make_tp_mock(trip_id=None, status: str = "pendente") -> TripPassangerModel:
     tp.status = status
     tp.boarded_at = None
     tp.alighted_at = None
+    tp.route_passanger = Mock()
+    tp.route_passanger.dependent_id = None
+    tp.route_passanger.user = Mock()
+    tp.route_passanger.user.photo_url = None
     return tp
 
 
@@ -848,6 +858,7 @@ def test_board_passanger_calls_notify_passanger_boarded():
     tp.route_passanger = Mock()
     tp.route_passanger.dependent_id = None
     tp.route_passanger.user = Mock(name="Alice", phone="51999990000")
+    tp.route_passanger.user.photo_url = None
     tp.route_passanger.pickup_address = Mock(label="Rua X")
     tp.boarded_at = None
     tp.alighted_at = None
@@ -894,6 +905,7 @@ def test_mark_passanger_absent_calls_notify_passanger_absent():
     tp.route_passanger = Mock()
     tp.route_passanger.dependent_id = None
     tp.route_passanger.user = Mock(name="Alice", phone="51999990000")
+    tp.route_passanger.user.photo_url = None
     tp.route_passanger.pickup_address = Mock(label="Rua X")
     tp.boarded_at = None
     tp.alighted_at = None
@@ -963,7 +975,12 @@ def test_board_passanger_calls_emit_passenger_boarded() -> None:
     updated_tp.trip_id = trip.id
     updated_tp.status = "presente"
     updated_tp.boarded_at = datetime.now(timezone.utc)
+    updated_tp.alighted_at = None
     updated_tp.route_passanger_id = tp.route_passanger_id
+    updated_tp.route_passanger = Mock()
+    updated_tp.route_passanger.dependent_id = None
+    updated_tp.route_passanger.user = Mock()
+    updated_tp.route_passanger.user.photo_url = None
 
     service, mocks = make_service()
     mocks["trip_repo"].find_by_id.return_value = trip
@@ -1044,7 +1061,12 @@ def test_mark_passanger_absent_calls_emit_passenger_absent() -> None:
     updated_tp.trip_id = trip.id
     updated_tp.status = "ausente"
     updated_tp.boarded_at = None
+    updated_tp.alighted_at = None
     updated_tp.route_passanger_id = tp.route_passanger_id
+    updated_tp.route_passanger = Mock()
+    updated_tp.route_passanger.dependent_id = None
+    updated_tp.route_passanger.user = Mock()
+    updated_tp.route_passanger.user.photo_url = None
 
     service, mocks = make_service()
     mocks["trip_repo"].find_by_id.return_value = trip
@@ -1099,7 +1121,12 @@ def test_skip_stop_calls_emit_passenger_absent_for_each_pending_tp() -> None:
     updated_tp.trip_id = trip.id
     updated_tp.status = "ausente"
     updated_tp.boarded_at = None
+    updated_tp.alighted_at = None
     updated_tp.route_passanger_id = rp_id
+    updated_tp.route_passanger = Mock()
+    updated_tp.route_passanger.dependent_id = None
+    updated_tp.route_passanger.user = Mock()
+    updated_tp.route_passanger.user.photo_url = None
 
     service, mocks = make_service()
     mocks["trip_repo"].find_by_id.return_value = trip
