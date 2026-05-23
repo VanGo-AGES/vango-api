@@ -1899,7 +1899,7 @@ def test_join_route_works_without_geocoding_service() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US10-TK19")
+
 def test_compute_route_totals_returns_tuple_when_routing_service_available() -> None:
     """_compute_route_totals devolve (km, min) quando routing_service responde."""
     from src.domains.routing.dtos import RouteInfoResult
@@ -1923,7 +1923,7 @@ def test_compute_route_totals_returns_tuple_when_routing_service_available() -> 
     assert duration == 22
 
 
-@pytest.mark.skip(reason="US10-TK19")
+
 def test_compute_route_totals_returns_none_when_routing_service_none() -> None:
     """Sem routing_service, _compute_route_totals retorna (None, None)."""
     service, _rp_repo, _route_repo, _, _, _, _, _ = build_service()
@@ -1937,7 +1937,7 @@ def test_compute_route_totals_returns_none_when_routing_service_none() -> None:
     assert duration is None
 
 
-@pytest.mark.skip(reason="US10-TK19")
+
 def test_list_my_routes_populates_totals_in_each_item() -> None:
     """Cada PassangerRouteResponse devolvido por list_my_routes deve ter
     total_distance_km e estimated_duration_min preenchidos com o resultado
@@ -1984,7 +1984,7 @@ def test_list_my_routes_populates_totals_in_each_item() -> None:
     assert results[0].estimated_duration_min == 32
 
 
-@pytest.mark.skip(reason="US10-TK19")
+
 def test_list_my_routes_totals_none_when_routing_unavailable() -> None:
     """Quando _compute_route_totals devolve (None, None), os campos saem
     None no PassangerRouteResponse — não levanta exceção."""
@@ -2021,7 +2021,7 @@ def test_list_my_routes_totals_none_when_routing_unavailable() -> None:
     assert results[0].estimated_duration_min is None
 
 
-@pytest.mark.skip(reason="US10-TK19")
+
 def test_get_my_route_detail_populates_totals_from_compute_helper() -> None:
     """PassangerRouteDetailResponse devolvido por get_my_route_detail deve
     ter total_distance_km e estimated_duration_min preenchidos com o

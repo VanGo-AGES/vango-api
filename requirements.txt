@@ -96,7 +96,7 @@ simple-websocket==1.1.0
 six==1.17.0
 sortedcontainers==2.4.0
 SQLAlchemy==2.0.48
-starlette==0.52.1
+starlette==1.0.1
 stevedore==5.8.0
 tomli==2.4.1
 tomli_w==1.2.0

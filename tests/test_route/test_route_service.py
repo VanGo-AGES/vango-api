@@ -1274,7 +1274,7 @@ def test_update_route_works_without_geocoding_service() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US10-TK19")
+
 def test_get_route_totals_returns_tuple_when_routing_service_available() -> None:
     """get_route_totals deve devolver (km, min) quando routing_service
     devolve um RouteInfoResult válido."""
@@ -1298,7 +1298,7 @@ def test_get_route_totals_returns_tuple_when_routing_service_available() -> None
     assert duration == 32
 
 
-@pytest.mark.skip(reason="US10-TK19")
+
 def test_get_route_totals_returns_none_when_routing_service_none() -> None:
     """Sem routing_service injetado, get_route_totals retorna (None, None)."""
     from src.domains.routes.service import RouteService
@@ -1315,7 +1315,7 @@ def test_get_route_totals_returns_none_when_routing_service_none() -> None:
     assert duration is None
 
 
-@pytest.mark.skip(reason="US10-TK19")
+
 def test_get_route_totals_returns_none_when_address_missing_coords() -> None:
     """Endereço sem lat/lng → (None, None) sem chamar routing."""
     from src.domains.routes.service import RouteService
@@ -1334,7 +1334,7 @@ def test_get_route_totals_returns_none_when_address_missing_coords() -> None:
     routing_mock.get_route_info.assert_not_called()
 
 
-@pytest.mark.skip(reason="US10-TK19")
+
 def test_get_route_totals_never_raises_on_routing_failure() -> None:
     """Falha do routing (network, credencial) absorvida em (None, None)."""
     from src.domains.routes.service import RouteService
