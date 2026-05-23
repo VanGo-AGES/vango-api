@@ -49,6 +49,7 @@ class TripPassangerResponse(BaseModel):
     - boarded_at: datetime | None
     - alighted_at: datetime | None
     - user_phone: str              — usado pelo FE para deeplink (US13)
+    - photo_url: str | None        — foto do usuário (FE usa nos cards de passageiro)
     """
 
     model_config = ConfigDict(from_attributes=True)
@@ -61,6 +62,7 @@ class TripPassangerResponse(BaseModel):
     boarded_at: datetime | None = None
     alighted_at: datetime | None = None
     user_phone: str
+    photo_url: str | None = None
 
 
 # US09-TK01
@@ -124,13 +126,17 @@ class CurrentTripResponse(BaseModel):
     """Resposta mínima exposta ao passageiro para acompanhamento da viagem.
 
     Retornada por GET /routes/{route_id}/trips/current.
-    Permite ao app do passageiro descobrir o trip_id e conectar ao Socket.IO.
+    Permite ao app do passageiro descobrir o trip_id e conectar ao Socket.IO,
+    além de exibir as informações básicas do motorista e do veículo.
     Retorna None (204/null) quando não há viagem em andamento na rota.
 
     Fields:
     - trip_id: UUID — identificador da viagem em andamento
     - status: str   — sempre "iniciada" enquanto em andamento
     - started_at: datetime | None — horário de início da viagem
+    - driver_name: str — nome do motorista da rota
+    - driver_photo_url: str | None — foto do motorista (FE usa no card de info)
+    - vehicle_plate: str | None — placa do veículo da viagem
     """
 
     model_config = ConfigDict(from_attributes=True)
@@ -138,3 +144,6 @@ class CurrentTripResponse(BaseModel):
     trip_id: UUID
     status: str
     started_at: datetime | None = None
+    driver_name: str
+    driver_photo_url: str | None = None
+    vehicle_plate: str | None = None

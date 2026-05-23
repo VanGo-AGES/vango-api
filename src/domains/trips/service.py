@@ -165,7 +165,7 @@ class TripService:
         )
 
     def _build_trip_passanger_response(self, tp: TripPassangerModel) -> TripPassangerResponse:
-        """Resolve nome, endereço e telefone a partir do RoutePassanger."""
+        """Resolve nome, endereço, telefone e foto a partir do RoutePassanger."""
         from datetime import datetime as _datetime
 
         rp = tp.route_passanger
@@ -181,6 +181,7 @@ class TripService:
             boarded_at=tp.boarded_at if isinstance(tp.boarded_at, _datetime) else None,
             alighted_at=tp.alighted_at if isinstance(tp.alighted_at, _datetime) else None,
             user_phone=str(rp.user.phone),
+            photo_url=rp.user.photo_url,
         )
 
     # US09-TK08
@@ -477,4 +478,7 @@ class TripService:
             trip_id=trip.id,
             status=trip.status,
             started_at=trip.started_at,
+            driver_name=str(route.driver.name),
+            driver_photo_url=route.driver.photo_url,
+            vehicle_plate=trip.vehicle.plate if trip.vehicle is not None else None,
         )

@@ -1164,6 +1164,9 @@ def make_current_trip_response():
         trip_id=uuid.uuid4(),
         status="iniciada",
         started_at=datetime(2026, 5, 10, 7, 30, tzinfo=timezone.utc),
+        driver_name="João Silva",
+        driver_photo_url="https://cdn.vango.app/u/joao.jpg",
+        vehicle_plate="ABC-1234",
     )
 
 

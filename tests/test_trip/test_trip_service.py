@@ -686,14 +686,20 @@ def test_finish_trip_raises_when_wrong_owner() -> None:
 
 
 def test_get_current_trip_for_passanger_returns_response_when_trip_in_progress() -> None:
-    """Passageiro com vínculo ativo e viagem em andamento recebe CurrentTripResponse."""
+    """Passageiro com vínculo ativo e viagem em andamento recebe CurrentTripResponse
+    com info do motorista e do veículo."""
     from src.domains.trips.dtos import CurrentTripResponse
     from src.domains.trips.errors import TripNotFoundError
 
     service, mocks = make_service()
     route = make_route_mock()
+    route.driver = Mock(name="João Silva", photo_url="https://cdn.vango.app/u/joao.jpg")
+    route.driver.name = "João Silva"
+    route.driver.photo_url = "https://cdn.vango.app/u/joao.jpg"
     rp = make_rp_mock(route_id=route.id, status="accepted")
     trip = make_trip_mock(route_id=route.id, status="iniciada")
+    trip.vehicle = Mock()
+    trip.vehicle.plate = "ABC-1234"
 
     mocks["route_repo"].find_by_id.return_value = route
     mocks["rp_repo"].find_active_by_user_and_route.return_value = rp
@@ -705,6 +711,36 @@ def test_get_current_trip_for_passanger_returns_response_when_trip_in_progress()
     assert result.trip_id == trip.id
     assert result.status == "iniciada"
     assert result.started_at == trip.started_at
+    assert result.driver_name == "João Silva"
+    assert result.driver_photo_url == "https://cdn.vango.app/u/joao.jpg"
+    assert result.vehicle_plate == "ABC-1234"
+
+
+def test_get_current_trip_for_passanger_handles_missing_photo_and_plate() -> None:
+    """driver_photo_url e vehicle_plate viram None quando o motorista não tem foto
+    e o veículo não tem placa."""
+    from src.domains.trips.dtos import CurrentTripResponse
+
+    service, mocks = make_service()
+    route = make_route_mock()
+    route.driver = Mock()
+    route.driver.name = "Maria Souza"
+    route.driver.photo_url = None
+    rp = make_rp_mock(route_id=route.id, status="accepted")
+    trip = make_trip_mock(route_id=route.id, status="iniciada")
+    trip.vehicle = Mock()
+    trip.vehicle.plate = None
+
+    mocks["route_repo"].find_by_id.return_value = route
+    mocks["rp_repo"].find_active_by_user_and_route.return_value = rp
+    mocks["trip_repo"].find_in_progress_by_route.return_value = trip
+
+    result = service.get_current_trip_for_passanger(route.id, rp.user_id)
+
+    assert isinstance(result, CurrentTripResponse)
+    assert result.driver_name == "Maria Souza"
+    assert result.driver_photo_url is None
+    assert result.vehicle_plate is None
 
 
 def test_get_current_trip_for_passanger_returns_none_when_no_trip() -> None:
