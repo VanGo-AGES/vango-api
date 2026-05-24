@@ -449,6 +449,39 @@ class TripService:
             trip_passangers=[self._build_trip_passanger_response(tp) for tp in trip.trip_passangers],
         )
 
+    # US10-TK17 — usado pelo socket.io server para calcular ETA do tracker
+    def get_next_stop_with_coordinates(self, trip_id: UUID) -> dict | None:
+        """Retorna stop_id, lat e lng da próxima parada pendente da trip.
+
+        Diferente de get_next_stop, não exige driver_id — a autenticação já
+        foi feita na conexão do socket. Usado exclusivamente pelo handler
+        _calculate_eta_for_tracker.
+
+        Retorna {"stop_id": UUID, "lat": float, "lng": float} ou None se:
+        - Não houver trip_passanger com status='pendente'
+        - O endereço da parada não tiver coordenadas (latitude/longitude)
+        - A stop associada ao trip_passanger não existir
+        """
+        trip_passangers = self.trip_passanger_repository.find_by_trip(trip_id)
+
+        for tp in trip_passangers:
+            if tp.status != "pendente":
+                continue
+
+            stop = self.stop_repository.find_by_route_passanger_id(tp.route_passanger_id)
+            if stop is None:
+                continue
+
+            lat = getattr(stop.address, "latitude", None)
+            lng = getattr(stop.address, "longitude", None)
+
+            if lat is None or lng is None:
+                return None
+
+            return {"stop_id": stop.id, "lat": lat, "lng": lng}
+
+        return None
+
     # US11-TK01 — viagem atual para o passageiro
     def get_current_trip_for_passanger(
         self,

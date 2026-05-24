@@ -1140,3 +1140,92 @@ def test_skip_stop_calls_emit_passenger_absent_for_each_pending_tp() -> None:
     ) as mock_emit:
         service.skip_stop(trip.id, stop.id, driver_id)
         assert mock_emit.call_count == 2
+
+
+# ===========================================================================
+# US10-TK17 — get_next_stop_with_coordinates
+# ===========================================================================
+
+
+def make_stop_with_address(lat: float | None = -30.0, lng: float | None = -51.0) -> StopModel:
+    stop = Mock(spec=StopModel)
+    stop.id = uuid.uuid4()
+    stop.route_passanger_id = uuid.uuid4()
+    stop.address = Mock()
+    stop.address.latitude = lat
+    stop.address.longitude = lng
+    return stop
+
+
+def test_get_next_stop_with_coordinates_returns_coords_for_first_pending() -> None:
+    """Retorna stop_id, lat e lng da primeira parada com status 'pendente'."""
+    service, mocks = make_service()
+    trip_id = uuid.uuid4()
+
+    tp = make_tp_mock(trip_id=trip_id, status="pendente")
+    stop = make_stop_with_address(lat=-30.123, lng=-51.456)
+    stop.route_passanger_id = tp.route_passanger_id
+
+    mocks["tp_repo"].find_by_trip.return_value = [tp]
+    mocks["stop_repo"].find_by_route_passanger_id.return_value = stop
+
+    result = service.get_next_stop_with_coordinates(trip_id)
+
+    assert result is not None
+    assert result["stop_id"] == stop.id
+    assert result["lat"] == -30.123
+    assert result["lng"] == -51.456
+
+
+def test_get_next_stop_with_coordinates_returns_none_when_no_pending() -> None:
+    """Retorna None quando todos os trip_passangers não estão mais pendentes."""
+    service, mocks = make_service()
+    trip_id = uuid.uuid4()
+
+    tp_present = make_tp_mock(trip_id=trip_id, status="presente")
+    tp_absent = make_tp_mock(trip_id=trip_id, status="ausente")
+
+    mocks["tp_repo"].find_by_trip.return_value = [tp_present, tp_absent]
+
+    result = service.get_next_stop_with_coordinates(trip_id)
+
+    assert result is None
+    mocks["stop_repo"].find_by_route_passanger_id.assert_not_called()
+
+
+def test_get_next_stop_with_coordinates_returns_none_when_address_has_no_coordinates() -> None:
+    """Retorna None quando a parada pendente existe mas não tem coordenadas."""
+    service, mocks = make_service()
+    trip_id = uuid.uuid4()
+
+    tp = make_tp_mock(trip_id=trip_id, status="pendente")
+    stop = make_stop_with_address(lat=None, lng=None)
+    stop.route_passanger_id = tp.route_passanger_id
+
+    mocks["tp_repo"].find_by_trip.return_value = [tp]
+    mocks["stop_repo"].find_by_route_passanger_id.return_value = stop
+
+    result = service.get_next_stop_with_coordinates(trip_id)
+
+    assert result is None
+
+
+def test_get_next_stop_with_coordinates_skips_missing_stop_and_finds_next() -> None:
+    """Pula trip_passangers cujo stop não existe no repo e continua para o próximo."""
+    service, mocks = make_service()
+    trip_id = uuid.uuid4()
+
+    tp_no_stop = make_tp_mock(trip_id=trip_id, status="pendente")
+    tp_with_stop = make_tp_mock(trip_id=trip_id, status="pendente")
+    stop = make_stop_with_address(lat=-30.0, lng=-51.0)
+    stop.route_passanger_id = tp_with_stop.route_passanger_id
+
+    mocks["tp_repo"].find_by_trip.return_value = [tp_no_stop, tp_with_stop]
+    mocks["stop_repo"].find_by_route_passanger_id.side_effect = [None, stop]
+
+    result = service.get_next_stop_with_coordinates(trip_id)
+
+    assert result is not None
+    assert result["stop_id"] == stop.id
+    assert result["lat"] == -30.0
+    assert result["lng"] == -51.0
