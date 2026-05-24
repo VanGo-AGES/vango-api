@@ -533,7 +533,6 @@ async def test_join_session_follower_defaults_missing_stop_coordinates_to_none()
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US11-TK04")
 @pytest.mark.asyncio
 async def test_trip_finished_emits_to_room():
     """emit_trip_finished deve emitir trip_finished para todos no room da sessão."""
@@ -552,7 +551,6 @@ async def test_trip_finished_emits_to_room():
     tracking_sessions.pop(trip_id, None)
 
 
-@pytest.mark.skip(reason="US11-TK04")
 @pytest.mark.asyncio
 async def test_trip_finished_clears_session_state():
     """emit_trip_finished deve remover a sessão do estado em memória."""
@@ -567,7 +565,6 @@ async def test_trip_finished_clears_session_state():
     assert trip_id not in tracking_sessions
 
 
-@pytest.mark.skip(reason="US11-TK04")
 @pytest.mark.asyncio
 async def test_trip_finished_no_error_when_session_not_found():
     """emit_trip_finished com trip_id sem sessão ativa não deve levantar exceção."""
