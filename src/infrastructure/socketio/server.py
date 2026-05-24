@@ -18,9 +18,9 @@ from urllib.parse import parse_qs
 
 import socketio
 from src.infrastructure.database import SessionLocal
+from src.infrastructure.notifications.firebase_notification_service import FirebaseNotificationService
 from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
 from src.infrastructure.repositories.trip_repository import TripRepositoryImpl
-from src.infrastructure.notifications.firebase_notification_service import FirebaseNotificationService
 
 # ---------------------------------------------------------------------------
 # Socket.IO server
@@ -293,8 +293,9 @@ async def emit_trip_finished(trip_id: str) -> None:
 
 
 # US12-TK06
-def _get_notification_service():
+def _get_notification_service() -> FirebaseNotificationService:
     return FirebaseNotificationService()
+
 
 async def _notify_proximity_if_needed(follower_sid: str, distance_km: float) -> None:
     """Envia push "Seu motorista está próximo" quando distance_km < PROXIMITY_THRESHOLD_KM."""
@@ -316,6 +317,7 @@ async def _notify_proximity_if_needed(follower_sid: str, distance_km: float) -> 
         meta["proximity_notified"] = True
     except Exception:
         pass
+
 
 # US12-TK07
 async def _notify_arrival_if_needed(follower_sid: str, distance_km: float) -> None:
