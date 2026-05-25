@@ -1,0 +1,76 @@
+version: 2
+
+updates:
+  - package-ecosystem: "pip"
+    directory: "/"
+
+    schedule:
+      interval: "monthly"
+
+    open-pull-requests-limit: 5
+
+    cooldown:
+      default-days: 7
+
+    groups:
+      production-dependencies:
+        patterns:
+          - "fastapi*"
+          - "sqlalchemy*"
+          - "pydantic*"
+          - "alembic*"
+          - "uvicorn*"
+          - "uvloop*"
+          - "python-socketio*"
+          - "socketio*"
+          - "boto3*"
+          - "firebase*"
+          - "google-*"
+          - "httpx*"
+          - "httptools*"
+          - "passlib*"
+          - "PyJWT*"
+          - "bcrypt*"
+          - "cryptography*"
+          - "websockets*"
+          - "grpcio*"
+          - "protobuf*"
+          - "starlette*"
+          - "psycopg2*"
+          - "watchfiles*"
+          - "python-multipart*"
+          - "python-dotenv*"
+          - "requests*"
+          - "httpcore*"
+          - "h2*"
+
+      dev-dependencies:
+        patterns:
+          - "ruff*"
+          - "pytest*"
+          - "coverage*"
+          - "mypy*"
+          - "bandit*"
+          - "pip-audit*"
+          - "pre-commit*"
+
+      security-updates:
+        applies-to: "security-updates"
+        patterns:
+          - "*"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+
+    schedule:
+      interval: "monthly"
+
+    open-pull-requests-limit: 5
+
+    cooldown:
+      default-days: 7
+
+    groups:
+      github-actions:
+        patterns:
+          - "*"
