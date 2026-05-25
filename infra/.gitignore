@@ -1,0 +1,6 @@
+# Ignorar logs e estados locais do Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+tfplan
