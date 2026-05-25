@@ -3,7 +3,7 @@ fail_fast: true
 repos:
   # 1. Ruff para Linter e Formatter
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.3.0
+    rev: v0.15.6
     hooks:
       # Roda o Linter para checar tipagem (ANN), bugs e imports
       - id: ruff

@@ -1017,9 +1017,9 @@ def test_leave_route_notifies_driver_before_delete() -> None:
     call_names = [c[0] for c in manager.mock_calls]
     assert call_names.index("notify") < call_names.index("delete_rp"), f"notify deve vir antes do delete_rp, mas ordem foi: {call_names}"
     if "delete_stop" in call_names:
-        assert call_names.index("notify") < call_names.index(
-            "delete_stop"
-        ), f"notify deve vir antes do delete_stop, mas ordem foi: {call_names}"
+        assert call_names.index("notify") < call_names.index("delete_stop"), (
+            f"notify deve vir antes do delete_stop, mas ordem foi: {call_names}"
+        )
 
 
 def test_leave_route_deletes_stop_explicitly() -> None:
