@@ -11,15 +11,19 @@ Convenções:
 
 import uuid
 from datetime import datetime, timezone
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock
 
 import pytest
 from fastapi.testclient import TestClient
 
 from src.domains.trips.service import TripService
 from src.infrastructure.database import get_db
+from src.infrastructure.dependencies.routing_dependencies import (
+    get_geocoding_service,
+    get_routing_service,
+)
 from src.infrastructure.dependencies.trip_dependencies import get_trip_service
-from src.main import app
+from src.main import fastapi_app as app
 from tests.test_trip._helpers import (
     make_address,
     make_driver,
@@ -53,9 +57,7 @@ def make_trip_response(status: str = "iniciada"):
         "status": status,
         "total_km": None if status != "finalizada" else 12.5,
         "started_at": datetime(2026, 4, 22, 7, 30, tzinfo=timezone.utc),
-        "finished_at": None
-        if status != "finalizada"
-        else datetime(2026, 4, 22, 8, 45, tzinfo=timezone.utc),
+        "finished_at": None if status != "finalizada" else datetime(2026, 4, 22, 8, 45, tzinfo=timezone.utc),
         "trip_passangers": [],
     }
     return TripResponse(**payload)
@@ -70,9 +72,7 @@ def make_trip_passanger_response(status: str = "pendente"):
         "passanger_name": "Maria Silva",
         "status": status,
         "pickup_address_label": "Rua X, 100",
-        "boarded_at": datetime(2026, 4, 22, 7, 45, tzinfo=timezone.utc)
-        if status == "presente"
-        else None,
+        "boarded_at": datetime(2026, 4, 22, 7, 45, tzinfo=timezone.utc) if status == "presente" else None,
         "alighted_at": None,
         "user_phone": "51999990000",
     }
@@ -325,9 +325,7 @@ def test_board_passanger_success_returns_200() -> None:
     mock_service.board_passanger.return_value = make_trip_passanger_response(status="presente")
     app.dependency_overrides[get_trip_service] = lambda: mock_service
 
-    response = client.post(
-        f"/trips/{uuid.uuid4()}/passangers/{uuid.uuid4()}/board", headers=DRIVER_HEADERS
-    )
+    response = client.post(f"/trips/{uuid.uuid4()}/passangers/{uuid.uuid4()}/board", headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 200
@@ -341,9 +339,7 @@ def test_board_passanger_trip_passanger_not_found_returns_404() -> None:
     mock_service.board_passanger.side_effect = TripPassangerNotFoundError()
     app.dependency_overrides[get_trip_service] = lambda: mock_service
 
-    response = client.post(
-        f"/trips/{uuid.uuid4()}/passangers/{uuid.uuid4()}/board", headers=DRIVER_HEADERS
-    )
+    response = client.post(f"/trips/{uuid.uuid4()}/passangers/{uuid.uuid4()}/board", headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 404
@@ -356,9 +352,7 @@ def test_board_passanger_wrong_owner_returns_403() -> None:
     mock_service.board_passanger.side_effect = TripOwnershipError()
     app.dependency_overrides[get_trip_service] = lambda: mock_service
 
-    response = client.post(
-        f"/trips/{uuid.uuid4()}/passangers/{uuid.uuid4()}/board", headers=DRIVER_HEADERS
-    )
+    response = client.post(f"/trips/{uuid.uuid4()}/passangers/{uuid.uuid4()}/board", headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 403
@@ -371,9 +365,7 @@ def test_board_passanger_trip_not_in_progress_returns_409() -> None:
     mock_service.board_passanger.side_effect = TripNotInProgressError()
     app.dependency_overrides[get_trip_service] = lambda: mock_service
 
-    response = client.post(
-        f"/trips/{uuid.uuid4()}/passangers/{uuid.uuid4()}/board", headers=DRIVER_HEADERS
-    )
+    response = client.post(f"/trips/{uuid.uuid4()}/passangers/{uuid.uuid4()}/board", headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 409
@@ -386,9 +378,7 @@ def test_board_passanger_invalid_status_returns_409() -> None:
     mock_service.board_passanger.side_effect = InvalidTripPassangerStatusError()
     app.dependency_overrides[get_trip_service] = lambda: mock_service
 
-    response = client.post(
-        f"/trips/{uuid.uuid4()}/passangers/{uuid.uuid4()}/board", headers=DRIVER_HEADERS
-    )
+    response = client.post(f"/trips/{uuid.uuid4()}/passangers/{uuid.uuid4()}/board", headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 409
@@ -404,9 +394,7 @@ def test_mark_absent_success_returns_200() -> None:
     mock_service.mark_passanger_absent.return_value = make_trip_passanger_response(status="ausente")
     app.dependency_overrides[get_trip_service] = lambda: mock_service
 
-    response = client.post(
-        f"/trips/{uuid.uuid4()}/passangers/{uuid.uuid4()}/absent", headers=DRIVER_HEADERS
-    )
+    response = client.post(f"/trips/{uuid.uuid4()}/passangers/{uuid.uuid4()}/absent", headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 200
@@ -420,9 +408,7 @@ def test_mark_absent_trip_passanger_not_found_returns_404() -> None:
     mock_service.mark_passanger_absent.side_effect = TripPassangerNotFoundError()
     app.dependency_overrides[get_trip_service] = lambda: mock_service
 
-    response = client.post(
-        f"/trips/{uuid.uuid4()}/passangers/{uuid.uuid4()}/absent", headers=DRIVER_HEADERS
-    )
+    response = client.post(f"/trips/{uuid.uuid4()}/passangers/{uuid.uuid4()}/absent", headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 404
@@ -435,9 +421,7 @@ def test_mark_absent_wrong_owner_returns_403() -> None:
     mock_service.mark_passanger_absent.side_effect = TripOwnershipError()
     app.dependency_overrides[get_trip_service] = lambda: mock_service
 
-    response = client.post(
-        f"/trips/{uuid.uuid4()}/passangers/{uuid.uuid4()}/absent", headers=DRIVER_HEADERS
-    )
+    response = client.post(f"/trips/{uuid.uuid4()}/passangers/{uuid.uuid4()}/absent", headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 403
@@ -450,9 +434,7 @@ def test_mark_absent_trip_not_in_progress_returns_409() -> None:
     mock_service.mark_passanger_absent.side_effect = TripNotInProgressError()
     app.dependency_overrides[get_trip_service] = lambda: mock_service
 
-    response = client.post(
-        f"/trips/{uuid.uuid4()}/passangers/{uuid.uuid4()}/absent", headers=DRIVER_HEADERS
-    )
+    response = client.post(f"/trips/{uuid.uuid4()}/passangers/{uuid.uuid4()}/absent", headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 409
@@ -470,9 +452,7 @@ def test_skip_stop_success_returns_200_with_list() -> None:
     ]
     app.dependency_overrides[get_trip_service] = lambda: mock_service
 
-    response = client.post(
-        f"/trips/{uuid.uuid4()}/stops/{uuid.uuid4()}/skip", headers=DRIVER_HEADERS
-    )
+    response = client.post(f"/trips/{uuid.uuid4()}/stops/{uuid.uuid4()}/skip", headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 200
@@ -488,9 +468,7 @@ def test_skip_stop_stop_not_found_returns_404() -> None:
     mock_service.skip_stop.side_effect = TripStopNotFoundError()
     app.dependency_overrides[get_trip_service] = lambda: mock_service
 
-    response = client.post(
-        f"/trips/{uuid.uuid4()}/stops/{uuid.uuid4()}/skip", headers=DRIVER_HEADERS
-    )
+    response = client.post(f"/trips/{uuid.uuid4()}/stops/{uuid.uuid4()}/skip", headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 404
@@ -503,9 +481,7 @@ def test_skip_stop_wrong_owner_returns_403() -> None:
     mock_service.skip_stop.side_effect = TripOwnershipError()
     app.dependency_overrides[get_trip_service] = lambda: mock_service
 
-    response = client.post(
-        f"/trips/{uuid.uuid4()}/stops/{uuid.uuid4()}/skip", headers=DRIVER_HEADERS
-    )
+    response = client.post(f"/trips/{uuid.uuid4()}/stops/{uuid.uuid4()}/skip", headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 403
@@ -518,9 +494,7 @@ def test_skip_stop_trip_not_in_progress_returns_409() -> None:
     mock_service.skip_stop.side_effect = TripNotInProgressError()
     app.dependency_overrides[get_trip_service] = lambda: mock_service
 
-    response = client.post(
-        f"/trips/{uuid.uuid4()}/stops/{uuid.uuid4()}/skip", headers=DRIVER_HEADERS
-    )
+    response = client.post(f"/trips/{uuid.uuid4()}/stops/{uuid.uuid4()}/skip", headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 409
@@ -538,9 +512,7 @@ def test_alight_passanger_success_returns_200() -> None:
     mock_service.alight_passanger.return_value = response_dto
     app.dependency_overrides[get_trip_service] = lambda: mock_service
 
-    response = client.post(
-        f"/trips/{uuid.uuid4()}/passangers/{uuid.uuid4()}/alight", headers=DRIVER_HEADERS
-    )
+    response = client.post(f"/trips/{uuid.uuid4()}/passangers/{uuid.uuid4()}/alight", headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 200
@@ -554,9 +526,7 @@ def test_alight_passanger_not_found_returns_404() -> None:
     mock_service.alight_passanger.side_effect = TripPassangerNotFoundError()
     app.dependency_overrides[get_trip_service] = lambda: mock_service
 
-    response = client.post(
-        f"/trips/{uuid.uuid4()}/passangers/{uuid.uuid4()}/alight", headers=DRIVER_HEADERS
-    )
+    response = client.post(f"/trips/{uuid.uuid4()}/passangers/{uuid.uuid4()}/alight", headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 404
@@ -569,9 +539,7 @@ def test_alight_passanger_invalid_status_returns_409() -> None:
     mock_service.alight_passanger.side_effect = InvalidTripPassangerStatusError()
     app.dependency_overrides[get_trip_service] = lambda: mock_service
 
-    response = client.post(
-        f"/trips/{uuid.uuid4()}/passangers/{uuid.uuid4()}/alight", headers=DRIVER_HEADERS
-    )
+    response = client.post(f"/trips/{uuid.uuid4()}/passangers/{uuid.uuid4()}/alight", headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 409
@@ -587,9 +555,7 @@ def test_finish_trip_success_returns_200() -> None:
     mock_service.finish_trip.return_value = make_trip_response(status="finalizada")
     app.dependency_overrides[get_trip_service] = lambda: mock_service
 
-    response = client.post(
-        f"/trips/{uuid.uuid4()}/finish", json={"total_km": 12.5}, headers=DRIVER_HEADERS
-    )
+    response = client.post(f"/trips/{uuid.uuid4()}/finish", json={"total_km": 12.5}, headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 200
@@ -602,9 +568,7 @@ def test_finish_trip_without_total_km_returns_200() -> None:
     mock_service.finish_trip.return_value = make_trip_response(status="finalizada")
     app.dependency_overrides[get_trip_service] = lambda: mock_service
 
-    response = client.post(
-        f"/trips/{uuid.uuid4()}/finish", json={}, headers=DRIVER_HEADERS
-    )
+    response = client.post(f"/trips/{uuid.uuid4()}/finish", json={}, headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 200
@@ -617,9 +581,7 @@ def test_finish_trip_not_found_returns_404() -> None:
     mock_service.finish_trip.side_effect = TripNotFoundError()
     app.dependency_overrides[get_trip_service] = lambda: mock_service
 
-    response = client.post(
-        f"/trips/{uuid.uuid4()}/finish", json={"total_km": 10.0}, headers=DRIVER_HEADERS
-    )
+    response = client.post(f"/trips/{uuid.uuid4()}/finish", json={"total_km": 10.0}, headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 404
@@ -632,9 +594,7 @@ def test_finish_trip_wrong_owner_returns_403() -> None:
     mock_service.finish_trip.side_effect = TripOwnershipError()
     app.dependency_overrides[get_trip_service] = lambda: mock_service
 
-    response = client.post(
-        f"/trips/{uuid.uuid4()}/finish", json={"total_km": 10.0}, headers=DRIVER_HEADERS
-    )
+    response = client.post(f"/trips/{uuid.uuid4()}/finish", json={"total_km": 10.0}, headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 403
@@ -647,9 +607,7 @@ def test_finish_trip_already_finished_returns_409() -> None:
     mock_service.finish_trip.side_effect = TripAlreadyFinishedError()
     app.dependency_overrides[get_trip_service] = lambda: mock_service
 
-    response = client.post(
-        f"/trips/{uuid.uuid4()}/finish", json={"total_km": 10.0}, headers=DRIVER_HEADERS
-    )
+    response = client.post(f"/trips/{uuid.uuid4()}/finish", json={"total_km": 10.0}, headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 409
@@ -667,6 +625,11 @@ def integration_client(db_session):
         yield db_session
 
     app.dependency_overrides[get_db] = override_db
+    # US10-TK19: routing_service e geocoding_service viraram dependências
+    # injetadas em vários services. Override por Mocks neutros pra evitar
+    # chamada Mapbox real no CI sem credencial.
+    app.dependency_overrides[get_routing_service] = lambda: MagicMock()
+    app.dependency_overrides[get_geocoding_service] = lambda: MagicMock()
     yield TestClient(app, raise_server_exceptions=False)
     app.dependency_overrides.clear()
 
@@ -723,17 +686,11 @@ def test_integration_start_trip_persists_trip_passangers(integration_client, db_
 
     assert response.status_code == 201
     trip_id = uuid.UUID(response.json()["id"])
-    tps = (
-        db_session.query(TripPassangerModel)
-        .filter(TripPassangerModel.trip_id == trip_id)
-        .all()
-    )
+    tps = db_session.query(TripPassangerModel).filter(TripPassangerModel.trip_id == trip_id).all()
     assert len(tps) == 2
 
 
-def test_integration_start_trip_already_in_progress_returns_409(
-    integration_client, db_session
-) -> None:
+def test_integration_start_trip_already_in_progress_returns_409(integration_client, db_session) -> None:
     driver = make_driver(db_session)
     vehicle = make_vehicle(db_session, driver.id)
     route = make_route(db_session, driver.id)
@@ -781,9 +738,7 @@ def test_integration_start_trip_wrong_owner_returns_403(integration_client, db_s
     assert response.status_code == 403
 
 
-def test_integration_start_trip_vehicle_not_owned_returns_403(
-    integration_client, db_session
-) -> None:
+def test_integration_start_trip_vehicle_not_owned_returns_403(integration_client, db_session) -> None:
     driver = make_driver(db_session)
     other_driver = make_driver(db_session, name="Outro")
     vehicle = make_vehicle(db_session, other_driver.id)
@@ -809,9 +764,7 @@ def test_integration_get_trip_success(integration_client, db_session) -> None:
     route = make_route(db_session, driver.id)
     trip = make_trip(db_session, route.id, vehicle.id)
 
-    response = integration_client.get(
-        f"/trips/{trip.id}", headers=_driver_headers(driver.id)
-    )
+    response = integration_client.get(f"/trips/{trip.id}", headers=_driver_headers(driver.id))
 
     assert response.status_code == 200
     assert response.json()["id"] == str(trip.id)
@@ -820,9 +773,7 @@ def test_integration_get_trip_success(integration_client, db_session) -> None:
 def test_integration_get_trip_not_found_returns_404(integration_client, db_session) -> None:
     driver = make_driver(db_session)
 
-    response = integration_client.get(
-        f"/trips/{uuid.uuid4()}", headers=_driver_headers(driver.id)
-    )
+    response = integration_client.get(f"/trips/{uuid.uuid4()}", headers=_driver_headers(driver.id))
 
     assert response.status_code == 404
 
@@ -834,9 +785,7 @@ def test_integration_get_trip_wrong_owner_returns_403(integration_client, db_ses
     route = make_route(db_session, driver.id)
     trip = make_trip(db_session, route.id, vehicle.id)
 
-    response = integration_client.get(
-        f"/trips/{trip.id}", headers=_driver_headers(other.id)
-    )
+    response = integration_client.get(f"/trips/{trip.id}", headers=_driver_headers(other.id))
 
     assert response.status_code == 403
 
@@ -857,9 +806,7 @@ def test_integration_next_stop_returns_first_pending(integration_client, db_sess
     trip = make_trip(db_session, route.id, vehicle.id)
     make_trip_passanger(db_session, trip.id, rp.id, status="pendente")
 
-    response = integration_client.get(
-        f"/trips/{trip.id}/next-stop", headers=_driver_headers(driver.id)
-    )
+    response = integration_client.get(f"/trips/{trip.id}/next-stop", headers=_driver_headers(driver.id))
 
     assert response.status_code == 200
     body = response.json()
@@ -878,9 +825,7 @@ def test_integration_next_stop_returns_null_when_all_done(integration_client, db
     trip = make_trip(db_session, route.id, vehicle.id)
     make_trip_passanger(db_session, trip.id, rp.id, status="presente")
 
-    response = integration_client.get(
-        f"/trips/{trip.id}/next-stop", headers=_driver_headers(driver.id)
-    )
+    response = integration_client.get(f"/trips/{trip.id}/next-stop", headers=_driver_headers(driver.id))
 
     assert response.status_code == 200
     assert response.json() is None
@@ -1110,9 +1055,7 @@ def test_integration_finish_trip_auto_alights_presents(integration_client, db_se
     assert refreshed.alighted_at is not None
 
 
-def test_integration_finish_trip_already_finished_returns_409(
-    integration_client, db_session
-) -> None:
+def test_integration_finish_trip_already_finished_returns_409(integration_client, db_session) -> None:
     driver = make_driver(db_session)
     vehicle = make_vehicle(db_session, driver.id)
     route = make_route(db_session, driver.id)
@@ -1141,3 +1084,191 @@ def test_integration_finish_trip_wrong_owner_returns_403(integration_client, db_
     )
 
     assert response.status_code == 403
+
+
+# ===========================================================================
+# US11-TK01 — GET /routes/{route_id}/trips/current (UNIDADE)
+# ===========================================================================
+
+
+def make_current_trip_response():
+    from src.domains.trips.dtos import CurrentTripResponse
+
+    return CurrentTripResponse(
+        trip_id=uuid.uuid4(),
+        status="iniciada",
+        started_at=datetime(2026, 5, 10, 7, 30, tzinfo=timezone.utc),
+        driver_name="João Silva",
+        driver_photo_url="https://cdn.vango.app/u/joao.jpg",
+        vehicle_plate="ABC-1234",
+    )
+
+
+PASSANGER_HEADERS = {"X-User-Id": str(uuid.uuid4()), "X-User-Role": "guardian"}
+
+
+def test_get_current_trip_for_passanger_success_returns_200() -> None:
+    """200 com CurrentTripResponse quando viagem em andamento existe."""
+    mock_service = Mock(spec=TripService)
+    mock_service.get_current_trip_for_passanger.return_value = make_current_trip_response()
+    app.dependency_overrides[get_trip_service] = lambda: mock_service
+
+    response = client.get(
+        f"/routes/{uuid.uuid4()}/trips/current",
+        headers=PASSANGER_HEADERS,
+    )
+
+    app.dependency_overrides.clear()
+    assert response.status_code == 200
+    assert response.json()["status"] == "iniciada"
+    assert "trip_id" in response.json()
+
+
+def test_get_current_trip_for_passanger_no_trip_returns_200_null() -> None:
+    """200 com null quando não há viagem em andamento."""
+    mock_service = Mock(spec=TripService)
+    mock_service.get_current_trip_for_passanger.return_value = None
+    app.dependency_overrides[get_trip_service] = lambda: mock_service
+
+    response = client.get(
+        f"/routes/{uuid.uuid4()}/trips/current",
+        headers=PASSANGER_HEADERS,
+    )
+
+    app.dependency_overrides.clear()
+    assert response.status_code == 200
+    assert response.json() is None
+
+
+def test_get_current_trip_for_passanger_route_not_found_returns_404() -> None:
+    from src.domains.routes.errors import RouteNotFoundError
+
+    mock_service = Mock(spec=TripService)
+    mock_service.get_current_trip_for_passanger.side_effect = RouteNotFoundError()
+    app.dependency_overrides[get_trip_service] = lambda: mock_service
+
+    response = client.get(
+        f"/routes/{uuid.uuid4()}/trips/current",
+        headers=PASSANGER_HEADERS,
+    )
+
+    app.dependency_overrides.clear()
+    assert response.status_code == 404
+
+
+def test_get_current_trip_for_passanger_not_passanger_returns_403() -> None:
+    from src.domains.route_passangers.errors import NotRoutePassangerError
+
+    mock_service = Mock(spec=TripService)
+    mock_service.get_current_trip_for_passanger.side_effect = NotRoutePassangerError()
+    app.dependency_overrides[get_trip_service] = lambda: mock_service
+
+    response = client.get(
+        f"/routes/{uuid.uuid4()}/trips/current",
+        headers=PASSANGER_HEADERS,
+    )
+
+    app.dependency_overrides.clear()
+    assert response.status_code == 403
+
+
+def test_get_current_trip_for_passanger_dependent_id_forwarded() -> None:
+    """Query param dependent_id deve ser repassado ao service."""
+    mock_service = Mock(spec=TripService)
+    mock_service.get_current_trip_for_passanger.return_value = None
+    app.dependency_overrides[get_trip_service] = lambda: mock_service
+    dep_id = uuid.uuid4()
+
+    response = client.get(
+        f"/routes/{uuid.uuid4()}/trips/current",
+        params={"dependent_id": str(dep_id)},
+        headers=PASSANGER_HEADERS,
+    )
+
+    app.dependency_overrides.clear()
+    assert response.status_code == 200
+    _, kwargs = mock_service.get_current_trip_for_passanger.call_args
+    assert kwargs.get("dependent_id") == dep_id
+
+
+# ===========================================================================
+# US11-TK01 — GET /routes/{route_id}/trips/current (INTEGRAÇÃO)
+# ===========================================================================
+
+
+def test_integration_get_current_trip_for_passanger_success(integration_client, db_session) -> None:
+    """Passageiro aceito com viagem em andamento recebe trip_id + status."""
+    driver = make_driver(db_session)
+    vehicle = make_vehicle(db_session, driver.id)
+    passanger = make_passenger(db_session)
+    route = make_route(db_session, driver.id, status="em_andamento")
+    make_rp(db_session, route.id, passanger.id, status="accepted")
+    trip = make_trip(db_session, route.id, vehicle.id, status="iniciada")
+
+    response = integration_client.get(
+        f"/routes/{route.id}/trips/current",
+        headers={"X-User-Id": str(passanger.id), "X-User-Role": "guardian"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["trip_id"] == str(trip.id)
+    assert body["status"] == "iniciada"
+
+
+def test_integration_get_current_trip_no_trip_returns_null(integration_client, db_session) -> None:
+    """Retorna null quando não há viagem em andamento."""
+    driver = make_driver(db_session)
+    passanger = make_passenger(db_session)
+    route = make_route(db_session, driver.id)
+    make_rp(db_session, route.id, passanger.id, status="accepted")
+
+    response = integration_client.get(
+        f"/routes/{route.id}/trips/current",
+        headers={"X-User-Id": str(passanger.id), "X-User-Role": "guardian"},
+    )
+
+    assert response.status_code == 200
+    assert response.json() is None
+
+
+def test_integration_get_current_trip_route_not_found_returns_404(integration_client, db_session) -> None:
+    passanger = make_passenger(db_session)
+
+    response = integration_client.get(
+        f"/routes/{uuid.uuid4()}/trips/current",
+        headers={"X-User-Id": str(passanger.id), "X-User-Role": "guardian"},
+    )
+
+    assert response.status_code == 404
+
+
+def test_integration_get_current_trip_not_passanger_returns_403(integration_client, db_session) -> None:
+    """Usuário sem vínculo na rota recebe 403."""
+    driver = make_driver(db_session)
+    outsider = make_passenger(db_session, "Outsider")
+    route = make_route(db_session, driver.id)
+
+    response = integration_client.get(
+        f"/routes/{route.id}/trips/current",
+        headers={"X-User-Id": str(outsider.id), "X-User-Role": "guardian"},
+    )
+
+    assert response.status_code == 403
+
+
+def test_integration_get_current_trip_pending_passanger_allowed(integration_client, db_session) -> None:
+    """Passageiro ainda pending pode consultar a viagem."""
+    driver = make_driver(db_session)
+    vehicle = make_vehicle(db_session, driver.id)
+    passanger = make_passenger(db_session)
+    route = make_route(db_session, driver.id, status="em_andamento")
+    make_rp(db_session, route.id, passanger.id, status="pending")
+    make_trip(db_session, route.id, vehicle.id, status="iniciada")
+
+    response = integration_client.get(
+        f"/routes/{route.id}/trips/current",
+        headers={"X-User-Id": str(passanger.id), "X-User-Role": "guardian"},
+    )
+
+    assert response.status_code == 200

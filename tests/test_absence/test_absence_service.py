@@ -11,7 +11,7 @@ Cobre:
 """
 
 import uuid
-from datetime import date, datetime, timezone,timedelta
+from datetime import date, datetime, timezone, timedelta
 from unittest.mock import Mock
 
 import pytest
@@ -20,6 +20,7 @@ import pytest
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def future_weekday() -> date:
     target = date.today() + timedelta(days=5)
 
@@ -27,6 +28,7 @@ def future_weekday() -> date:
         target += timedelta(days=1)
 
     return target
+
 
 def make_route_mock(driver_id: uuid.UUID, status: str = "ativa", recurrence: str = "seg,ter,qua,qui,sex"):
     from src.domains.routes.entity import RouteModel
@@ -264,3 +266,51 @@ def test_create_absence_does_not_notify_on_validation_error() -> None:
 
     deps["notification_service"].notify_driver_passanger_absence_reported.assert_not_called()
     deps["absence_repository"].save.assert_not_called()
+
+
+# ===========================================================================
+# US10-TK08 — optimize_stop_order wiring em create_absence
+# ===========================================================================
+
+
+def test_create_absence_calls_optimize_stop_order() -> None:
+    """create_absence deve chamar routing_service.optimize_stop_order após registrar ausência."""
+    from src.domains.absences.dtos import CreateAbsenceRequest
+    from src.domains.routing.service import IRoutingService
+    from src.domains.stops.repository import IStopRepository
+    from src.domains.trips.entity import AbsenceModel
+
+    user_id = uuid.uuid4()
+    driver_id = uuid.uuid4()
+
+    routing_mock = Mock(spec=IRoutingService)
+    routing_mock.optimize_stop_order.return_value = []
+    stop_repo_mock = Mock(spec=IStopRepository)
+    stop_repo_mock.find_by_route_id.return_value = []
+
+    service, deps = build_service(
+        routing_service=routing_mock,
+        stop_repository=stop_repo_mock,
+    )
+    route = make_route_mock(driver_id=driver_id)
+    rp = make_rp_mock(route_id=route.id, user_id=user_id)
+    rp.route_id = route.id
+
+    deps["route_repository"].find_by_id.return_value = route
+    deps["route_passanger_repository"].find_active_by_user_and_route.return_value = rp
+    deps["absence_repository"].find_for_route_passanger_on_date.return_value = None
+    saved = Mock(spec=AbsenceModel)
+    saved.id = uuid.uuid4()
+    saved.trip_id = None
+    saved.route_passanger_id = rp.id
+    saved.absence_date = datetime(2026, 4, 28, 0, 0, tzinfo=timezone.utc)
+    saved.reason = None
+    saved.created_at = datetime.now(tz=timezone.utc)
+    deps["absence_repository"].save.return_value = saved
+
+    service.create_absence(
+        user_id=user_id,
+        data=CreateAbsenceRequest(route_id=route.id, absence_date=future_weekday()),
+    )
+
+    routing_mock.optimize_stop_order.assert_called_once()

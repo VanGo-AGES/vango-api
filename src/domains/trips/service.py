@@ -14,14 +14,18 @@ IRouteRepository, IVehicleRepository (ou cheque equivalente), IStopRepository
 e INotificationService.
 """
 
+import asyncio
 from datetime import UTC, datetime
 from uuid import UUID
 
 from src.domains.notifications.service import INotificationService
+from src.domains.route_passangers.errors import NotRoutePassangerError
 from src.domains.route_passangers.repository import IRoutePassangerRepository
+from src.domains.routes.errors import RouteNotFoundError
 from src.domains.routes.repository import IRouteRepository
 from src.domains.stops.repository import IStopRepository
 from src.domains.trips.dtos import (
+    CurrentTripResponse,
     FinishTripRequest,
     StartTripRequest,
     TripNextStopResponse,
@@ -161,7 +165,9 @@ class TripService:
         )
 
     def _build_trip_passanger_response(self, tp: TripPassangerModel) -> TripPassangerResponse:
-        """Resolve nome, endereço e telefone a partir do RoutePassanger."""
+        """Resolve nome, endereço, telefone e foto a partir do RoutePassanger."""
+        from datetime import datetime as _datetime
+
         rp = tp.route_passanger
 
         passanger_name = rp.dependent.name if rp.dependent_id else rp.user.name
@@ -172,9 +178,10 @@ class TripService:
             passanger_name=str(passanger_name),
             status=tp.status,
             pickup_address_label=str(rp.pickup_address.label),
-            boarded_at=tp.boarded_at,
-            alighted_at=tp.alighted_at,
+            boarded_at=tp.boarded_at if isinstance(tp.boarded_at, _datetime) else None,
+            alighted_at=tp.alighted_at if isinstance(tp.alighted_at, _datetime) else None,
             user_phone=str(rp.user.phone),
+            photo_url=rp.user.photo_url,
         )
 
     # US09-TK08
@@ -247,12 +254,26 @@ class TripService:
 
         now = datetime.now(UTC)
         updated = self.trip_passanger_repository.update_status(trip_passanger_id, "presente", boarded_at=now)
+        # US12-TK05
+        self.notification_service.notify_passanger_boarded(updated)
+        # US11-TK05 — chamar emit_passenger_boarded(str(trip.id), str(updated.id), user_name)
+        from src.infrastructure.socketio.server import emit_passenger_boarded
+
+        passenger_name = getattr(updated, "dependent_name", None) or getattr(updated, "user_name", "Passageiro")
+
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(emit_passenger_boarded(str(trip.id), str(updated.id), passenger_name))
+        except RuntimeError:
+            asyncio.run(emit_passenger_boarded(str(trip.id), str(updated.id), passenger_name))
+
+        updated.alighted_at = None
+
         return self._build_trip_passanger_response(updated)
 
     # US09-TK10
     def mark_passanger_absent(self, trip_id: UUID, trip_passanger_id: UUID, driver_id: UUID) -> TripPassangerResponse:
         """Marca passageiro como não embarcado (ausente).
-
         Mesmas validações do board_passanger, mas:
         - Só pode marcar ausente quem está 'pendente'.
         - Atualiza status='ausente' (boarded_at permanece None).
@@ -273,13 +294,27 @@ class TripService:
             raise InvalidTripPassangerStatusError(f"Não é possível marcar ausente um passageiro com status '{tp.status}'.")
 
         updated = self.trip_passanger_repository.update_status(trip_passanger_id, "ausente")
+
+        # US12-TK05
+        self.notification_service.notify_passanger_absent(updated)
+
+        # US11-TK06 — Extrair o nome do usuário/dependente e emitir o evento
+        rp = updated.route_passanger
+        passanger_name = str(rp.dependent.name if rp.dependent_id else rp.user.name)
+        from src.infrastructure.socketio import server as _socketio_server
+
+        coro = _socketio_server.emit_passenger_absent(str(trip.id), str(updated.id), passanger_name)
+        try:
+            asyncio.ensure_future(coro)
+        except RuntimeError:
+            coro.close()
+
         return self._build_trip_passanger_response(updated)
 
     # US09-TK11
     def skip_stop(self, trip_id: UUID, stop_id: UUID, driver_id: UUID) -> list[TripPassangerResponse]:
         """Pula uma parada inteira — marca todos os trip_passangers daquela
         parada como 'ausente'.
-
         - Valida ownership e status da trip.
         - Valida que o stop pertence à rota da trip (TripStopNotFoundError).
         - Identifica os trip_passangers associados à stop (via
@@ -311,6 +346,18 @@ class TripService:
         updated_responses = []
         for tp in pending_tps:
             updated = self.trip_passanger_repository.update_status(tp.id, "ausente")
+
+            # US11-TK06 — Extrair o nome do usuário/dependente e emitir o evento
+            rp = updated.route_passanger
+            passanger_name = str(rp.dependent.name if rp.dependent_id else rp.user.name)
+            from src.infrastructure.socketio import server as _socketio_server
+
+            coro = _socketio_server.emit_passenger_absent(str(trip.id), str(updated.id), passanger_name)
+            try:
+                asyncio.ensure_future(coro)
+            except RuntimeError:
+                coro.close()
+
             updated_responses.append(self._build_trip_passanger_response(updated))
 
         return updated_responses
@@ -377,8 +424,17 @@ class TripService:
         # Libera a rota
         self.route_repository.update(trip.route_id, {"status": "ativa"})
 
-        # Notifica
+        # Notifica push
         self.notification_service.notify_trip_finished(finished)
+
+        # US11-TK04 — emitir evento Socket.IO trip_finished para followers
+        from src.infrastructure.socketio.server import emit_trip_finished
+
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(emit_trip_finished(str(trip_id)))
+        except RuntimeError:
+            asyncio.run(emit_trip_finished(str(trip_id)))
 
         return TripResponse(
             id=finished.id,
@@ -391,4 +447,77 @@ class TripService:
             started_at=finished.started_at,
             finished_at=finished.finished_at,
             trip_passangers=[self._build_trip_passanger_response(tp) for tp in trip.trip_passangers],
+        )
+
+    # US10-TK17 — usado pelo socket.io server para calcular ETA do tracker
+    def get_next_stop_with_coordinates(self, trip_id: UUID) -> dict | None:
+        """Retorna stop_id, lat e lng da próxima parada pendente da trip.
+
+        Diferente de get_next_stop, não exige driver_id — a autenticação já
+        foi feita na conexão do socket. Usado exclusivamente pelo handler
+        _calculate_eta_for_tracker.
+
+        Retorna {"stop_id": UUID, "lat": float, "lng": float} ou None se:
+        - Não houver trip_passanger com status='pendente'
+        - O endereço da parada não tiver coordenadas (latitude/longitude)
+        - A stop associada ao trip_passanger não existir
+        """
+        trip_passangers = self.trip_passanger_repository.find_by_trip(trip_id)
+
+        for tp in trip_passangers:
+            if tp.status != "pendente":
+                continue
+
+            stop = self.stop_repository.find_by_route_passanger_id(tp.route_passanger_id)
+            if stop is None:
+                continue
+
+            lat = getattr(stop.address, "latitude", None)
+            lng = getattr(stop.address, "longitude", None)
+
+            if lat is None or lng is None:
+                return None
+
+            return {"stop_id": stop.id, "lat": lat, "lng": lng}
+
+        return None
+
+    # US11-TK01 — viagem atual para o passageiro
+    def get_current_trip_for_passanger(
+        self,
+        route_id: UUID,
+        user_id: UUID,
+        dependent_id: UUID | None = None,
+    ) -> CurrentTripResponse | None:
+        """Retorna a viagem em andamento da rota para um passageiro autenticado.
+
+        - 404 RouteNotFoundError se a rota não existir.
+        - 403 NotRoutePassangerError se o usuário não tiver vínculo ativo (pending
+          ou accepted) na rota — inclui guardian atuando por dependente.
+        - Retorna None quando nenhuma viagem está em andamento na rota.
+        - Não valida ownership do motorista — qualquer passageiro da rota pode
+          consultar.
+        """
+        # Valida que a rota existe
+        route = self.route_repository.find_by_id(route_id)
+        if route is None:
+            raise RouteNotFoundError(f"Rota {route_id} não encontrada.")
+
+        # Valida que o usuário/dependente tem vínculo ativo na rota
+        active_link = self.route_passanger_repository.find_active_by_user_and_route(user_id, dependent_id, route_id)
+        if active_link is None:
+            raise NotRoutePassangerError("Usuário não possui vínculo ativo nesta rota.")
+
+        # Busca viagem em andamento
+        trip = self.trip_repository.find_in_progress_by_route(route_id)
+        if trip is None:
+            return None
+
+        return CurrentTripResponse(
+            trip_id=trip.id,
+            status=trip.status,
+            started_at=trip.started_at,
+            driver_name=str(route.driver.name),
+            driver_photo_url=route.driver.photo_url,
+            vehicle_plate=trip.vehicle.plate if trip.vehicle is not None else None,
         )

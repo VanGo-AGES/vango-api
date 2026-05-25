@@ -7,7 +7,7 @@ Cobre:
 
 import uuid
 from datetime import date, datetime, time, timezone, timedelta
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -18,8 +18,12 @@ from src.domains.route_passangers.entity import RoutePassangerModel
 from src.domains.routes.entity import RouteModel
 from src.domains.users.entity import UserModel
 from src.infrastructure.database import get_db
+from src.infrastructure.dependencies.routing_dependencies import (
+    get_geocoding_service,
+    get_routing_service,
+)
 from src.infrastructure.dependencies.absence_dependencies import get_absence_service
-from src.main import app
+from src.main import fastapi_app as app
 
 client = TestClient(app, raise_server_exceptions=False)
 
@@ -160,6 +164,12 @@ def integration_client(db_session):
         yield db_session
 
     app.dependency_overrides[get_db] = override_db
+    # US10-TK19: routing_service e geocoding_service são injetados em vários
+    # services agora; em CI sem internet/credencial Mapbox o caminho real
+    # quebra. Override por Mocks neutros — testes que precisam de routing
+    # com return específico devem mockar explicitamente.
+    app.dependency_overrides[get_routing_service] = lambda: MagicMock()
+    app.dependency_overrides[get_geocoding_service] = lambda: MagicMock()
     yield TestClient(app, raise_server_exceptions=False)
     app.dependency_overrides.clear()
 
@@ -277,9 +287,7 @@ def test_integration_create_absence_success(integration_client, db_session) -> N
     assert body["reason"] == "Consulta"
 
 
-def test_integration_create_absence_route_not_found_returns_404(
-    integration_client, db_session
-) -> None:
+def test_integration_create_absence_route_not_found_returns_404(integration_client, db_session) -> None:
     passenger = make_integration_passenger(db_session)
     headers = {"X-User-Id": str(passenger.id), "X-User-Role": "guardian"}
 
@@ -292,9 +300,7 @@ def test_integration_create_absence_route_not_found_returns_404(
     assert response.status_code == 404
 
 
-def test_integration_create_absence_outsider_returns_403(
-    integration_client, db_session
-) -> None:
+def test_integration_create_absence_outsider_returns_403(integration_client, db_session) -> None:
     driver = make_integration_driver(db_session)
     outsider = make_integration_passenger(db_session, "Outsider")
     route = make_integration_route(db_session, driver.id)
@@ -309,9 +315,7 @@ def test_integration_create_absence_outsider_returns_403(
     assert response.status_code == 403
 
 
-def test_integration_create_absence_duplicate_returns_409(
-    integration_client, db_session
-) -> None:
+def test_integration_create_absence_duplicate_returns_409(integration_client, db_session) -> None:
     driver = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)
     route = make_integration_route(db_session, driver.id)
@@ -327,9 +331,7 @@ def test_integration_create_absence_duplicate_returns_409(
     assert second.status_code == 409
 
 
-def test_integration_create_absence_persists_in_db(
-    integration_client, db_session
-) -> None:
+def test_integration_create_absence_persists_in_db(integration_client, db_session) -> None:
     from src.domains.trips.entity import AbsenceModel
 
     driver = make_integration_driver(db_session)
@@ -348,9 +350,7 @@ def test_integration_create_absence_persists_in_db(
     assert len(stored) == 1
 
 
-def test_integration_create_absence_invalid_recurrence_returns_409(
-    integration_client, db_session
-) -> None:
+def test_integration_create_absence_invalid_recurrence_returns_409(integration_client, db_session) -> None:
     """Rota recorre só em segundas; avisar ausência em sábado deve dar 409."""
     driver = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)

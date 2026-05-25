@@ -22,6 +22,11 @@ jobs:
     steps:
       # 2. Copia seu código pro computador do GitHub
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Gitleaks
+        run: docker run --rm -v "${{ github.workspace }}:/repo" ghcr.io/gitleaks/gitleaks:v8.30.0 detect --source=/repo --verbose --redact
 
       # 3. Instala o Python
       - uses: actions/setup-python@v5
@@ -32,15 +37,28 @@ jobs:
       - name: Instalar libs
         run: pip install -r requirements.txt
 
-      # 5. SINCRONIZA O BANCO
+      # 5. Linting, formatacao, vulnerabilidades e  seguranca
+      - name: Ruff lint
+        run: ruff check src/ tests/
+
+      - name: Ruff format
+        run: ruff format --check src/ tests/
+
+      - name: Bandit
+        run: bandit -r src/ -ll
+
+      - name: Pip audit
+        run: pip-audit -r requirements.txt --ignore-vuln PYSEC-2025-183
+
+      # 6. SINCRONIZA O BANCO
       # Sem isso, o banco existe mas está sem as tabelas.
       - name: Rodar Migrations
         env:
           DATABASE_URL: postgresql://root:password123@localhost:5432/vango_test
         run: alembic upgrade head
 
-      # 6. AGORA SIM: Roda o teste
+      # 7. AGORA SIM: Roda o teste
       - name: Executar Pytest
         env:
           DATABASE_URL: postgresql://root:password123@localhost:5432/vango_test
-        run: pytest
+        run: pytest --cov=src --cov-fail-under=90 --cov-report=term-missing

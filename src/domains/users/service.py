@@ -1,4 +1,4 @@
-from src.domains.users.dtos import UserCreate, UserUpdate
+from src.domains.users.dtos import RegisterPushTokenRequest, UserCreate, UserUpdate
 from src.domains.users.entity import UserModel
 from src.domains.users.errors import (
     DuplicateEmailError,
@@ -59,6 +59,23 @@ class UserService:
 
     def list_users(self) -> list[UserModel]:
         return self.repository.find_all()
+
+    # US12-TK02
+    def register_push_token(self, user_id: str, data: RegisterPushTokenRequest) -> UserModel:
+        """Registra o FCM push token do dispositivo do usuário.
+
+        - UserNotFoundError se o usuário não existir.
+        - Persiste via update_push_token e retorna o UserModel atualizado.
+        """
+        user = self.repository.find_by_id(user_id)
+        if not user:
+            raise UserNotFoundError()
+
+        updated_user = self.repository.update_push_token(user_id, data.token)
+        if not updated_user:
+            raise UserNotFoundError()
+
+        return updated_user
 
     def login(self, email: str, password: str) -> UserModel:
         """Login intermediário: valida email + senha e devolve o UserModel.

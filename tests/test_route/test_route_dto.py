@@ -374,12 +374,24 @@ def test_route_invite_summary_response_requires_accepted_count() -> None:
         "expected_time": time(8, 0),
         "max_passengers": 5,
         "origin_address": {
-            "id": uuid4(), "label": "o", "street": "o", "number": "1",
-            "neighborhood": "o", "zip": "12345-000", "city": "o", "state": "RS",
+            "id": uuid4(),
+            "label": "o",
+            "street": "o",
+            "number": "1",
+            "neighborhood": "o",
+            "zip": "12345-000",
+            "city": "o",
+            "state": "RS",
         },
         "destination_address": {
-            "id": uuid4(), "label": "d", "street": "d", "number": "1",
-            "neighborhood": "d", "zip": "12345-000", "city": "d", "state": "RS",
+            "id": uuid4(),
+            "label": "d",
+            "street": "d",
+            "number": "1",
+            "neighborhood": "d",
+            "zip": "12345-000",
+            "city": "d",
+            "state": "RS",
         },
     }
     with pytest.raises(ValidationError):

@@ -1,13 +1,13 @@
 import uuid
 from datetime import time
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock
 
 import pytest
 from fastapi.testclient import TestClient
 
 from src.domains.routes.service import RouteService
 from src.infrastructure.dependencies.route_dependencies import get_route_service
-from src.main import app
+from src.main import fastapi_app as app
 
 client = TestClient(app, raise_server_exceptions=False)
 
@@ -284,6 +284,10 @@ def test_get_route_wrong_owner_returns_403() -> None:
 from src.domains.users.entity import UserModel
 from src.domains.vehicles.entity import VehicleModel
 from src.infrastructure.database import get_db
+from src.infrastructure.dependencies.routing_dependencies import (
+    get_geocoding_service,
+    get_routing_service,
+)
 from src.infrastructure.repositories.vehicle_repository import VehicleRepositoryImpl
 from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
 
@@ -325,6 +329,12 @@ def integration_client(db_session):
         yield db_session
 
     app.dependency_overrides[get_db] = override_db
+    # US10-TK19: routing_service e geocoding_service viraram dependências
+    # injetadas em RouteService e RoutePassangerService. Em CI sem
+    # credencial Mapbox o caminho real quebra (e create_route chama
+    # _geocode_address). Override por Mocks neutros.
+    app.dependency_overrides[get_routing_service] = lambda: MagicMock()
+    app.dependency_overrides[get_geocoding_service] = lambda: MagicMock()
     yield TestClient(app, raise_server_exceptions=False)
     app.dependency_overrides.clear()
 
@@ -442,7 +452,8 @@ def test_integration_regenerate_invite_code_wrong_owner_returns_403(integration_
     driver2, _ = make_driver_with_vehicle(db_session)
 
     create_response = integration_client.post(
-        "/routes/", json=route_payload(),
+        "/routes/",
+        json=route_payload(),
         headers={"X-User-Id": str(driver1.id), "X-User-Role": "driver"},
     )
     route_id = create_response.json()["id"]
@@ -524,7 +535,8 @@ def test_integration_get_route_wrong_owner_returns_403(integration_client, db_se
     driver2, _ = make_driver_with_vehicle(db_session)
 
     create_response = integration_client.post(
-        "/routes/", json=route_payload(),
+        "/routes/",
+        json=route_payload(),
         headers={"X-User-Id": str(driver1.id), "X-User-Role": "driver"},
     )
 
@@ -606,9 +618,7 @@ def test_update_route_invalid_recurrence_returns_422() -> None:
 
 
 def test_update_route_invalid_route_type_returns_422() -> None:
-    response = client.put(
-        f"/routes/{uuid.uuid4()}", json={"route_type": "ambos"}, headers=DRIVER_HEADERS
-    )
+    response = client.put(f"/routes/{uuid.uuid4()}", json={"route_type": "ambos"}, headers=DRIVER_HEADERS)
     assert response.status_code == 422
 
 
@@ -675,13 +685,15 @@ def test_integration_update_route_wrong_owner_returns_403(integration_client, db
     driver2, _ = make_driver_with_vehicle(db_session)
 
     create_response = integration_client.post(
-        "/routes/", json=route_payload(),
+        "/routes/",
+        json=route_payload(),
         headers={"X-User-Id": str(driver1.id), "X-User-Role": "driver"},
     )
     route_id = create_response.json()["id"]
 
     response = integration_client.put(
-        f"/routes/{route_id}", json={"name": "X"},
+        f"/routes/{route_id}",
+        json={"name": "X"},
         headers={"X-User-Id": str(driver2.id), "X-User-Role": "driver"},
     )
 
@@ -763,17 +775,25 @@ def test_integration_get_route_returns_correct_accepted_count(integration_client
         db_session.add(passenger)
         db_session.flush()
         pickup = AddressModel(
-            user_id=passenger.id, label="Casa", street="R.1", number="1",
-            neighborhood="N", zip="00000-000", city="POA", state="RS",
+            user_id=passenger.id,
+            label="Casa",
+            street="R.1",
+            number="1",
+            neighborhood="N",
+            zip="00000-000",
+            city="POA",
+            state="RS",
         )
         db_session.add(pickup)
         db_session.flush()
-        db_session.add(RoutePassangerModel(
-            route_id=route_id,
-            user_id=passenger.id,
-            pickup_address_id=pickup.id,
-            status=status_val,
-        ))
+        db_session.add(
+            RoutePassangerModel(
+                route_id=route_id,
+                user_id=passenger.id,
+                pickup_address_id=pickup.id,
+                status=status_val,
+            )
+        )
     db_session.commit()
 
     response = integration_client.get(f"/routes/{route_id}", headers=headers)
@@ -820,8 +840,14 @@ def test_integration_get_route_with_stops_returns_all_stops(integration_client, 
     db_session.flush()
 
     pickup = AddressModel(
-        user_id=passenger.id, label="Pickup", street="R.1", number="1",
-        neighborhood="N", zip="00000-000", city="POA", state="RS",
+        user_id=passenger.id,
+        label="Pickup",
+        street="R.1",
+        number="1",
+        neighborhood="N",
+        zip="00000-000",
+        city="POA",
+        state="RS",
     )
     db_session.add(pickup)
     db_session.flush()
@@ -991,12 +1017,14 @@ def test_integration_get_by_invite_code_counts_accepted_passangers(integration_c
         )
         db_session.add(passenger)
         db_session.flush()
-        db_session.add(RoutePassangerModel(
-            route_id=route_id,
-            user_id=passenger.id,
-            pickup_address_id=pickup_addr_id,
-            status=status,
-        ))
+        db_session.add(
+            RoutePassangerModel(
+                route_id=route_id,
+                user_id=passenger.id,
+                pickup_address_id=pickup_addr_id,
+                status=status,
+            )
+        )
     db_session.commit()
 
     response = integration_client.get(f"/routes/invite/{invite_code}", headers=headers)
@@ -1305,9 +1333,7 @@ def test_integration_list_absences_driver_returns_200(integration_client, db_ses
     assert response.json() == []
 
 
-def test_integration_list_absences_accepted_passanger_returns_200(
-    integration_client, db_session
-) -> None:
+def test_integration_list_absences_accepted_passanger_returns_200(integration_client, db_session) -> None:
     """Passageiro com status 'accepted' consegue acessar as ausências da rota."""
     driver, _ = make_driver_with_vehicle(db_session)
     driver_headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
@@ -1324,9 +1350,7 @@ def test_integration_list_absences_accepted_passanger_returns_200(
     assert response.status_code == 200
 
 
-def test_integration_list_absences_outsider_returns_403(
-    integration_client, db_session
-) -> None:
+def test_integration_list_absences_outsider_returns_403(integration_client, db_session) -> None:
     """Usuário sem vínculo com a rota recebe 403."""
     driver, _ = make_driver_with_vehicle(db_session)
     driver_headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}

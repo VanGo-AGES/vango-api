@@ -23,10 +23,7 @@ class TripPassangerRepositoryImpl(ITripPassangerRepository):
     def save_all(self, trip_passangers: list[TripPassangerModel]) -> list[TripPassangerModel]:
         for tp in trip_passangers:
             self.session.add(tp)
-        self.session.flush()
         self.session.commit()
-        for tp in trip_passangers:
-            self.session.refresh(tp)
         return trip_passangers
 
     # US09-TK03
@@ -60,9 +57,7 @@ class TripPassangerRepositoryImpl(ITripPassangerRepository):
             tp.boarded_at = boarded_at
         if alighted_at is not None:
             tp.alighted_at = alighted_at
-        self.session.flush()
         self.session.commit()
-        self.session.refresh(tp)
         return tp
 
     # US09-TK03
@@ -78,6 +73,5 @@ class TripPassangerRepositoryImpl(ITripPassangerRepository):
             .execution_options(synchronize_session="fetch")
         )
         result = self.session.execute(stmt)
-        self.session.flush()
         self.session.commit()
         return result.rowcount

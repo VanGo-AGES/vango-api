@@ -17,7 +17,6 @@ class RoutePassangerRepositoryImpl(IRoutePassangerRepository):
 
     def save(self, rp: RoutePassangerModel) -> RoutePassangerModel:
         self.session.add(rp)
-        self.session.flush()
         self.session.commit()
         self.session.refresh(rp)
         return rp
@@ -115,4 +114,24 @@ class RoutePassangerRepositoryImpl(IRoutePassangerRepository):
             )
             .order_by(RoutePassangerModel.joined_at.desc())
             .all()
+        )
+
+    def find_active_for_user_or_as_guardian(
+        self,
+        user_id: UUID,
+        route_id: UUID,
+    ) -> RoutePassangerModel | None:
+        return (
+            self.session.query(RoutePassangerModel)
+            .outerjoin(RoutePassangerModel.dependent)
+            .filter(
+                RoutePassangerModel.route_id == route_id,
+                RoutePassangerModel.status.in_(["pending", "accepted"]),
+                or_(
+                    RoutePassangerModel.user_id == user_id,
+                    DependentModel.guardian_id == user_id,
+                ),
+            )
+            .order_by(RoutePassangerModel.joined_at.desc())
+            .first()
         )

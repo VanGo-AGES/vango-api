@@ -25,7 +25,6 @@ def make_rp_stub(status: str = "pending"):
     return rp
 
 
-@pytest.mark.skip(reason="US06-TK07")
 def test_notification_service_is_abstract() -> None:
     from src.domains.notifications.service import INotificationService
 
@@ -33,7 +32,6 @@ def test_notification_service_is_abstract() -> None:
         INotificationService()  # type: ignore[abstract]
 
 
-@pytest.mark.skip(reason="US06-TK07")
 def test_logging_notification_service_implements_interface() -> None:
     from src.domains.notifications.service import INotificationService, LoggingNotificationService
 
@@ -41,7 +39,6 @@ def test_logging_notification_service_implements_interface() -> None:
     assert isinstance(service, INotificationService)
 
 
-@pytest.mark.skip(reason="US06-TK07")
 def test_logging_notification_service_notify_accepted_does_not_raise() -> None:
     from src.domains.notifications.service import LoggingNotificationService
 
@@ -51,7 +48,6 @@ def test_logging_notification_service_notify_accepted_does_not_raise() -> None:
     assert service.notify_passanger_accepted(rp) is None
 
 
-@pytest.mark.skip(reason="US06-TK07")
 def test_logging_notification_service_notify_rejected_does_not_raise() -> None:
     from src.domains.notifications.service import LoggingNotificationService
 
@@ -60,7 +56,6 @@ def test_logging_notification_service_notify_rejected_does_not_raise() -> None:
     assert service.notify_passanger_rejected(rp) is None
 
 
-@pytest.mark.skip(reason="US06-TK07")
 def test_logging_notification_service_notify_removed_does_not_raise() -> None:
     from src.domains.notifications.service import LoggingNotificationService
 
@@ -69,7 +64,6 @@ def test_logging_notification_service_notify_removed_does_not_raise() -> None:
     assert service.notify_passanger_removed(rp) is None
 
 
-@pytest.mark.skip(reason="US06-TK07")
 def test_notification_service_methods_signature() -> None:
     """Valida que métodos esperados existem na interface."""
     from src.domains.notifications.service import INotificationService
@@ -84,7 +78,6 @@ def test_notification_service_methods_signature() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US08-TK04")
 def test_notification_service_passanger_events_in_interface() -> None:
     from src.domains.notifications.service import INotificationService
 
@@ -93,7 +86,6 @@ def test_notification_service_passanger_events_in_interface() -> None:
     assert hasattr(INotificationService, "notify_driver_passanger_schedules_changed")
 
 
-@pytest.mark.skip(reason="US08-TK04")
 def test_logging_notify_driver_requested_does_not_raise() -> None:
     from src.domains.notifications.service import LoggingNotificationService
 
@@ -102,7 +94,6 @@ def test_logging_notify_driver_requested_does_not_raise() -> None:
     assert service.notify_driver_passanger_requested(rp) is None
 
 
-@pytest.mark.skip(reason="US08-TK04")
 def test_logging_notify_driver_left_does_not_raise() -> None:
     from src.domains.notifications.service import LoggingNotificationService
 
@@ -111,7 +102,6 @@ def test_logging_notify_driver_left_does_not_raise() -> None:
     assert service.notify_driver_passanger_left(rp) is None
 
 
-@pytest.mark.skip(reason="US08-TK04")
 def test_logging_notify_driver_schedules_changed_does_not_raise() -> None:
     from src.domains.notifications.service import LoggingNotificationService
 

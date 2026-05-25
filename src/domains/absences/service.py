@@ -23,6 +23,8 @@ from src.domains.route_passangers.errors import NotRoutePassangerError
 from src.domains.route_passangers.repository import IRoutePassangerRepository
 from src.domains.routes.errors import RouteNotFoundError
 from src.domains.routes.repository import IRouteRepository
+from src.domains.routing.service import IRoutingService
+from src.domains.stops.repository import IStopRepository
 from src.domains.trips.entity import AbsenceModel
 from src.domains.trips.repository import IAbsenceRepository
 
@@ -44,11 +46,16 @@ class AbsenceService:
         route_repository: IRouteRepository,
         route_passanger_repository: IRoutePassangerRepository,
         notification_service: INotificationService,
+        stop_repository: IStopRepository | None = None,
+        routing_service: IRoutingService | None = None,
     ):
         self.absence_repository = absence_repository
         self.route_repository = route_repository
         self.route_passanger_repository = route_passanger_repository
         self.notification_service = notification_service
+        # US10-TK08: usados para reordenar paradas após aviso de ausência.
+        self.stop_repository = stop_repository
+        self.routing_service = routing_service
 
     # US06-TK19
     def create_absence(
@@ -98,6 +105,7 @@ class AbsenceService:
         )
         saved = self.absence_repository.save(absence)
         self.notification_service.notify_driver_passanger_absence_reported(rp)
+        self._trigger_route_optimization(rp.route_id)  # US10-TK08
 
         return AbsenceResponse.model_construct(
             id=saved.id,
@@ -107,3 +115,35 @@ class AbsenceService:
             reason=saved.reason,
             created_at=saved.created_at,
         )
+
+    # US10-TK08
+    def _trigger_route_optimization(self, route_id: UUID) -> None:
+        """Reordena as paradas da rota via IRoutingService.optimize_stop_order.
+
+        Busca as paradas (stop_repository.find_by_route_id), monta a lista de
+        coordenadas {id, lat, lng} a partir dos endereços e chama
+        routing_service.optimize_stop_order. Em seguida atualiza order_index
+        de cada stop de acordo com a nova ordem.
+        Silenciosamente ignorado se routing_service ou stop_repository forem None.
+        """
+        if self.routing_service is None or self.stop_repository is None:
+            return
+
+        stops = self.stop_repository.find_by_route_id(route_id)
+        coordinates = []
+        optimizable_stops = []
+        for stop in stops:
+            address = getattr(stop, "address", None)
+            latitude = getattr(address, "latitude", None)
+            longitude = getattr(address, "longitude", None)
+            if latitude is None or longitude is None:
+                continue
+            coordinates.append({"id": stop.id, "lat": latitude, "lng": longitude})
+            optimizable_stops.append(stop)
+
+        optimized_order = self.routing_service.optimize_stop_order(coordinates)
+        for order_index, original_index in enumerate(optimized_order):
+            if 0 <= original_index < len(optimizable_stops):
+                stop = optimizable_stops[original_index]
+                stop.order_index = order_index
+                self.stop_repository.save(stop)

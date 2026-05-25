@@ -1,10 +1,11 @@
 from typing import Annotated
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 
 from src.infrastructure.dependencies.user_dependencies import get_user_service
 
-from .dtos import LoginRequest, UserCreate, UserResponse, UserUpdate
+from .dtos import LoginRequest, RegisterPushTokenRequest, UserCreate, UserResponse, UserUpdate
 from .errors import DuplicateEmailError, InvalidCredentialsError, UserNotFoundError
 from .service import UserService
 
@@ -69,7 +70,7 @@ def list_users(service: Annotated[UserService, Depends(get_user_service)]) -> li
     summary="Buscar usuário por ID",
     description="Retorna os dados de um usuário específico pelo seu ID.",
 )
-def get_user(user_id: str, service: Annotated[UserService, Depends(get_user_service)]) -> UserResponse:
+def get_user(user_id: UUID, service: Annotated[UserService, Depends(get_user_service)]) -> UserResponse:
     try:
         return service.get_user(user_id)
     except UserNotFoundError as exc:
@@ -84,7 +85,7 @@ def get_user(user_id: str, service: Annotated[UserService, Depends(get_user_serv
     description="Atualiza os campos de um usuário existente.",
 )
 def update_user(
-    user_id: str,
+    user_id: UUID,
     body: UserUpdate,
     service: Annotated[UserService, Depends(get_user_service)],
 ) -> UserResponse:
@@ -100,8 +101,31 @@ def update_user(
     summary="Excluir usuário",
     description="Remove a conta do usuário e todos os dados associados em cascata.",
 )
-def delete_user(user_id: str, service: Annotated[UserService, Depends(get_user_service)]) -> None:
+def delete_user(user_id: UUID, service: Annotated[UserService, Depends(get_user_service)]) -> None:
     try:
         service.delete_user(user_id)
+    except UserNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+# US12-TK02
+@router.post(
+    "/me/push-token",
+    response_model=UserResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Registrar FCM push token do dispositivo",
+    description=(
+        "Associa o token FCM do dispositivo ao usuário autenticado. "
+        "Usado pelo app mobile logo após o login para habilitar notificações push. "
+        "404 se o usuário não existir."
+    ),
+)
+def register_push_token(
+    body: RegisterPushTokenRequest,
+    service: Annotated[UserService, Depends(get_user_service)],
+    x_user_id: Annotated[UUID, Header(alias="X-User-Id")],
+) -> UserResponse:
+    try:
+        return service.register_push_token(x_user_id, body)
     except UserNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc

@@ -1,3 +1,4 @@
+import datetime
 import uuid
 from unittest.mock import MagicMock, Mock
 
@@ -89,9 +90,7 @@ def build_service(**overrides):
     schedule_repo = overrides.pop("schedule_repo", Mock())
     address_repo = overrides.pop("address_repo", Mock())
     return (
-        RoutePassangerService(
-            rp_repo, route_repo, user_repo, dep_repo, notif, stop_repo, schedule_repo, address_repo
-        ),
+        RoutePassangerService(rp_repo, route_repo, user_repo, dep_repo, notif, stop_repo, schedule_repo, address_repo),
         rp_repo,
         route_repo,
         user_repo,
@@ -831,7 +830,6 @@ def test_list_by_status_resolves_dependent_and_guardian_names() -> None:
     assert result[0].guardian_name == "Responsável João"
 
 
-
 # ===========================================================================
 # US08-TK07 — RoutePassangerService.join_route
 # ===========================================================================
@@ -1017,9 +1015,7 @@ def test_leave_route_notifies_driver_before_delete() -> None:
     service.leave_route(route.id, user_id)
 
     call_names = [c[0] for c in manager.mock_calls]
-    assert call_names.index("notify") < call_names.index("delete_rp"), (
-        f"notify deve vir antes do delete_rp, mas ordem foi: {call_names}"
-    )
+    assert call_names.index("notify") < call_names.index("delete_rp"), f"notify deve vir antes do delete_rp, mas ordem foi: {call_names}"
     if "delete_stop" in call_names:
         assert call_names.index("notify") < call_names.index("delete_stop"), (
             f"notify deve vir antes do delete_stop, mas ordem foi: {call_names}"
@@ -1105,10 +1101,7 @@ def make_update_request(days=("monday",), address_id=None):
     )
 
     address_id = address_id or uuid.uuid4()
-    schedules = [
-        RoutePassangerScheduleRequest(day_of_week=day, address_id=address_id)
-        for day in days
-    ]
+    schedules = [RoutePassangerScheduleRequest(day_of_week=day, address_id=address_id) for day in days]
     return UpdateSchedulesRequest(schedules=schedules)
 
 
@@ -1187,9 +1180,7 @@ def test_update_schedules_with_dependent_id_uses_dependent_scope() -> None:
     route_repo.find_by_id.return_value = route
     rp_repo.find_active_by_user_and_route.return_value = rp
 
-    service.update_schedules(
-        route.id, guardian_id, make_update_request(), dependent_id=dep_id
-    )
+    service.update_schedules(route.id, guardian_id, make_update_request(), dependent_id=dep_id)
 
     call_kwargs = rp_repo.find_active_by_user_and_route.call_args.kwargs
     call_args = rp_repo.find_active_by_user_and_route.call_args.args
@@ -1239,9 +1230,13 @@ def make_rp_with_route_mock(
     origin = Mock(spec=AddressModel)
     origin.id = uuid.uuid4()
     origin.label = origin_label
+    origin.latitude = None
+    origin.longitude = None
     destination = Mock(spec=AddressModel)
     destination.id = uuid.uuid4()
     destination.label = destination_label
+    destination.latitude = None
+    destination.longitude = None
 
     route = Mock(spec=RouteModel)
     route.id = route_id
@@ -1336,8 +1331,11 @@ def test_list_my_routes_exposes_membership_status() -> None:
     user_id = uuid.uuid4()
     driver = make_user_mock()
     rp = make_rp_with_route_mock(
-        uuid.uuid4(), user_id, driver.id,
-        status="pending", route_status="ativa",
+        uuid.uuid4(),
+        user_id,
+        driver.id,
+        status="pending",
+        route_status="ativa",
     )
 
     service, rp_repo, _, user_repo, _, _, _, _ = build_service()
@@ -1355,14 +1353,17 @@ def test_list_my_routes_resolves_dependent_name_when_present() -> None:
     dep = make_dependent_mock("Maria Dependente", guardian_id=guardian_id)
     driver = make_user_mock("Motorista")
     rp = make_rp_with_route_mock(
-        uuid.uuid4(), guardian_id, driver.id,
-        status="accepted", dependent_id=dep.id,
+        uuid.uuid4(),
+        guardian_id,
+        driver.id,
+        status="accepted",
+        dependent_id=dep.id,
     )
 
     service, rp_repo, _, user_repo, dep_repo, _, _, _ = build_service()
     rp_repo.find_active_with_route_by_user.return_value = [rp]
     user_repo.find_by_id.return_value = driver
-    dep_repo.find_by_id.return_value = dep
+    dep_repo.get_by_id.return_value = dep
 
     result = service.list_my_routes(guardian_id)
 
@@ -1461,9 +1462,14 @@ def make_full_route_mock(
     route.stops = [stop_a, stop_b]
 
     if include_trip:
+        from src.domains.vehicles.entity import VehicleModel
+
+        vehicle = Mock(spec=VehicleModel)
+        vehicle.plate = "ABC-1234"
         trip = Mock(spec=TripModel)
         trip.id = uuid.uuid4()
         trip.status = "iniciada"
+        trip.vehicle = vehicle
         route.trips = [trip]
     else:
         route.trips = []
@@ -1563,13 +1569,11 @@ def test_get_my_route_detail_looks_up_membership_with_correct_args() -> None:
     route_repo.find_by_id.return_value = route
     rp_repo.find_active_by_user_and_route.return_value = rp
     user_repo.find_by_id.return_value = driver
-    dep_repo.find_by_id.return_value = make_dependent_mock("Filha", guardian_id=user_id)
+    dep_repo.get_by_id.return_value = make_dependent_mock("Filha", guardian_id=user_id)
 
     service.get_my_route_detail(route.id, user_id, dependent_id=dependent_id)
 
-    rp_repo.find_active_by_user_and_route.assert_called_once_with(
-        user_id, dependent_id, route.id
-    )
+    rp_repo.find_active_by_user_and_route.assert_called_once_with(user_id, dependent_id, route.id)
 
 
 def test_get_my_route_detail_resolves_dependent_name_when_dependent_id_present() -> None:
@@ -1585,7 +1589,7 @@ def test_get_my_route_detail_resolves_dependent_name_when_dependent_id_present()
     route_repo.find_by_id.return_value = route
     rp_repo.find_active_by_user_and_route.return_value = rp
     user_repo.find_by_id.return_value = driver
-    dep_repo.find_by_id.return_value = dep
+    dep_repo.get_by_id.return_value = dep
 
     result = service.get_my_route_detail(route.id, user_id, dependent_id=dependent_id)
 
@@ -1607,7 +1611,7 @@ def test_get_my_route_detail_dependent_name_none_for_self_membership() -> None:
     result = service.get_my_route_detail(route.id, user_id)
 
     assert result.dependent_name is None
-    dep_repo.find_by_id.assert_not_called()
+    dep_repo.get_by_id.assert_not_called()
 
 
 def test_get_my_route_detail_current_trip_id_set_when_in_progress() -> None:
@@ -1643,6 +1647,40 @@ def test_get_my_route_detail_current_trip_id_none_when_route_not_in_progress() -
     assert result.current_trip_id is None
 
 
+def test_get_my_route_detail_driver_plate_populated_when_trip_in_progress() -> None:
+    """driver_plate deve vir da trip ativa quando route.status == 'em_andamento'."""
+    user_id = uuid.uuid4()
+    driver = make_user_mock()
+    route = make_full_route_mock(driver.id, status="em_andamento", include_trip=True)
+    rp = make_rp_with_pickup_mock(route.id, user_id, status="accepted")
+
+    service, rp_repo, route_repo, user_repo, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_by_user_and_route.return_value = rp
+    user_repo.find_by_id.return_value = driver
+
+    result = service.get_my_route_detail(route.id, user_id)
+
+    assert result.driver_plate == "ABC-1234"
+
+
+def test_get_my_route_detail_driver_plate_none_when_no_active_trip() -> None:
+    """driver_plate deve ser None quando não há viagem em andamento."""
+    user_id = uuid.uuid4()
+    driver = make_user_mock()
+    route = make_full_route_mock(driver.id, status="ativa")
+    rp = make_rp_with_pickup_mock(route.id, user_id, status="accepted")
+
+    service, rp_repo, route_repo, user_repo, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_by_user_and_route.return_value = rp
+    user_repo.find_by_id.return_value = driver
+
+    result = service.get_my_route_detail(route.id, user_id)
+
+    assert result.driver_plate is None
+
+
 def test_get_my_route_detail_resolves_driver_from_route_driver_id() -> None:
     user_id = uuid.uuid4()
     driver = make_user_mock("Paula Driver")
@@ -1673,3 +1711,319 @@ def test_get_my_route_detail_my_pickup_address_comes_from_rp() -> None:
     result = service.get_my_route_detail(route.id, user_id)
 
     assert result.my_pickup_address.id == rp.pickup_address.id
+
+
+# ===========================================================================
+# US10-TK08 — optimize_stop_order wiring em accept_request e remove_passanger
+# ===========================================================================
+
+
+def test_accept_request_calls_optimize_stop_order() -> None:
+    """accept_request deve chamar routing_service.optimize_stop_order após salvar a stop."""
+    from src.domains.routing.service import IRoutingService
+
+    driver_id = uuid.uuid4()
+    route = make_route_mock(driver_id, status="ativa", max_passengers=5)
+    rp = make_rp_mock(route.id, uuid.uuid4(), status="pending")
+
+    routing_mock = Mock(spec=IRoutingService)
+    routing_mock.optimize_stop_order.return_value = [0]
+
+    service, rp_repo, route_repo, user_repo, _, _, stop_repo, _ = build_service()
+    service.routing_service = routing_mock
+
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_by_id.return_value = rp
+    rp_repo.count_accepted_by_route.return_value = 0
+    rp_repo.update_status.return_value = make_rp_mock(route.id, rp.user_id, status="accepted")
+    user_repo.find_by_id.return_value = make_user_mock()
+    stop_repo.find_by_route_id.return_value = []
+
+    service.accept_request(route.id, rp.id, driver_id)
+
+    routing_mock.optimize_stop_order.assert_called_once()
+
+
+def test_remove_passanger_calls_optimize_stop_order() -> None:
+    """remove_passanger deve chamar routing_service.optimize_stop_order após remover a stop."""
+    from src.domains.routing.service import IRoutingService
+
+    driver_id = uuid.uuid4()
+    route = make_route_mock(driver_id, status="ativa")
+    rp = make_rp_mock(route.id, uuid.uuid4(), status="accepted")
+
+    routing_mock = Mock(spec=IRoutingService)
+    routing_mock.optimize_stop_order.return_value = []
+
+    service, rp_repo, route_repo, user_repo, _, _, stop_repo, _ = build_service()
+    service.routing_service = routing_mock
+
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_by_id.return_value = rp
+    stop_repo.find_by_route_id.return_value = []
+
+    service.remove_passanger(route.id, rp.id, driver_id)
+
+    routing_mock.optimize_stop_order.assert_called_once()
+
+
+# ===========================================================================
+# US10-TK18 — join_route chama geocoding_service para o pickup_address
+# ===========================================================================
+
+
+def test_join_route_calls_geocoding_for_pickup_address() -> None:
+    """join_route deve chamar geocoding_service.geocode_address para o
+    endereço de embarque criado inline."""
+    from src.domains.routing.dtos import GeocodeResult
+
+    route = make_route_mock(uuid.uuid4(), status="ativa", max_passengers=5)
+    user_id = uuid.uuid4()
+    req = make_join_request()
+
+    geocoding = Mock()
+    geocoding.geocode_address.return_value = GeocodeResult(latitude=-30.0, longitude=-51.2)
+
+    service, rp_repo, route_repo, _, _, _, _, _ = build_service()
+    service.geocoding_service = geocoding
+
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_by_user_and_route.return_value = None
+    rp_repo.count_accepted_by_route.return_value = 0
+    rp_repo.save.return_value = make_rp_mock(route.id, user_id, status="pending")
+
+    service.join_route(route.id, user_id, req)
+
+    geocoding.geocode_address.assert_called_once()
+
+
+def test_join_route_persists_coordinates_when_geocoding_succeeds() -> None:
+    """Quando geocoding retorna lat/lng, o pickup_address salvo deve estar
+    com latitude/longitude populados."""
+    from src.domains.routing.dtos import GeocodeResult
+
+    route = make_route_mock(uuid.uuid4(), status="ativa", max_passengers=5)
+    user_id = uuid.uuid4()
+    req = make_join_request()
+
+    geocoding = Mock()
+    geocoding.geocode_address.return_value = GeocodeResult(latitude=-30.05, longitude=-51.22)
+
+    service, rp_repo, route_repo, _, _, _, _, _ = build_service()
+    service.geocoding_service = geocoding
+
+    saved_addr_holder = {}
+
+    def capture_save(addr):
+        saved_addr_holder["addr"] = addr
+        addr.id = uuid.uuid4()
+        return addr
+
+    service.address_repository.save.side_effect = capture_save
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_by_user_and_route.return_value = None
+    rp_repo.count_accepted_by_route.return_value = 0
+    rp_repo.save.return_value = make_rp_mock(route.id, user_id, status="pending")
+
+    service.join_route(route.id, user_id, req)
+
+    saved = saved_addr_holder["addr"]
+    assert saved.latitude == pytest.approx(-30.05)
+    assert saved.longitude == pytest.approx(-51.22)
+
+
+def test_join_route_persists_null_coordinates_when_geocoding_fails() -> None:
+    """Quando geocoding retorna None, o endereço de embarque deve ser salvo
+    mesmo assim, com lat/lng permanecendo None."""
+    route = make_route_mock(uuid.uuid4(), status="ativa", max_passengers=5)
+    user_id = uuid.uuid4()
+    req = make_join_request()
+
+    geocoding = Mock()
+    geocoding.geocode_address.return_value = None
+
+    service, rp_repo, route_repo, _, _, _, _, _ = build_service()
+    service.geocoding_service = geocoding
+
+    saved_addr_holder = {}
+
+    def capture_save(addr):
+        saved_addr_holder["addr"] = addr
+        addr.id = uuid.uuid4()
+        return addr
+
+    service.address_repository.save.side_effect = capture_save
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_by_user_and_route.return_value = None
+    rp_repo.count_accepted_by_route.return_value = 0
+    rp_repo.save.return_value = make_rp_mock(route.id, user_id, status="pending")
+
+    service.join_route(route.id, user_id, req)
+
+    saved = saved_addr_holder["addr"]
+    assert getattr(saved, "latitude", None) is None
+    assert getattr(saved, "longitude", None) is None
+
+
+def test_join_route_works_without_geocoding_service() -> None:
+    """join_route deve continuar funcionando se geocoding_service for None
+    (instanciação legacy)."""
+    route = make_route_mock(uuid.uuid4(), status="ativa", max_passengers=5)
+    user_id = uuid.uuid4()
+    req = make_join_request()
+
+    service, rp_repo, route_repo, _, _, _, _, _ = build_service()
+    assert service.geocoding_service is None  # default
+
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_by_user_and_route.return_value = None
+    rp_repo.count_accepted_by_route.return_value = 0
+    rp_repo.save.return_value = make_rp_mock(route.id, user_id, status="pending")
+
+    # não deve levantar exceção
+    service.join_route(route.id, user_id, req)
+    rp_repo.save.assert_called_once()
+
+
+# ===========================================================================
+# US10-TK19 — RoutePassangerService._compute_route_totals + injeção nos
+# DTOs de resposta (list_my_routes e get_my_route_detail)
+# ===========================================================================
+
+
+def test_compute_route_totals_returns_tuple_when_routing_service_available() -> None:
+    """_compute_route_totals devolve (km, min) quando routing_service responde."""
+    from src.domains.routing.dtos import RouteInfoResult
+
+    routing_mock = Mock()
+    routing_mock.get_route_info.return_value = RouteInfoResult(total_distance_km=8.5, estimated_duration_min=22)
+
+    service, _rp_repo, _route_repo, _, _, _, _, _ = build_service()
+    service.routing_service = routing_mock
+
+    route = Mock()
+    route.origin_address = Mock(latitude=-30.0, longitude=-51.0)
+    route.destination_address = Mock(latitude=-30.1, longitude=-51.1)
+    route.stops = []
+
+    distance, duration = service._compute_route_totals(route)
+
+    assert distance == pytest.approx(8.5)
+    assert duration == 22
+
+
+def test_compute_route_totals_returns_none_when_routing_service_none() -> None:
+    """Sem routing_service, _compute_route_totals retorna (None, None)."""
+    service, _rp_repo, _route_repo, _, _, _, _, _ = build_service()
+    # build_service() não injeta routing_service por default
+    assert service.routing_service is None
+
+    route = Mock()
+    distance, duration = service._compute_route_totals(route)
+
+    assert distance is None
+    assert duration is None
+
+
+def test_list_my_routes_populates_totals_in_each_item() -> None:
+    """Cada PassangerRouteResponse devolvido por list_my_routes deve ter
+    total_distance_km e estimated_duration_min preenchidos com o resultado
+    de _compute_route_totals(route) (mockado aqui)."""
+    from src.domains.routes.entity import RouteModel
+    from src.domains.users.entity import UserModel
+
+    driver = Mock(spec=UserModel)
+    driver.id = uuid.uuid4()
+    driver.name = "Motorista"
+    driver.phone = "51999999999"
+
+    origin = Mock(label="Casa", latitude=-30.0, longitude=-51.0)
+    destination = Mock(label="PUCRS", latitude=-30.1, longitude=-51.1)
+    route = Mock(spec=RouteModel)
+    route.id = uuid.uuid4()
+    route.name = "PUCRS Manhã"
+    route.driver_id = driver.id
+    route.driver = driver
+    route.recurrence = "seg,ter"
+    route.expected_time = "07:30"
+    route.status = "ativa"
+    route.origin_address = origin
+    route.destination_address = destination
+
+    rp = make_rp_mock(route.id, uuid.uuid4(), status="accepted")
+    rp.route = route
+    rp.dependent_id = None
+    rp.schedules = []
+    rp.joined_at = datetime.datetime.now(datetime.UTC) if hasattr(datetime, "UTC") else datetime.datetime.utcnow()
+
+    service, rp_repo, _route_repo, _, _, _, _, _ = build_service()
+    rp_repo.find_active_with_route_by_user.return_value = [rp]
+
+    # Mockando o helper interno via patch — o teste valida que o RESULTADO
+    # do helper aparece no DTO de resposta, não a impl interna do helper.
+    from unittest.mock import patch as _patch
+
+    with _patch.object(service, "_compute_route_totals", return_value=(10.5, 32)):
+        results = service.list_my_routes(rp.user_id)
+
+    assert len(results) == 1
+    assert results[0].total_distance_km == pytest.approx(10.5)
+    assert results[0].estimated_duration_min == 32
+
+
+def test_list_my_routes_totals_none_when_routing_unavailable() -> None:
+    """Quando _compute_route_totals devolve (None, None), os campos saem
+    None no PassangerRouteResponse — não levanta exceção."""
+    from src.domains.routes.entity import RouteModel
+
+    driver = Mock(id=uuid.uuid4(), name="M", phone="51")
+    route = Mock(spec=RouteModel)
+    route.id = uuid.uuid4()
+    route.name = "X"
+    route.driver = driver
+    route.driver_id = driver.id
+    route.recurrence = "seg"
+    route.expected_time = "07:30"
+    route.status = "ativa"
+    route.origin_address = Mock(label="A", latitude=None, longitude=None)
+    route.destination_address = Mock(label="B", latitude=None, longitude=None)
+
+    rp = make_rp_mock(route.id, uuid.uuid4(), status="accepted")
+    rp.route = route
+    rp.dependent_id = None
+    rp.schedules = []
+    rp.joined_at = datetime.datetime.now(datetime.UTC) if hasattr(datetime, "UTC") else datetime.datetime.utcnow()
+
+    service, rp_repo, _route_repo, _, _, _, _, _ = build_service()
+    rp_repo.find_active_with_route_by_user.return_value = [rp]
+
+    from unittest.mock import patch as _patch
+
+    with _patch.object(service, "_compute_route_totals", return_value=(None, None)):
+        results = service.list_my_routes(rp.user_id)
+
+    assert len(results) == 1
+    assert results[0].total_distance_km is None
+    assert results[0].estimated_duration_min is None
+
+
+def test_get_my_route_detail_populates_totals_from_compute_helper() -> None:
+    """PassangerRouteDetailResponse devolvido por get_my_route_detail deve
+    ter total_distance_km e estimated_duration_min preenchidos com o
+    resultado de _compute_route_totals(route) (mockado aqui)."""
+    route = make_route_mock(uuid.uuid4(), status="ativa")
+    user_id = uuid.uuid4()
+    rp = make_rp_mock(route.id, user_id, status="accepted")
+
+    service, rp_repo, route_repo, user_repo, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_for_user_or_as_guardian.return_value = rp
+    user_repo.find_by_id.return_value = Mock(name="João", phone="51")
+
+    from unittest.mock import patch as _patch
+
+    with _patch.object(service, "_compute_route_totals", return_value=(12.0, 35)):
+        detail = service.get_my_route_detail(route.id, user_id)
+
+    assert detail.total_distance_km == pytest.approx(12.0)
+    assert detail.estimated_duration_min == 35

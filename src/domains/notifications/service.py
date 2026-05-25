@@ -78,8 +78,53 @@ class INotificationService(ABC):
         pass
 
     @abstractmethod
+    def notify_trip_arrived_at_stop(self, trip_passanger: TripPassangerModel) -> None:
+        """Notifica o passageiro da próxima parada que a van chegou."""
+        pass
+
+    @abstractmethod
     def notify_trip_finished(self, trip: TripModel) -> None:
         """Notifica passageiros/guardians que a viagem foi finalizada."""
+        pass
+
+    # -----------------------------------------------------------------
+    # US12-TK06 — notificação de proximidade do motorista
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def notify_passanger_driver_approaching(self, user_id: str, route_id: str) -> None:
+        """Notifica o passageiro que o motorista está chegando à sua parada.
+
+        Chamado pelo servidor Socket.IO quando distance_km < PROXIMITY_THRESHOLD_KM.
+        Recebe user_id e route_id (disponíveis em sid_meta) — sem acesso ao DB.
+        """
+        pass
+
+    # -----------------------------------------------------------------
+    # US12-TK07 — notificação de chegada do motorista na parada
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def notify_passanger_driver_arrived(self, user_id: str, route_id: str) -> None:
+        """Notifica o passageiro que o motorista chegou à sua parada.
+
+        Chamado pelo servidor Socket.IO quando distance_km < ARRIVAL_THRESHOLD_KM.
+        Recebe user_id e route_id (disponíveis em sid_meta) — sem acesso ao DB.
+        """
+        pass
+
+    # -----------------------------------------------------------------
+    # US12-TK05 — confirmação de embarque / ausência durante a viagem
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def notify_passanger_boarded(self, trip_passanger: TripPassangerModel) -> None:
+        """Notifica guardian/passageiro que o embarque foi confirmado pelo motorista."""
+        pass
+
+    @abstractmethod
+    def notify_passanger_absent(self, trip_passanger: TripPassangerModel) -> None:
+        """Notifica guardian/passageiro que o passageiro foi marcado ausente."""
         pass
 
 
@@ -121,6 +166,25 @@ class LoggingNotificationService(INotificationService):
             rp.id,
             rp.user_id,
         )
+
+    # US09-TK05
+    def notify_trip_arrived_at_stop(self, trip_passanger: TripPassangerModel) -> None:
+        pass
+
+    # US12-TK06
+    def notify_passanger_driver_approaching(self, user_id: str, route_id: str) -> None:
+        pass
+
+    # US12-TK07
+    def notify_passanger_driver_arrived(self, user_id: str, route_id: str) -> None:
+        pass
+
+    # US12-TK05
+    def notify_passanger_boarded(self, trip_passanger: TripPassangerModel) -> None:
+        pass
+
+    def notify_passanger_absent(self, trip_passanger: TripPassangerModel) -> None:
+        pass
 
     # US09-TK05
     def notify_trip_started(self, trip: TripModel) -> None:

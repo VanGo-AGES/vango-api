@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from src.main import app
+from src.main import fastapi_app as app
 
 client = TestClient(app, raise_server_exceptions=False)
 
@@ -52,8 +52,7 @@ def test_s3_photo_uploader_upload_returns_url() -> None:
         "AWS_S3_BUCKET_NAME": "test-bucket",
     }
 
-    with patch("src.infrastructure.utils.photo_uploader.boto3") as mock_boto, \
-         patch.dict("os.environ", env_vars):
+    with patch("src.infrastructure.utils.photo_uploader.boto3") as mock_boto, patch.dict("os.environ", env_vars):
         mock_boto.client.return_value = MagicMock()
 
         uploader = S3PhotoUploader()
@@ -81,8 +80,7 @@ def test_s3_photo_uploader_upload_calls_upload_fileobj() -> None:
         "AWS_S3_BUCKET_NAME": "test-bucket",
     }
 
-    with patch("src.infrastructure.utils.photo_uploader.boto3") as mock_boto, \
-         patch.dict("os.environ", env_vars):
+    with patch("src.infrastructure.utils.photo_uploader.boto3") as mock_boto, patch.dict("os.environ", env_vars):
         mock_s3_client = MagicMock()
         mock_boto.client.return_value = mock_s3_client
 
@@ -108,8 +106,7 @@ def test_s3_photo_uploader_upload_raises_on_s3_error() -> None:
         "AWS_S3_BUCKET_NAME": "test-bucket",
     }
 
-    with patch("src.infrastructure.utils.photo_uploader.boto3") as mock_boto, \
-         patch.dict("os.environ", env_vars):
+    with patch("src.infrastructure.utils.photo_uploader.boto3") as mock_boto, patch.dict("os.environ", env_vars):
         mock_s3_client = MagicMock()
         mock_s3_client.upload_fileobj.side_effect = Exception("S3 connection error")
         mock_boto.client.return_value = mock_s3_client
