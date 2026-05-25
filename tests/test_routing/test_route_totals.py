@@ -48,7 +48,6 @@ def _make_route_mock(stops=None, origin_coords=(-30.0, -51.0), destination_coord
     return route
 
 
-
 def test_compute_route_totals_returns_tuple_when_all_addresses_have_coords():
     """Caso happy path: retorna (distance_km, duration_min) do IRoutingService.get_route_info."""
     from src.domains.routing.dtos import RouteInfoResult
@@ -62,15 +61,12 @@ def test_compute_route_totals_returns_tuple_when_all_addresses_have_coords():
     )
 
     routing_mock = MagicMock()
-    routing_mock.get_route_info.return_value = RouteInfoResult(
-        total_distance_km=10.5, estimated_duration_min=32
-    )
+    routing_mock.get_route_info.return_value = RouteInfoResult(total_distance_km=10.5, estimated_duration_min=32)
 
     distance, duration = compute_route_totals(route, routing_mock)
 
     assert distance == pytest.approx(10.5)
     assert duration == 32
-
 
 
 def test_compute_route_totals_returns_none_when_routing_service_none():
@@ -82,7 +78,6 @@ def test_compute_route_totals_returns_none_when_routing_service_none():
 
     assert distance is None
     assert duration is None
-
 
 
 def test_compute_route_totals_returns_none_when_origin_missing_coords():
@@ -99,7 +94,6 @@ def test_compute_route_totals_returns_none_when_origin_missing_coords():
     routing_mock.get_route_info.assert_not_called()
 
 
-
 def test_compute_route_totals_returns_none_when_destination_missing_coords():
     """destination sem coords → (None, None) sem chamar routing."""
     from src.domains.routing.route_totals import compute_route_totals
@@ -114,7 +108,6 @@ def test_compute_route_totals_returns_none_when_destination_missing_coords():
     routing_mock.get_route_info.assert_not_called()
 
 
-
 def test_compute_route_totals_returns_none_when_routing_raises():
     """Exceção em get_route_info → (None, None) sem propagar."""
     from src.domains.routing.route_totals import compute_route_totals
@@ -127,7 +120,6 @@ def test_compute_route_totals_returns_none_when_routing_raises():
 
     assert distance is None
     assert duration is None
-
 
 
 def test_compute_route_totals_passes_waypoints_in_order_index_order():
@@ -145,9 +137,7 @@ def test_compute_route_totals_passes_waypoints_in_order_index_order():
     )
 
     routing_mock = MagicMock()
-    routing_mock.get_route_info.return_value = RouteInfoResult(
-        total_distance_km=12.0, estimated_duration_min=40
-    )
+    routing_mock.get_route_info.return_value = RouteInfoResult(total_distance_km=12.0, estimated_duration_min=40)
 
     compute_route_totals(route, routing_mock)
 
@@ -162,7 +152,6 @@ def test_compute_route_totals_passes_waypoints_in_order_index_order():
     assert waypoints[2]["lat"] == pytest.approx(-30.30)
 
 
-
 def test_compute_route_totals_works_without_stops():
     """Rota sem stops (só origem+destino) deve calcular normalmente."""
     from src.domains.routing.dtos import RouteInfoResult
@@ -170,9 +159,7 @@ def test_compute_route_totals_works_without_stops():
 
     route = _make_route_mock(stops=[])
     routing_mock = MagicMock()
-    routing_mock.get_route_info.return_value = RouteInfoResult(
-        total_distance_km=5.0, estimated_duration_min=15
-    )
+    routing_mock.get_route_info.return_value = RouteInfoResult(total_distance_km=5.0, estimated_duration_min=15)
 
     distance, duration = compute_route_totals(route, routing_mock)
 

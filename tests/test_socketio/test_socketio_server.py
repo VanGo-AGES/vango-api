@@ -35,7 +35,6 @@ def _make_user_id() -> str:
 # ===========================================================================
 
 
-
 def test_sio_server_is_async_server():
     """sio deve ser uma instância de socketio.AsyncServer."""
     import socketio as sio_lib
@@ -45,7 +44,6 @@ def test_sio_server_is_async_server():
     assert isinstance(sio, sio_lib.AsyncServer)
 
 
-
 def test_tracking_sessions_starts_empty():
     """tracking_sessions deve iniciar como dict vazio."""
     from src.infrastructure.socketio.server import tracking_sessions
@@ -53,13 +51,11 @@ def test_tracking_sessions_starts_empty():
     assert isinstance(tracking_sessions, dict)
 
 
-
 def test_sid_meta_starts_empty():
     """sid_meta deve iniciar como dict vazio."""
     from src.infrastructure.socketio.server import sid_meta
 
     assert isinstance(sid_meta, dict)
-
 
 
 def test_asgi_app_mountable():
@@ -78,22 +74,20 @@ def test_asgi_app_mountable():
 # ===========================================================================
 
 
-
 @pytest.mark.asyncio
 async def test_connect_tracker_invalid_user_disconnects():
     """connect com X-User-Id inválido (usuário não existe) deve emitir error e desconectar."""
     from src.infrastructure.socketio.server import sio, tracking_sessions, sid_meta
 
     sid = "sid-test-001"
-    environ = {
-        "QUERY_STRING": f"trip_id={_make_trip_id()}&role=tracker&user_id={_make_user_id()}"
-    }
+    environ = {"QUERY_STRING": f"trip_id={_make_trip_id()}&role=tracker&user_id={_make_user_id()}"}
 
-    with patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock) as mock_emit, \
-         patch("src.infrastructure.socketio.server.sio.disconnect", new_callable=AsyncMock) as mock_disc:
+    with (
+        patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock) as mock_emit,
+        patch("src.infrastructure.socketio.server.sio.disconnect", new_callable=AsyncMock) as mock_disc,
+    ):
         await sio.handlers["/"]["connect"](sid, environ)
         mock_disc.assert_called_once_with(sid)
-
 
 
 @pytest.mark.asyncio
@@ -103,11 +97,11 @@ async def test_connect_tracker_not_route_driver_disconnects():
 
     sid = "sid-test-002"
 
-    with patch("src.infrastructure.socketio.server.sio.disconnect", new_callable=AsyncMock) as mock_disc, \
-         patch("src.infrastructure.socketio.server._validate_tracker", return_value=False):
-        environ = {
-            "QUERY_STRING": f"trip_id={_make_trip_id()}&role=tracker&user_id={_make_user_id()}"
-        }
+    with (
+        patch("src.infrastructure.socketio.server.sio.disconnect", new_callable=AsyncMock) as mock_disc,
+        patch("src.infrastructure.socketio.server._validate_tracker", return_value=False),
+    ):
+        environ = {"QUERY_STRING": f"trip_id={_make_trip_id()}&role=tracker&user_id={_make_user_id()}"}
         await sio.handlers["/"]["connect"](sid, environ)
         mock_disc.assert_called_once_with(sid)
 
@@ -115,7 +109,6 @@ async def test_connect_tracker_not_route_driver_disconnects():
 # ===========================================================================
 # US10-TK03 — join_session (tracker) + session_joined
 # ===========================================================================
-
 
 
 @pytest.mark.asyncio
@@ -127,8 +120,10 @@ async def test_join_session_tracker_creates_session():
     sid = "tracker-sid-001"
     sid_meta[sid] = {"trip_id": trip_id, "role": "tracker", "user_id": _make_user_id()}
 
-    with patch("src.infrastructure.socketio.server.sio.enter_room", new_callable=AsyncMock), \
-         patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock) as mock_emit:
+    with (
+        patch("src.infrastructure.socketio.server.sio.enter_room", new_callable=AsyncMock),
+        patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock) as mock_emit,
+    ):
         await sio.handlers["/"]["join_session"](sid, {"trip_id": trip_id, "role": "tracker"})
 
         assert trip_id in tracking_sessions
@@ -136,7 +131,6 @@ async def test_join_session_tracker_creates_session():
 
     tracking_sessions.pop(trip_id, None)
     sid_meta.pop(sid, None)
-
 
 
 @pytest.mark.asyncio
@@ -148,8 +142,10 @@ async def test_join_session_tracker_emits_session_joined():
     sid = "tracker-sid-002"
     sid_meta[sid] = {"trip_id": trip_id, "role": "tracker", "user_id": _make_user_id()}
 
-    with patch("src.infrastructure.socketio.server.sio.enter_room", new_callable=AsyncMock), \
-         patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock) as mock_emit:
+    with (
+        patch("src.infrastructure.socketio.server.sio.enter_room", new_callable=AsyncMock),
+        patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock) as mock_emit,
+    ):
         await sio.handlers["/"]["join_session"](sid, {"trip_id": trip_id, "role": "tracker"})
 
         mock_emit.assert_called_once()
@@ -163,7 +159,6 @@ async def test_join_session_tracker_emits_session_joined():
 # ===========================================================================
 # US10-TK04 — location_update + broadcast
 # ===========================================================================
-
 
 
 @pytest.mark.asyncio
@@ -185,7 +180,6 @@ async def test_location_update_saves_last_location():
 
     tracking_sessions.pop(trip_id, None)
     sid_meta.pop(sid, None)
-
 
 
 @pytest.mark.asyncio
@@ -211,17 +205,15 @@ async def test_location_update_broadcasts_to_room():
 
         # Procurar o emit de location_update para o room
         room_broadcasts = [
-            call for call in mock_emit.call_args_list
-            if len(call.args) > 0
-            and call.args[0] == "location_update"
-            and call.kwargs.get("room")
+            call
+            for call in mock_emit.call_args_list
+            if len(call.args) > 0 and call.args[0] == "location_update" and call.kwargs.get("room")
         ]
         assert len(room_broadcasts) >= 1
         assert trip_id in room_broadcasts[0].kwargs.get("room")
 
     tracking_sessions.pop(trip_id, None)
     sid_meta.pop(sid, None)
-
 
 
 @pytest.mark.asyncio
@@ -247,7 +239,6 @@ async def test_location_update_non_tracker_ignored():
 # ===========================================================================
 
 
-
 @pytest.mark.asyncio
 async def test_disconnect_tracker_emits_tracker_disconnected():
     """disconnect do tracker deve emitir tracker_disconnected para followers."""
@@ -267,7 +258,6 @@ async def test_disconnect_tracker_emits_tracker_disconnected():
     tracking_sessions.pop(trip_id, None)
 
 
-
 @pytest.mark.asyncio
 async def test_disconnect_tracker_clears_tracker_sid():
     """disconnect do tracker deve setar tracker_sid para None na sessão."""
@@ -283,7 +273,6 @@ async def test_disconnect_tracker_clears_tracker_sid():
 
     assert tracking_sessions[trip_id]["tracker_sid"] is None
     tracking_sessions.pop(trip_id, None)
-
 
 
 @pytest.mark.asyncio
@@ -313,12 +302,12 @@ async def test_connect_follower_without_active_membership_disconnects():
     from src.infrastructure.socketio.server import sio
 
     sid = "follower-auth-001"
-    environ = {
-        "QUERY_STRING": f"trip_id={_make_trip_id()}&role=follower&user_id={_make_user_id()}"
-    }
+    environ = {"QUERY_STRING": f"trip_id={_make_trip_id()}&role=follower&user_id={_make_user_id()}"}
 
-    with patch("src.infrastructure.socketio.server.sio.disconnect", new_callable=AsyncMock) as mock_disc, \
-         patch("src.infrastructure.socketio.server._validate_follower", return_value=False):
+    with (
+        patch("src.infrastructure.socketio.server.sio.disconnect", new_callable=AsyncMock) as mock_disc,
+        patch("src.infrastructure.socketio.server._validate_follower", return_value=False),
+    ):
         await sio.handlers["/"]["connect"](sid, environ)
         mock_disc.assert_called_once_with(sid)
 
@@ -329,13 +318,13 @@ async def test_connect_follower_with_active_membership_allowed():
     from src.infrastructure.socketio.server import sio
 
     sid = "follower-auth-002"
-    environ = {
-        "QUERY_STRING": f"trip_id={_make_trip_id()}&role=follower&user_id={_make_user_id()}"
-    }
+    environ = {"QUERY_STRING": f"trip_id={_make_trip_id()}&role=follower&user_id={_make_user_id()}"}
 
-    with patch("src.infrastructure.socketio.server.sio.disconnect", new_callable=AsyncMock) as mock_disc, \
-         patch("src.infrastructure.socketio.server._validate_follower", return_value=True), \
-         patch("src.infrastructure.socketio.server._validate_tracker", return_value=True):
+    with (
+        patch("src.infrastructure.socketio.server.sio.disconnect", new_callable=AsyncMock) as mock_disc,
+        patch("src.infrastructure.socketio.server._validate_follower", return_value=True),
+        patch("src.infrastructure.socketio.server._validate_tracker", return_value=True),
+    ):
         await sio.handlers["/"]["connect"](sid, environ)
         mock_disc.assert_not_called()
 
@@ -355,9 +344,11 @@ def test_validate_follower_accepts_pending_or_accepted_statuses():
     pending_rp = MagicMock(status="pending")
     accepted_rp = MagicMock(status="accepted")
 
-    with patch("src.infrastructure.socketio.server.SessionLocal") as mock_session_local, \
-         patch("src.infrastructure.socketio.server.TripRepositoryImpl") as mock_trip_repo_cls, \
-         patch("src.infrastructure.socketio.server.RoutePassangerRepositoryImpl") as mock_rp_repo_cls:
+    with (
+        patch("src.infrastructure.socketio.server.SessionLocal") as mock_session_local,
+        patch("src.infrastructure.socketio.server.TripRepositoryImpl") as mock_trip_repo_cls,
+        patch("src.infrastructure.socketio.server.RoutePassangerRepositoryImpl") as mock_rp_repo_cls,
+    ):
         session = MagicMock()
         mock_session_local.return_value = session
         mock_trip_repo_cls.return_value.find_by_id.return_value = FakeTrip(route_id)
@@ -378,9 +369,11 @@ def test_validate_follower_returns_false_without_link():
         def __init__(self, route_id):
             self.route_id = route_id
 
-    with patch("src.infrastructure.socketio.server.SessionLocal") as mock_session_local, \
-         patch("src.infrastructure.socketio.server.TripRepositoryImpl") as mock_trip_repo_cls, \
-         patch("src.infrastructure.socketio.server.RoutePassangerRepositoryImpl") as mock_rp_repo_cls:
+    with (
+        patch("src.infrastructure.socketio.server.SessionLocal") as mock_session_local,
+        patch("src.infrastructure.socketio.server.TripRepositoryImpl") as mock_trip_repo_cls,
+        patch("src.infrastructure.socketio.server.RoutePassangerRepositoryImpl") as mock_rp_repo_cls,
+    ):
         session = MagicMock()
         mock_session_local.return_value = session
         mock_trip_repo_cls.return_value.find_by_id.return_value = FakeTrip(route_id)
@@ -406,8 +399,10 @@ async def test_join_session_follower_registered_in_followers():
     tracking_sessions[trip_id] = {"tracker_sid": tracker_sid, "followers": [], "last_location": None}
     sid_meta[follower_sid] = {"trip_id": trip_id, "role": "follower", "user_id": _make_user_id()}
 
-    with patch("src.infrastructure.socketio.server.sio.enter_room", new_callable=AsyncMock), \
-         patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock):
+    with (
+        patch("src.infrastructure.socketio.server.sio.enter_room", new_callable=AsyncMock),
+        patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock),
+    ):
         await sio.handlers["/"]["join_session"](follower_sid, {"trip_id": trip_id, "role": "follower"})
 
     assert follower_sid in tracking_sessions[trip_id]["followers"]
@@ -428,8 +423,10 @@ async def test_join_session_follower_receives_last_location():
     tracking_sessions[trip_id] = {"tracker_sid": "tracker-x", "followers": [], "last_location": last_loc}
     sid_meta[follower_sid] = {"trip_id": trip_id, "role": "follower", "user_id": _make_user_id()}
 
-    with patch("src.infrastructure.socketio.server.sio.enter_room", new_callable=AsyncMock), \
-         patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock) as mock_emit:
+    with (
+        patch("src.infrastructure.socketio.server.sio.enter_room", new_callable=AsyncMock),
+        patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock) as mock_emit,
+    ):
         await sio.handlers["/"]["join_session"](follower_sid, {"trip_id": trip_id, "role": "follower"})
 
         call_data = mock_emit.call_args[0][1]
@@ -451,8 +448,10 @@ async def test_join_session_follower_tracker_online_true_when_connected():
     tracking_sessions[trip_id] = {"tracker_sid": "tracker-online", "followers": [], "last_location": None}
     sid_meta[follower_sid] = {"trip_id": trip_id, "role": "follower", "user_id": _make_user_id()}
 
-    with patch("src.infrastructure.socketio.server.sio.enter_room", new_callable=AsyncMock), \
-         patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock) as mock_emit:
+    with (
+        patch("src.infrastructure.socketio.server.sio.enter_room", new_callable=AsyncMock),
+        patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock) as mock_emit,
+    ):
         await sio.handlers["/"]["join_session"](follower_sid, {"trip_id": trip_id, "role": "follower"})
 
         call_data = mock_emit.call_args[0][1]
@@ -474,8 +473,10 @@ async def test_join_session_follower_populates_stop_coordinates():
     tracking_sessions[trip_id] = {"tracker_sid": "tracker-x", "followers": [], "last_location": None}
     sid_meta[follower_sid] = {"trip_id": trip_id, "role": "follower", "user_id": _make_user_id()}
 
-    with patch("src.infrastructure.socketio.server.sio.enter_room", new_callable=AsyncMock), \
-         patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock):
+    with (
+        patch("src.infrastructure.socketio.server.sio.enter_room", new_callable=AsyncMock),
+        patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock),
+    ):
         await sio.handlers["/"]["join_session"](
             follower_sid,
             {"trip_id": trip_id, "role": "follower", "stop_lat": -30.0567, "stop_lng": -51.1734},
@@ -502,8 +503,10 @@ async def test_join_session_follower_defaults_missing_stop_coordinates_to_none()
     tracking_sessions[trip_id] = {"tracker_sid": "tracker-x", "followers": [], "last_location": None}
     sid_meta[follower_sid] = {"trip_id": trip_id, "role": "follower", "user_id": _make_user_id()}
 
-    with patch("src.infrastructure.socketio.server.sio.enter_room", new_callable=AsyncMock), \
-         patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock):
+    with (
+        patch("src.infrastructure.socketio.server.sio.enter_room", new_callable=AsyncMock),
+        patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock),
+    ):
         # Sem stop_lat/stop_lng no payload
         await sio.handlers["/"]["join_session"](follower_sid, {"trip_id": trip_id, "role": "follower"})
 
@@ -514,8 +517,10 @@ async def test_join_session_follower_defaults_missing_stop_coordinates_to_none()
     sid_meta[follower_sid] = {"trip_id": trip_id, "role": "follower", "user_id": _make_user_id()}
     tracking_sessions[trip_id] = {"tracker_sid": "tracker-x", "followers": [], "last_location": None}
 
-    with patch("src.infrastructure.socketio.server.sio.enter_room", new_callable=AsyncMock), \
-         patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock):
+    with (
+        patch("src.infrastructure.socketio.server.sio.enter_room", new_callable=AsyncMock),
+        patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock),
+    ):
         await sio.handlers["/"]["join_session"](
             follower_sid,
             {"trip_id": trip_id, "role": "follower", "stop_lat": "abc", "stop_lng": None},
@@ -579,7 +584,6 @@ async def test_trip_finished_no_error_when_session_not_found():
 # ===========================================================================
 
 
-
 @pytest.mark.asyncio
 async def test_location_update_broadcast_includes_eta_fields():
     """location_update broadcast para cada follower deve incluir eta_minutes e distance_km."""
@@ -605,20 +609,19 @@ async def test_location_update_broadcast_includes_eta_fields():
 
     payload = {"lat": -30.0, "lng": -51.2, "heading": 90.0, "speed": 40.0, "timestamp": "2026-01-01T08:00:00Z"}
 
-    with patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock) as mock_emit, \
-         patch("src.infrastructure.socketio.server._calculate_eta_for_follower", new_callable=AsyncMock) as mock_eta:
+    with (
+        patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock) as mock_emit,
+        patch("src.infrastructure.socketio.server._calculate_eta_for_follower", new_callable=AsyncMock) as mock_eta,
+    ):
         mock_eta.return_value = {"eta_minutes": 5, "distance_km": 2.3}
         await sio.handlers["/"]["location_update"](tracker_sid, payload)
 
         broadcast_data = mock_emit.call_args[0][1]
-        assert "eta_minutes" in broadcast_data or any(
-            "eta_minutes" in str(call) for call in mock_emit.call_args_list
-        )
+        assert "eta_minutes" in broadcast_data or any("eta_minutes" in str(call) for call in mock_emit.call_args_list)
 
     tracking_sessions.pop(trip_id, None)
     sid_meta.pop(tracker_sid, None)
     sid_meta.pop(follower_sid, None)
-
 
 
 @pytest.mark.asyncio
@@ -646,8 +649,10 @@ async def test_location_update_eta_uses_follower_stop_coordinates():
 
     payload = {"lat": -30.0, "lng": -51.0, "heading": 0.0, "speed": 0.0, "timestamp": "2026-01-01T08:00:00Z"}
 
-    with patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock), \
-         patch("src.infrastructure.socketio.server._calculate_eta_for_follower", new_callable=AsyncMock) as mock_eta:
+    with (
+        patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock),
+        patch("src.infrastructure.socketio.server._calculate_eta_for_follower", new_callable=AsyncMock) as mock_eta,
+    ):
         mock_eta.return_value = {"eta_minutes": 8, "distance_km": 3.1}
         await sio.handlers["/"]["location_update"](tracker_sid, payload)
 
@@ -660,7 +665,6 @@ async def test_location_update_eta_uses_follower_stop_coordinates():
     tracking_sessions.pop(trip_id, None)
     sid_meta.pop(tracker_sid, None)
     sid_meta.pop(follower_sid, None)
-
 
 
 @pytest.mark.asyncio
@@ -693,16 +697,15 @@ async def test_location_update_eta_gracefully_none_when_routing_unavailable():
 
     payload = {"lat": -30.0, "lng": -51.0, "heading": 0.0, "speed": 0.0, "timestamp": "2026-01-01T08:00:00Z"}
 
-    with patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock) as mock_emit, \
-         patch("src.infrastructure.socketio.server._calculate_eta_for_follower", new_callable=AsyncMock) as mock_eta:
+    with (
+        patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock) as mock_emit,
+        patch("src.infrastructure.socketio.server._calculate_eta_for_follower", new_callable=AsyncMock) as mock_eta,
+    ):
         mock_eta.return_value = None  # routing indisponível
         await sio.handlers["/"]["location_update"](tracker_sid, payload)
 
         # broadcast deve ocorrer mesmo sem ETA (não pode suprimir o evento)
-        location_update_calls = [
-            call for call in mock_emit.call_args_list
-            if len(call.args) > 0 and call.args[0] == "location_update"
-        ]
+        location_update_calls = [call for call in mock_emit.call_args_list if len(call.args) > 0 and call.args[0] == "location_update"]
         assert len(location_update_calls) >= 1
 
     tracking_sessions.pop(trip_id, None)
@@ -720,7 +723,6 @@ async def test_location_update_eta_gracefully_none_when_routing_unavailable():
 # (US10-TK17) e de `_trigger_route_optimization` (route_passanger_service /
 # absence_service).
 # ---------------------------------------------------------------------------
-
 
 
 @pytest.mark.asyncio
@@ -758,7 +760,6 @@ async def test_calculate_eta_for_follower_returns_dict_when_stop_coordinates_pre
     sid_meta.pop(follower_sid, None)
 
 
-
 @pytest.mark.asyncio
 async def test_calculate_eta_for_follower_returns_none_when_stop_coordinates_missing():
     """Se sid_meta[follower_sid] não tem stop_lat/stop_lng (ou está com None),
@@ -788,7 +789,6 @@ async def test_calculate_eta_for_follower_returns_none_when_stop_coordinates_mis
     sid_meta.pop(follower_sid, None)
 
 
-
 @pytest.mark.asyncio
 async def test_calculate_eta_for_follower_returns_none_when_follower_not_in_sid_meta():
     """Se o follower_sid não existir em sid_meta, o helper retorna None
@@ -806,7 +806,6 @@ async def test_calculate_eta_for_follower_returns_none_when_follower_not_in_sid_
 
     assert result is None
     routing_mock.get_route_info.assert_not_called()
-
 
 
 @pytest.mark.asyncio
@@ -856,7 +855,6 @@ async def test_calculate_eta_for_follower_passes_correct_origin_and_destination(
     sid_meta.pop(follower_sid, None)
 
 
-
 @pytest.mark.asyncio
 async def test_calculate_eta_for_follower_returns_none_when_routing_raises():
     """Se IRoutingService.get_route_info levantar exceção, o helper devolve
@@ -893,7 +891,6 @@ async def test_calculate_eta_for_follower_returns_none_when_routing_raises():
 # ===========================================================================
 
 
-
 @pytest.mark.asyncio
 async def test_emit_passenger_boarded_emits_to_room():
     """emit_passenger_boarded deve emitir evento passenger_boarded para o room da sessão."""
@@ -909,7 +906,6 @@ async def test_emit_passenger_boarded_emits_to_room():
         assert mock_emit.call_args[0][0] == "passenger_boarded"
 
     tracking_sessions.pop(trip_id, None)
-
 
 
 @pytest.mark.asyncio
@@ -930,7 +926,6 @@ async def test_emit_passenger_boarded_payload_contains_user_name():
     tracking_sessions.pop(trip_id, None)
 
 
-
 @pytest.mark.asyncio
 async def test_emit_passenger_boarded_no_error_when_session_not_found():
     """emit_passenger_boarded com trip_id sem sessão ativa não deve levantar exceção."""
@@ -943,7 +938,6 @@ async def test_emit_passenger_boarded_no_error_when_session_not_found():
 # ===========================================================================
 # US11-TK06 — emit_passenger_absent
 # ===========================================================================
-
 
 
 @pytest.mark.asyncio
@@ -961,7 +955,6 @@ async def test_emit_passenger_absent_emits_to_room():
         assert mock_emit.call_args[0][0] == "passenger_absent"
 
     tracking_sessions.pop(trip_id, None)
-
 
 
 @pytest.mark.asyncio
@@ -982,7 +975,6 @@ async def test_emit_passenger_absent_payload_contains_user_name():
     tracking_sessions.pop(trip_id, None)
 
 
-
 @pytest.mark.asyncio
 async def test_emit_passenger_absent_no_error_when_session_not_found():
     """emit_passenger_absent com trip_id sem sessão ativa não deve levantar exceção."""
@@ -995,7 +987,6 @@ async def test_emit_passenger_absent_no_error_when_session_not_found():
 # ===========================================================================
 # US12-TK06 — _notify_proximity_if_needed (push "motorista está próximo")
 # ===========================================================================
-
 
 
 @pytest.mark.asyncio
@@ -1028,7 +1019,6 @@ async def test_proximity_notification_sent_when_below_threshold():
     sid_meta.pop(follower_sid, None)
 
 
-
 @pytest.mark.asyncio
 async def test_proximity_notification_not_sent_when_above_threshold():
     """_notify_proximity_if_needed não deve notificar quando distance_km >= threshold."""
@@ -1059,7 +1049,6 @@ async def test_proximity_notification_not_sent_when_above_threshold():
     sid_meta.pop(follower_sid, None)
 
 
-
 @pytest.mark.asyncio
 async def test_proximity_notification_sent_only_once_per_session():
     """_notify_proximity_if_needed não deve reenviar o push se proximity_notified já for True."""
@@ -1088,7 +1077,6 @@ async def test_proximity_notification_sent_only_once_per_session():
     notif_mock.notify_passanger_driver_approaching.assert_not_called()
 
     sid_meta.pop(follower_sid, None)
-
 
 
 @pytest.mark.asyncio
@@ -1126,7 +1114,6 @@ async def test_proximity_notification_sets_flag_after_sending():
 # ===========================================================================
 
 
-
 @pytest.mark.asyncio
 async def test_arrival_notification_sent_when_below_threshold():
     """_notify_arrival_if_needed deve chamar notify_passanger_driver_arrived quando distance_km < ARRIVAL_THRESHOLD_KM."""
@@ -1155,7 +1142,6 @@ async def test_arrival_notification_sent_when_below_threshold():
     notif_mock.notify_passanger_driver_arrived.assert_called_once()
 
     sid_meta.pop(follower_sid, None)
-
 
 
 @pytest.mark.asyncio
@@ -1188,7 +1174,6 @@ async def test_arrival_notification_not_sent_when_above_threshold():
     sid_meta.pop(follower_sid, None)
 
 
-
 @pytest.mark.asyncio
 async def test_arrival_notification_sent_only_once_per_session():
     """_notify_arrival_if_needed não deve reenviar o push se arrived_notified já for True."""
@@ -1217,7 +1202,6 @@ async def test_arrival_notification_sent_only_once_per_session():
     notif_mock.notify_passanger_driver_arrived.assert_not_called()
 
     sid_meta.pop(follower_sid, None)
-
 
 
 @pytest.mark.asyncio
@@ -1250,7 +1234,6 @@ async def test_arrival_notification_sets_flag_after_sending():
     sid_meta.pop(follower_sid, None)
 
 
-
 @pytest.mark.asyncio
 async def test_arrival_threshold_smaller_than_proximity_threshold():
     """ARRIVAL_THRESHOLD_KM deve ser menor que PROXIMITY_THRESHOLD_KM."""
@@ -1262,7 +1245,6 @@ async def test_arrival_threshold_smaller_than_proximity_threshold():
 # ===========================================================================
 # US10-TK17 — _calculate_eta_for_tracker + driver_eta emit no location_update
 # ===========================================================================
-
 
 
 @pytest.mark.asyncio
@@ -1282,16 +1264,15 @@ async def test_location_update_emits_driver_eta_to_tracker():
 
     payload = {"lat": -30.0, "lng": -51.2, "heading": 90.0, "speed": 40.0, "timestamp": "2026-01-01T08:00:00Z"}
 
-    with patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock) as mock_emit, \
-         patch("src.infrastructure.socketio.server._calculate_eta_for_tracker", new_callable=AsyncMock) as mock_eta:
+    with (
+        patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock) as mock_emit,
+        patch("src.infrastructure.socketio.server._calculate_eta_for_tracker", new_callable=AsyncMock) as mock_eta,
+    ):
         mock_eta.return_value = {"stop_id": "stop-x", "eta_minutes": 6, "distance_km": 1.4}
         await sio.handlers["/"]["location_update"](tracker_sid, payload)
 
         # entre as chamadas de emit deve haver uma para "driver_eta" com to=tracker_sid
-        driver_eta_calls = [
-            call for call in mock_emit.call_args_list
-            if len(call.args) > 0 and call.args[0] == "driver_eta"
-        ]
+        driver_eta_calls = [call for call in mock_emit.call_args_list if len(call.args) > 0 and call.args[0] == "driver_eta"]
         assert len(driver_eta_calls) >= 1
         # to deve apontar para o tracker_sid (kwarg ou posicional)
         first_call = driver_eta_calls[0]
@@ -1300,7 +1281,6 @@ async def test_location_update_emits_driver_eta_to_tracker():
 
     tracking_sessions.pop(trip_id, None)
     sid_meta.pop(tracker_sid, None)
-
 
 
 @pytest.mark.asyncio
@@ -1316,22 +1296,20 @@ async def test_driver_eta_payload_contains_eta_and_distance_fields():
 
     payload = {"lat": -30.0, "lng": -51.0, "heading": 0.0, "speed": 0.0, "timestamp": "2026-01-01T08:00:00Z"}
 
-    with patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock) as mock_emit, \
-         patch("src.infrastructure.socketio.server._calculate_eta_for_tracker", new_callable=AsyncMock) as mock_eta:
+    with (
+        patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock) as mock_emit,
+        patch("src.infrastructure.socketio.server._calculate_eta_for_tracker", new_callable=AsyncMock) as mock_eta,
+    ):
         mock_eta.return_value = {"stop_id": "stop-y", "eta_minutes": 12, "distance_km": 3.5}
         await sio.handlers["/"]["location_update"](tracker_sid, payload)
 
-        driver_eta_call = next(
-            call for call in mock_emit.call_args_list
-            if len(call.args) > 0 and call.args[0] == "driver_eta"
-        )
+        driver_eta_call = next(call for call in mock_emit.call_args_list if len(call.args) > 0 and call.args[0] == "driver_eta")
         body = driver_eta_call.args[1]
         assert body.get("eta_minutes") == 12
         assert body.get("distance_km") == 3.5
 
     tracking_sessions.pop(trip_id, None)
     sid_meta.pop(tracker_sid, None)
-
 
 
 @pytest.mark.asyncio
@@ -1348,22 +1326,20 @@ async def test_driver_eta_emitted_with_null_when_no_pending_stop():
 
     payload = {"lat": -30.0, "lng": -51.0, "heading": 0.0, "speed": 0.0, "timestamp": "2026-01-01T08:00:00Z"}
 
-    with patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock) as mock_emit, \
-         patch("src.infrastructure.socketio.server._calculate_eta_for_tracker", new_callable=AsyncMock) as mock_eta:
+    with (
+        patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock) as mock_emit,
+        patch("src.infrastructure.socketio.server._calculate_eta_for_tracker", new_callable=AsyncMock) as mock_eta,
+    ):
         mock_eta.return_value = None
         await sio.handlers["/"]["location_update"](tracker_sid, payload)
 
-        driver_eta_call = next(
-            call for call in mock_emit.call_args_list
-            if len(call.args) > 0 and call.args[0] == "driver_eta"
-        )
+        driver_eta_call = next(call for call in mock_emit.call_args_list if len(call.args) > 0 and call.args[0] == "driver_eta")
         body = driver_eta_call.args[1]
         assert body.get("eta_minutes") is None
         assert body.get("distance_km") is None
 
     tracking_sessions.pop(trip_id, None)
     sid_meta.pop(tracker_sid, None)
-
 
 
 @pytest.mark.asyncio
@@ -1386,8 +1362,10 @@ async def test_driver_eta_failure_does_not_block_follower_broadcast():
 
     payload = {"lat": -30.0, "lng": -51.0, "heading": 0.0, "speed": 0.0, "timestamp": "2026-01-01T08:00:00Z"}
 
-    with patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock) as mock_emit, \
-         patch("src.infrastructure.socketio.server._calculate_eta_for_tracker", new_callable=AsyncMock) as mock_eta:
+    with (
+        patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock) as mock_emit,
+        patch("src.infrastructure.socketio.server._calculate_eta_for_tracker", new_callable=AsyncMock) as mock_eta,
+    ):
         mock_eta.side_effect = RuntimeError("routing service down")
         # location_update não deve propagar a exceção
         await sio.handlers["/"]["location_update"](tracker_sid, payload)
@@ -1396,16 +1374,12 @@ async def test_driver_eta_failure_does_not_block_follower_broadcast():
         # via room (followers fora de sid_meta) OU emit per-follower
         # (followers em sid_meta com ou sem stop coords). O essencial é
         # que pelo menos um evento "location_update" tenha sido emitido.
-        location_update_calls = [
-            call for call in mock_emit.call_args_list
-            if len(call.args) > 0 and call.args[0] == "location_update"
-        ]
+        location_update_calls = [call for call in mock_emit.call_args_list if len(call.args) > 0 and call.args[0] == "location_update"]
         assert len(location_update_calls) >= 1
 
     tracking_sessions.pop(trip_id, None)
     sid_meta.pop(tracker_sid, None)
     sid_meta.pop(follower_sid, None)
-
 
 
 @pytest.mark.asyncio
@@ -1434,15 +1408,16 @@ async def test_calculate_eta_for_tracker_returns_dict_when_pending_stop_exists()
         total_distance_km=1.4,
     )
 
-    with patch("src.infrastructure.socketio.server._get_trip_service", return_value=trip_service_mock), \
-         patch("src.infrastructure.socketio.server._get_routing_service", return_value=routing_mock, create=True):
+    with (
+        patch("src.infrastructure.socketio.server._get_trip_service", return_value=trip_service_mock),
+        patch("src.infrastructure.socketio.server._get_routing_service", return_value=routing_mock, create=True),
+    ):
         result = await _calculate_eta_for_tracker(-30.0, -51.2, trip_id)
 
     assert result is not None
     assert result.get("eta_minutes") == 6
     assert result.get("distance_km") == 1.4
     assert result.get("stop_id") == "stop-pending-001"
-
 
 
 @pytest.mark.asyncio
@@ -1457,7 +1432,6 @@ async def test_calculate_eta_for_tracker_returns_none_when_no_pending_stop():
         result = await _calculate_eta_for_tracker(-30.0, -51.2, _make_trip_id())
 
     assert result is None
-
 
 
 @pytest.mark.asyncio
@@ -1478,7 +1452,6 @@ async def test_calculate_eta_for_tracker_returns_none_when_address_missing_coord
     assert result is None
 
 
-
 @pytest.mark.asyncio
 async def test_calculate_eta_for_tracker_returns_none_when_routing_unavailable():
     """Se routing_service não estiver disponível (ou levantar exceção), retorna None."""
@@ -1494,8 +1467,10 @@ async def test_calculate_eta_for_tracker_returns_none_when_routing_unavailable()
     routing_mock = MagicMock()
     routing_mock.get_route_info.side_effect = RuntimeError("mapbox down")
 
-    with patch("src.infrastructure.socketio.server._get_trip_service", return_value=trip_service_mock), \
-         patch("src.infrastructure.socketio.server._get_routing_service", return_value=routing_mock, create=True):
+    with (
+        patch("src.infrastructure.socketio.server._get_trip_service", return_value=trip_service_mock),
+        patch("src.infrastructure.socketio.server._get_routing_service", return_value=routing_mock, create=True),
+    ):
         result = await _calculate_eta_for_tracker(-30.0, -51.2, _make_trip_id())
 
     assert result is None

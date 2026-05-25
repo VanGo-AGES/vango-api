@@ -57,9 +57,7 @@ def test_accept_request_success_returns_200() -> None:
     mock_service.accept_request.return_value = make_rp_response(status="accepted")
     app.dependency_overrides[get_route_passanger_service] = lambda: mock_service
 
-    response = client.post(
-        f"/routes/{uuid.uuid4()}/passangers/{uuid.uuid4()}/accept", headers=DRIVER_HEADERS
-    )
+    response = client.post(f"/routes/{uuid.uuid4()}/passangers/{uuid.uuid4()}/accept", headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 200
@@ -73,9 +71,7 @@ def test_accept_request_route_not_found_returns_404() -> None:
     mock_service.accept_request.side_effect = RouteNotFoundError()
     app.dependency_overrides[get_route_passanger_service] = lambda: mock_service
 
-    response = client.post(
-        f"/routes/{uuid.uuid4()}/passangers/{uuid.uuid4()}/accept", headers=DRIVER_HEADERS
-    )
+    response = client.post(f"/routes/{uuid.uuid4()}/passangers/{uuid.uuid4()}/accept", headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 404
@@ -88,9 +84,7 @@ def test_accept_request_wrong_owner_returns_403() -> None:
     mock_service.accept_request.side_effect = RouteOwnershipError()
     app.dependency_overrides[get_route_passanger_service] = lambda: mock_service
 
-    response = client.post(
-        f"/routes/{uuid.uuid4()}/passangers/{uuid.uuid4()}/accept", headers=DRIVER_HEADERS
-    )
+    response = client.post(f"/routes/{uuid.uuid4()}/passangers/{uuid.uuid4()}/accept", headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 403
@@ -103,9 +97,7 @@ def test_accept_request_in_progress_returns_409() -> None:
     mock_service.accept_request.side_effect = RouteInProgressError()
     app.dependency_overrides[get_route_passanger_service] = lambda: mock_service
 
-    response = client.post(
-        f"/routes/{uuid.uuid4()}/passangers/{uuid.uuid4()}/accept", headers=DRIVER_HEADERS
-    )
+    response = client.post(f"/routes/{uuid.uuid4()}/passangers/{uuid.uuid4()}/accept", headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 409
@@ -118,9 +110,7 @@ def test_accept_request_rp_not_found_returns_404() -> None:
     mock_service.accept_request.side_effect = RoutePassangerNotFoundError()
     app.dependency_overrides[get_route_passanger_service] = lambda: mock_service
 
-    response = client.post(
-        f"/routes/{uuid.uuid4()}/passangers/{uuid.uuid4()}/accept", headers=DRIVER_HEADERS
-    )
+    response = client.post(f"/routes/{uuid.uuid4()}/passangers/{uuid.uuid4()}/accept", headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 404
@@ -133,9 +123,7 @@ def test_accept_request_already_processed_returns_409() -> None:
     mock_service.accept_request.side_effect = RoutePassangerAlreadyProcessedError()
     app.dependency_overrides[get_route_passanger_service] = lambda: mock_service
 
-    response = client.post(
-        f"/routes/{uuid.uuid4()}/passangers/{uuid.uuid4()}/accept", headers=DRIVER_HEADERS
-    )
+    response = client.post(f"/routes/{uuid.uuid4()}/passangers/{uuid.uuid4()}/accept", headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 409
@@ -148,9 +136,7 @@ def test_accept_request_capacity_exceeded_returns_409() -> None:
     mock_service.accept_request.side_effect = RouteCapacityExceededError()
     app.dependency_overrides[get_route_passanger_service] = lambda: mock_service
 
-    response = client.post(
-        f"/routes/{uuid.uuid4()}/passangers/{uuid.uuid4()}/accept", headers=DRIVER_HEADERS
-    )
+    response = client.post(f"/routes/{uuid.uuid4()}/passangers/{uuid.uuid4()}/accept", headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 409
@@ -166,9 +152,7 @@ def test_reject_request_success_returns_200() -> None:
     mock_service.reject_request.return_value = make_rp_response(status="rejected")
     app.dependency_overrides[get_route_passanger_service] = lambda: mock_service
 
-    response = client.post(
-        f"/routes/{uuid.uuid4()}/passangers/{uuid.uuid4()}/reject", headers=DRIVER_HEADERS
-    )
+    response = client.post(f"/routes/{uuid.uuid4()}/passangers/{uuid.uuid4()}/reject", headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 200
@@ -182,9 +166,7 @@ def test_reject_request_rp_not_found_returns_404() -> None:
     mock_service.reject_request.side_effect = RoutePassangerNotFoundError()
     app.dependency_overrides[get_route_passanger_service] = lambda: mock_service
 
-    response = client.post(
-        f"/routes/{uuid.uuid4()}/passangers/{uuid.uuid4()}/reject", headers=DRIVER_HEADERS
-    )
+    response = client.post(f"/routes/{uuid.uuid4()}/passangers/{uuid.uuid4()}/reject", headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 404
@@ -197,9 +179,7 @@ def test_reject_request_route_not_found_returns_404() -> None:
     mock_service.reject_request.side_effect = RouteNotFoundError()
     app.dependency_overrides[get_route_passanger_service] = lambda: mock_service
 
-    response = client.post(
-        f"/routes/{uuid.uuid4()}/passangers/{uuid.uuid4()}/reject", headers=DRIVER_HEADERS
-    )
+    response = client.post(f"/routes/{uuid.uuid4()}/passangers/{uuid.uuid4()}/reject", headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 404
@@ -212,9 +192,7 @@ def test_reject_request_wrong_owner_returns_403() -> None:
     mock_service.reject_request.side_effect = RouteOwnershipError()
     app.dependency_overrides[get_route_passanger_service] = lambda: mock_service
 
-    response = client.post(
-        f"/routes/{uuid.uuid4()}/passangers/{uuid.uuid4()}/reject", headers=DRIVER_HEADERS
-    )
+    response = client.post(f"/routes/{uuid.uuid4()}/passangers/{uuid.uuid4()}/reject", headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 403
@@ -227,9 +205,7 @@ def test_reject_request_in_progress_returns_409() -> None:
     mock_service.reject_request.side_effect = RouteInProgressError()
     app.dependency_overrides[get_route_passanger_service] = lambda: mock_service
 
-    response = client.post(
-        f"/routes/{uuid.uuid4()}/passangers/{uuid.uuid4()}/reject", headers=DRIVER_HEADERS
-    )
+    response = client.post(f"/routes/{uuid.uuid4()}/passangers/{uuid.uuid4()}/reject", headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 409
@@ -242,9 +218,7 @@ def test_reject_request_already_processed_returns_409() -> None:
     mock_service.reject_request.side_effect = RoutePassangerAlreadyProcessedError()
     app.dependency_overrides[get_route_passanger_service] = lambda: mock_service
 
-    response = client.post(
-        f"/routes/{uuid.uuid4()}/passangers/{uuid.uuid4()}/reject", headers=DRIVER_HEADERS
-    )
+    response = client.post(f"/routes/{uuid.uuid4()}/passangers/{uuid.uuid4()}/reject", headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 409
@@ -260,9 +234,7 @@ def test_remove_passanger_success_returns_204() -> None:
     mock_service.remove_passanger.return_value = None
     app.dependency_overrides[get_route_passanger_service] = lambda: mock_service
 
-    response = client.delete(
-        f"/routes/{uuid.uuid4()}/passangers/{uuid.uuid4()}", headers=DRIVER_HEADERS
-    )
+    response = client.delete(f"/routes/{uuid.uuid4()}/passangers/{uuid.uuid4()}", headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 204
@@ -275,9 +247,7 @@ def test_remove_passanger_not_found_returns_404() -> None:
     mock_service.remove_passanger.side_effect = RoutePassangerNotFoundError()
     app.dependency_overrides[get_route_passanger_service] = lambda: mock_service
 
-    response = client.delete(
-        f"/routes/{uuid.uuid4()}/passangers/{uuid.uuid4()}", headers=DRIVER_HEADERS
-    )
+    response = client.delete(f"/routes/{uuid.uuid4()}/passangers/{uuid.uuid4()}", headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 404
@@ -290,9 +260,7 @@ def test_remove_passanger_route_not_found_returns_404() -> None:
     mock_service.remove_passanger.side_effect = RouteNotFoundError()
     app.dependency_overrides[get_route_passanger_service] = lambda: mock_service
 
-    response = client.delete(
-        f"/routes/{uuid.uuid4()}/passangers/{uuid.uuid4()}", headers=DRIVER_HEADERS
-    )
+    response = client.delete(f"/routes/{uuid.uuid4()}/passangers/{uuid.uuid4()}", headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 404
@@ -305,9 +273,7 @@ def test_remove_passanger_wrong_owner_returns_403() -> None:
     mock_service.remove_passanger.side_effect = RouteOwnershipError()
     app.dependency_overrides[get_route_passanger_service] = lambda: mock_service
 
-    response = client.delete(
-        f"/routes/{uuid.uuid4()}/passangers/{uuid.uuid4()}", headers=DRIVER_HEADERS
-    )
+    response = client.delete(f"/routes/{uuid.uuid4()}/passangers/{uuid.uuid4()}", headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 403
@@ -320,9 +286,7 @@ def test_remove_passanger_in_progress_returns_409() -> None:
     mock_service.remove_passanger.side_effect = RouteInProgressError()
     app.dependency_overrides[get_route_passanger_service] = lambda: mock_service
 
-    response = client.delete(
-        f"/routes/{uuid.uuid4()}/passangers/{uuid.uuid4()}", headers=DRIVER_HEADERS
-    )
+    response = client.delete(f"/routes/{uuid.uuid4()}/passangers/{uuid.uuid4()}", headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 409
@@ -341,9 +305,7 @@ def test_list_passangers_success_returns_200() -> None:
     ]
     app.dependency_overrides[get_route_passanger_service] = lambda: mock_service
 
-    response = client.get(
-        f"/routes/{uuid.uuid4()}/passangers?status=pending", headers=DRIVER_HEADERS
-    )
+    response = client.get(f"/routes/{uuid.uuid4()}/passangers?status=pending", headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 200
@@ -388,9 +350,7 @@ def test_list_passangers_route_not_found_returns_404() -> None:
     mock_service.list_by_status.side_effect = RouteNotFoundError()
     app.dependency_overrides[get_route_passanger_service] = lambda: mock_service
 
-    response = client.get(
-        f"/routes/{uuid.uuid4()}/passangers?status=pending", headers=DRIVER_HEADERS
-    )
+    response = client.get(f"/routes/{uuid.uuid4()}/passangers?status=pending", headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 404
@@ -403,9 +363,7 @@ def test_list_passangers_wrong_owner_returns_403() -> None:
     mock_service.list_by_status.side_effect = RouteOwnershipError()
     app.dependency_overrides[get_route_passanger_service] = lambda: mock_service
 
-    response = client.get(
-        f"/routes/{uuid.uuid4()}/passangers?status=pending", headers=DRIVER_HEADERS
-    )
+    response = client.get(f"/routes/{uuid.uuid4()}/passangers?status=pending", headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 403
@@ -416,9 +374,7 @@ def test_list_passangers_invalid_status_returns_422() -> None:
     mock_service.list_by_status.side_effect = ValueError("status inválido")
     app.dependency_overrides[get_route_passanger_service] = lambda: mock_service
 
-    response = client.get(
-        f"/routes/{uuid.uuid4()}/passangers?status=foobar", headers=DRIVER_HEADERS
-    )
+    response = client.get(f"/routes/{uuid.uuid4()}/passangers?status=foobar", headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code in (400, 422)
@@ -430,9 +386,7 @@ def test_list_passangers_response_includes_names() -> None:
     mock_service.list_by_status.return_value = [make_rp_response(status="pending", dependent=True)]
     app.dependency_overrides[get_route_passanger_service] = lambda: mock_service
 
-    response = client.get(
-        f"/routes/{uuid.uuid4()}/passangers?status=pending", headers=DRIVER_HEADERS
-    )
+    response = client.get(f"/routes/{uuid.uuid4()}/passangers?status=pending", headers=DRIVER_HEADERS)
 
     app.dependency_overrides.clear()
     body = response.json()[0]
@@ -591,9 +545,7 @@ def test_integration_accept_request_success(integration_client, db_session) -> N
     rp = make_integration_rp(db_session, route.id, passenger.id)
     headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
 
-    response = integration_client.post(
-        f"/routes/{route.id}/passangers/{rp.id}/accept", headers=headers
-    )
+    response = integration_client.post(f"/routes/{route.id}/passangers/{rp.id}/accept", headers=headers)
 
     assert response.status_code == 200
     assert response.json()["status"] == "accepted"
@@ -606,9 +558,7 @@ def test_integration_accept_request_in_progress_returns_409(integration_client, 
     rp = make_integration_rp(db_session, route.id, passenger.id)
     headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
 
-    response = integration_client.post(
-        f"/routes/{route.id}/passangers/{rp.id}/accept", headers=headers
-    )
+    response = integration_client.post(f"/routes/{route.id}/passangers/{rp.id}/accept", headers=headers)
 
     assert response.status_code == 409
 
@@ -623,9 +573,7 @@ def test_integration_accept_request_capacity_exceeded_returns_409(integration_cl
     rp = make_integration_rp(db_session, route.id, new_passenger.id)
     headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
 
-    response = integration_client.post(
-        f"/routes/{route.id}/passangers/{rp.id}/accept", headers=headers
-    )
+    response = integration_client.post(f"/routes/{route.id}/passangers/{rp.id}/accept", headers=headers)
 
     assert response.status_code == 409
 
@@ -638,9 +586,7 @@ def test_integration_accept_request_wrong_owner_returns_403(integration_client, 
     rp = make_integration_rp(db_session, route.id, passenger.id)
     headers = {"X-User-Id": str(other_driver.id), "X-User-Role": "driver"}
 
-    response = integration_client.post(
-        f"/routes/{route.id}/passangers/{rp.id}/accept", headers=headers
-    )
+    response = integration_client.post(f"/routes/{route.id}/passangers/{rp.id}/accept", headers=headers)
 
     assert response.status_code == 403
 
@@ -655,9 +601,7 @@ def test_integration_accept_request_persists_stop_in_db(integration_client, db_s
     rp = make_integration_rp(db_session, route.id, passenger.id)
     headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
 
-    response = integration_client.post(
-        f"/routes/{route.id}/passangers/{rp.id}/accept", headers=headers
-    )
+    response = integration_client.post(f"/routes/{route.id}/passangers/{rp.id}/accept", headers=headers)
 
     assert response.status_code == 200
     stop = db_session.query(StopModel).filter_by(route_passanger_id=rp.id).first()
@@ -666,9 +610,7 @@ def test_integration_accept_request_persists_stop_in_db(integration_client, db_s
     assert stop.address_id == rp.pickup_address_id
 
 
-def test_integration_accept_request_stop_type_matches_outbound(
-    integration_client, db_session
-) -> None:
+def test_integration_accept_request_stop_type_matches_outbound(integration_client, db_session) -> None:
     """Rota outbound → stop.type = 'embarque'."""
     from src.domains.stops.entity import StopModel
 
@@ -678,9 +620,7 @@ def test_integration_accept_request_stop_type_matches_outbound(
     rp = make_integration_rp(db_session, route.id, passenger.id)
     headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
 
-    response = integration_client.post(
-        f"/routes/{route.id}/passangers/{rp.id}/accept", headers=headers
-    )
+    response = integration_client.post(f"/routes/{route.id}/passangers/{rp.id}/accept", headers=headers)
 
     assert response.status_code == 200
     stop = db_session.query(StopModel).filter_by(route_passanger_id=rp.id).first()
@@ -699,9 +639,7 @@ def test_integration_reject_request_success(integration_client, db_session) -> N
     rp = make_integration_rp(db_session, route.id, passenger.id)
     headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
 
-    response = integration_client.post(
-        f"/routes/{route.id}/passangers/{rp.id}/reject", headers=headers
-    )
+    response = integration_client.post(f"/routes/{route.id}/passangers/{rp.id}/reject", headers=headers)
 
     assert response.status_code == 200
     assert response.json()["status"] == "rejected"
@@ -714,9 +652,7 @@ def test_integration_reject_request_in_progress_returns_409(integration_client, 
     rp = make_integration_rp(db_session, route.id, passenger.id)
     headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
 
-    response = integration_client.post(
-        f"/routes/{route.id}/passangers/{rp.id}/reject", headers=headers
-    )
+    response = integration_client.post(f"/routes/{route.id}/passangers/{rp.id}/reject", headers=headers)
 
     assert response.status_code == 409
 
@@ -728,9 +664,7 @@ def test_integration_reject_request_already_processed_returns_409(integration_cl
     rp = make_integration_rp(db_session, route.id, passenger.id, status="accepted")
     headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
 
-    response = integration_client.post(
-        f"/routes/{route.id}/passangers/{rp.id}/reject", headers=headers
-    )
+    response = integration_client.post(f"/routes/{route.id}/passangers/{rp.id}/reject", headers=headers)
 
     assert response.status_code == 409
 
@@ -743,9 +677,7 @@ def test_integration_reject_request_wrong_owner_returns_403(integration_client, 
     rp = make_integration_rp(db_session, route.id, passenger.id)
     headers = {"X-User-Id": str(other_driver.id), "X-User-Role": "driver"}
 
-    response = integration_client.post(
-        f"/routes/{route.id}/passangers/{rp.id}/reject", headers=headers
-    )
+    response = integration_client.post(f"/routes/{route.id}/passangers/{rp.id}/reject", headers=headers)
 
     assert response.status_code == 403
 
@@ -762,9 +694,7 @@ def test_integration_remove_passanger_success(integration_client, db_session) ->
     rp = make_integration_rp(db_session, route.id, passenger.id, status="accepted")
     headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
 
-    response = integration_client.delete(
-        f"/routes/{route.id}/passangers/{rp.id}", headers=headers
-    )
+    response = integration_client.delete(f"/routes/{route.id}/passangers/{rp.id}", headers=headers)
 
     assert response.status_code == 204
 
@@ -776,9 +706,7 @@ def test_integration_remove_passanger_in_progress_returns_409(integration_client
     rp = make_integration_rp(db_session, route.id, passenger.id, status="accepted")
     headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
 
-    response = integration_client.delete(
-        f"/routes/{route.id}/passangers/{rp.id}", headers=headers
-    )
+    response = integration_client.delete(f"/routes/{route.id}/passangers/{rp.id}", headers=headers)
 
     assert response.status_code == 409
 
@@ -791,16 +719,12 @@ def test_integration_remove_passanger_wrong_owner_returns_403(integration_client
     rp = make_integration_rp(db_session, route.id, passenger.id, status="accepted")
     headers = {"X-User-Id": str(other_driver.id), "X-User-Role": "driver"}
 
-    response = integration_client.delete(
-        f"/routes/{route.id}/passangers/{rp.id}", headers=headers
-    )
+    response = integration_client.delete(f"/routes/{route.id}/passangers/{rp.id}", headers=headers)
 
     assert response.status_code == 403
 
 
-def test_integration_remove_passanger_deletes_stop_from_db(
-    integration_client, db_session
-) -> None:
+def test_integration_remove_passanger_deletes_stop_from_db(integration_client, db_session) -> None:
     """Após remove bem-sucedido, a Stop vinculada ao rp não deve mais existir."""
     from src.domains.stops.entity import StopModel
 
@@ -823,9 +747,7 @@ def test_integration_remove_passanger_deletes_stop_from_db(
     db_session.flush()
     assert db_session.query(StopModel).filter_by(route_passanger_id=rp_id).first() is not None
 
-    response = integration_client.delete(
-        f"/routes/{route.id}/passangers/{rp_id}", headers=headers
-    )
+    response = integration_client.delete(f"/routes/{route.id}/passangers/{rp_id}", headers=headers)
 
     assert response.status_code == 204
     assert db_session.query(StopModel).filter_by(route_passanger_id=rp_id).first() is None
@@ -847,9 +769,7 @@ def test_integration_list_passangers_filter_pending(integration_client, db_sessi
     make_integration_rp(db_session, route.id, p3.id, status="accepted")
     headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
 
-    response = integration_client.get(
-        f"/routes/{route.id}/passangers?status=pending", headers=headers
-    )
+    response = integration_client.get(f"/routes/{route.id}/passangers?status=pending", headers=headers)
 
     assert response.status_code == 200
     data = response.json()
@@ -866,9 +786,7 @@ def test_integration_list_passangers_no_filter_returns_all(integration_client, d
     make_integration_rp(db_session, route.id, p2.id, status="accepted")
     headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
 
-    response = integration_client.get(
-        f"/routes/{route.id}/passangers", headers=headers
-    )
+    response = integration_client.get(f"/routes/{route.id}/passangers", headers=headers)
 
     assert response.status_code == 200
     assert len(response.json()) == 2
@@ -881,9 +799,7 @@ def test_integration_list_passangers_resolves_user_name(integration_client, db_s
     make_integration_rp(db_session, route.id, passenger.id, status="pending")
     headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
 
-    response = integration_client.get(
-        f"/routes/{route.id}/passangers?status=pending", headers=headers
-    )
+    response = integration_client.get(f"/routes/{route.id}/passangers?status=pending", headers=headers)
 
     assert response.status_code == 200
     assert response.json()[0]["user_name"] == "Maria da Silva"
@@ -895,9 +811,7 @@ def test_integration_list_passangers_wrong_owner_returns_403(integration_client,
     route = make_integration_route(db_session, driver.id)
     headers = {"X-User-Id": str(other_driver.id), "X-User-Role": "driver"}
 
-    response = integration_client.get(
-        f"/routes/{route.id}/passangers", headers=headers
-    )
+    response = integration_client.get(f"/routes/{route.id}/passangers", headers=headers)
 
     assert response.status_code == 403
 
@@ -906,9 +820,7 @@ def test_integration_list_passangers_route_not_found_returns_404(integration_cli
     driver, _ = make_integration_driver(db_session)
     headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
 
-    response = integration_client.get(
-        f"/routes/{uuid.uuid4()}/passangers", headers=headers
-    )
+    response = integration_client.get(f"/routes/{uuid.uuid4()}/passangers", headers=headers)
 
     assert response.status_code == 404
 
@@ -1084,11 +996,7 @@ def test_integration_join_route_creates_schedules(integration_client, db_session
 
     assert response.status_code == 201
     rp_id = uuid.UUID(response.json()["id"])
-    schedules = (
-        db_session.query(RoutePassangerScheduleModel)
-        .filter(RoutePassangerScheduleModel.route_passanger_id == rp_id)
-        .all()
-    )
+    schedules = db_session.query(RoutePassangerScheduleModel).filter(RoutePassangerScheduleModel.route_passanger_id == rp_id).all()
     assert len(schedules) == 2
 
 
@@ -1220,9 +1128,7 @@ def test_integration_leave_route_success(integration_client, db_session) -> None
     make_integration_rp(db_session, route.id, passenger.id, status="pending")
     headers = {"X-User-Id": str(passenger.id), "X-User-Role": "guardian"}
 
-    response = integration_client.delete(
-        f"/routes/{route.id}/passangers/me", headers=headers
-    )
+    response = integration_client.delete(f"/routes/{route.id}/passangers/me", headers=headers)
 
     assert response.status_code == 204
 
@@ -1233,9 +1139,7 @@ def test_integration_leave_route_no_active_rp_returns_404(integration_client, db
     route = make_integration_route(db_session, driver.id)
     headers = {"X-User-Id": str(passenger.id), "X-User-Role": "guardian"}
 
-    response = integration_client.delete(
-        f"/routes/{route.id}/passangers/me", headers=headers
-    )
+    response = integration_client.delete(f"/routes/{route.id}/passangers/me", headers=headers)
 
     assert response.status_code == 404
 
@@ -1247,9 +1151,7 @@ def test_integration_leave_route_in_progress_returns_409(integration_client, db_
     make_integration_rp(db_session, route.id, passenger.id, status="accepted")
     headers = {"X-User-Id": str(passenger.id), "X-User-Role": "guardian"}
 
-    response = integration_client.delete(
-        f"/routes/{route.id}/passangers/me", headers=headers
-    )
+    response = integration_client.delete(f"/routes/{route.id}/passangers/me", headers=headers)
 
     assert response.status_code == 409
 
@@ -1261,11 +1163,7 @@ def test_integration_leave_route_in_progress_returns_409(integration_client, db_
 
 def make_update_payload(days=("monday",), address_id=None):
     address_id = address_id or str(uuid.uuid4())
-    return {
-        "schedules": [
-            {"day_of_week": d, "address_id": address_id} for d in days
-        ]
-    }
+    return {"schedules": [{"day_of_week": d, "address_id": address_id} for d in days]}
 
 
 def test_update_schedules_success_returns_200() -> None:
@@ -1410,11 +1308,7 @@ def test_integration_update_schedules_success(integration_client, db_session) ->
     )
 
     assert response.status_code == 200
-    schedules = (
-        db_session.query(RoutePassangerScheduleModel)
-        .filter(RoutePassangerScheduleModel.route_passanger_id == rp.id)
-        .all()
-    )
+    schedules = db_session.query(RoutePassangerScheduleModel).filter(RoutePassangerScheduleModel.route_passanger_id == rp.id).all()
     assert len(schedules) == 2
 
 
@@ -1626,8 +1520,12 @@ PASSENGER_HEADERS = {"X-User-Id": str(uuid.uuid4()), "X-User-Role": "guardian"}
 
 
 def make_detail_response(
-    *, status: str = "ativa", membership_status: str = "accepted",
-    dependent_id=None, dependent_name=None, current_trip_id=None,
+    *,
+    status: str = "ativa",
+    membership_status: str = "accepted",
+    dependent_id=None,
+    dependent_name=None,
+    current_trip_id=None,
 ):
     from datetime import time as dtime
 
@@ -1725,16 +1623,12 @@ def test_get_my_route_detail_not_passanger_returns_403() -> None:
 
 def test_get_my_route_detail_forwards_dependent_id_query_param() -> None:
     mock_service = Mock(spec=RoutePassangerService)
-    mock_service.get_my_route_detail.return_value = make_detail_response(
-        dependent_id=uuid.uuid4(), dependent_name="Valentina"
-    )
+    mock_service.get_my_route_detail.return_value = make_detail_response(dependent_id=uuid.uuid4(), dependent_name="Valentina")
     app.dependency_overrides[get_route_passanger_service] = lambda: mock_service
 
     route_id = uuid.uuid4()
     dep_id = uuid.uuid4()
-    response = client.get(
-        f"/routes/{route_id}/me?dependent_id={dep_id}", headers=PASSENGER_HEADERS
-    )
+    response = client.get(f"/routes/{route_id}/me?dependent_id={dep_id}", headers=PASSENGER_HEADERS)
 
     app.dependency_overrides.clear()
     assert response.status_code == 200
@@ -1745,9 +1639,7 @@ def test_get_my_route_detail_forwards_dependent_id_query_param() -> None:
 def test_get_my_route_detail_current_trip_id_when_in_progress() -> None:
     trip_id = uuid.uuid4()
     mock_service = Mock(spec=RoutePassangerService)
-    mock_service.get_my_route_detail.return_value = make_detail_response(
-        status="em_andamento", current_trip_id=trip_id
-    )
+    mock_service.get_my_route_detail.return_value = make_detail_response(status="em_andamento", current_trip_id=trip_id)
     app.dependency_overrides[get_route_passanger_service] = lambda: mock_service
 
     response = client.get(f"/routes/{uuid.uuid4()}/me", headers=PASSENGER_HEADERS)
@@ -1781,9 +1673,7 @@ def test_integration_get_my_route_detail_success(integration_client, db_session)
     assert "driver_id" not in body
 
 
-def test_integration_get_my_route_detail_route_not_found_returns_404(
-    integration_client, db_session
-) -> None:
+def test_integration_get_my_route_detail_route_not_found_returns_404(integration_client, db_session) -> None:
     passenger = make_integration_passenger(db_session)
     headers = {"X-User-Id": str(passenger.id), "X-User-Role": "guardian"}
 
@@ -1792,9 +1682,7 @@ def test_integration_get_my_route_detail_route_not_found_returns_404(
     assert response.status_code == 404
 
 
-def test_integration_get_my_route_detail_not_passanger_returns_403(
-    integration_client, db_session
-) -> None:
+def test_integration_get_my_route_detail_not_passanger_returns_403(integration_client, db_session) -> None:
     driver, _ = make_integration_driver(db_session)
     outsider = make_integration_passenger(db_session, "Outsider")
     route = make_integration_route(db_session, driver.id)
@@ -1805,9 +1693,7 @@ def test_integration_get_my_route_detail_not_passanger_returns_403(
     assert response.status_code == 403
 
 
-def test_integration_get_my_route_detail_pending_membership_allowed(
-    integration_client, db_session
-) -> None:
+def test_integration_get_my_route_detail_pending_membership_allowed(integration_client, db_session) -> None:
     """Passageiro ainda com status pending deve conseguir ver os detalhes."""
     driver, _ = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)
@@ -1821,9 +1707,7 @@ def test_integration_get_my_route_detail_pending_membership_allowed(
     assert response.json()["membership_status"] == "pending"
 
 
-def test_integration_get_my_route_detail_does_not_collide_with_route_by_id(
-    integration_client, db_session
-) -> None:
+def test_integration_get_my_route_detail_does_not_collide_with_route_by_id(integration_client, db_session) -> None:
     """GET /routes/{uuid}/me deve ser resolvido pelo route_passanger controller
     (que é registrado antes) e não pela rota genérica GET /routes/{route_id}."""
     driver, _ = make_integration_driver(db_session)
@@ -1839,9 +1723,7 @@ def test_integration_get_my_route_detail_does_not_collide_with_route_by_id(
     assert response.status_code == 200
 
 
-def test_integration_get_my_route_detail_rejected_membership_returns_403(
-    integration_client, db_session
-) -> None:
+def test_integration_get_my_route_detail_rejected_membership_returns_403(integration_client, db_session) -> None:
     """Vínculo com status='rejected' não é ativo — deve retornar 403."""
     driver, _ = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)

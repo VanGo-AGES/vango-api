@@ -352,9 +352,7 @@ def test_route_repository_update_preserves_unchanged_fields(db_session) -> None:
     driver = make_driver(db_session)
     origin = make_address(db_session, driver.id, "Casa")
     destination = make_address(db_session, driver.id, "PUCRS")
-    route = make_route(
-        db_session, driver.id, origin.id, destination.id, name="Original", recurrence="seg,ter"
-    )
+    route = make_route(db_session, driver.id, origin.id, destination.id, name="Original", recurrence="seg,ter")
     db_session.commit()
 
     repo = RouteRepositoryImpl(db_session)

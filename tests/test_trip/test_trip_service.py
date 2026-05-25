@@ -823,16 +823,13 @@ def test_get_current_trip_for_passanger_forwards_dependent_id() -> None:
 
     service.get_current_trip_for_passanger(route.id, rp.user_id, dependent_id=dep_id)
 
-    mocks["rp_repo"].find_active_by_user_and_route.assert_called_once_with(
-        rp.user_id, dep_id, route.id
-    )
+    mocks["rp_repo"].find_active_by_user_and_route.assert_called_once_with(rp.user_id, dep_id, route.id)
 
 
 # ===========================================================================
 # US12-TK05 — wiring de notificações em board_passanger / mark_passanger_absent
 # Arquivo: src/domains/trips/service.py
 # ===========================================================================
-
 
 
 def test_board_passanger_calls_notify_passanger_boarded():
@@ -881,7 +878,6 @@ def test_board_passanger_calls_notify_passanger_boarded():
     mocks["notification"].notify_passanger_boarded.assert_called_once_with(updated_tp)
 
 
-
 def test_mark_passanger_absent_calls_notify_passanger_absent():
     """mark_passanger_absent deve chamar notification_service.notify_passanger_absent."""
     service, mocks = make_service()
@@ -928,13 +924,11 @@ def test_mark_passanger_absent_calls_notify_passanger_absent():
     mocks["notification"].notify_passanger_absent.assert_called_once_with(updated_tp)
 
 
-
 def test_notification_service_interface_has_passanger_boarded():
     """INotificationService deve expor notify_passanger_boarded."""
     from src.domains.notifications.service import INotificationService
 
     assert hasattr(INotificationService, "notify_passanger_boarded")
-
 
 
 def test_notification_service_interface_has_passanger_absent():
@@ -947,7 +941,6 @@ def test_notification_service_interface_has_passanger_absent():
 # ===========================================================================
 # US11-TK05 — board_passanger chama emit_passenger_boarded
 # ===========================================================================
-
 
 
 def test_board_passanger_calls_emit_passenger_boarded() -> None:
@@ -997,7 +990,6 @@ def test_board_passanger_calls_emit_passenger_boarded() -> None:
         assert str(trip.id) in call_args
 
 
-
 def test_board_passanger_emit_not_called_on_invalid_status() -> None:
     """board_passanger não deve chamar emit se o status do tp não for pendente."""
     from unittest.mock import patch, AsyncMock
@@ -1033,7 +1025,6 @@ def test_board_passanger_emit_not_called_on_invalid_status() -> None:
 # ===========================================================================
 # US11-TK06 — mark_passanger_absent e skip_stop chamam emit_passenger_absent
 # ===========================================================================
-
 
 
 def test_mark_passanger_absent_calls_emit_passenger_absent() -> None:
@@ -1081,7 +1072,6 @@ def test_mark_passanger_absent_calls_emit_passenger_absent() -> None:
         mock_emit.assert_called_once()
         call_args = mock_emit.call_args[0]
         assert str(trip.id) in call_args
-
 
 
 def test_skip_stop_calls_emit_passenger_absent_for_each_pending_tp() -> None:

@@ -141,9 +141,7 @@ def test_trip_passanger_response_photo_url_defaults_to_none() -> None:
 
 
 def test_trip_passanger_response_accepts_photo_url() -> None:
-    dto = TripPassangerResponse(
-        **_trip_passanger_payload(photo_url="https://cdn.vango.app/u/abc.jpg")
-    )
+    dto = TripPassangerResponse(**_trip_passanger_payload(photo_url="https://cdn.vango.app/u/abc.jpg"))
     assert dto.photo_url == "https://cdn.vango.app/u/abc.jpg"
 
 

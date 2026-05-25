@@ -392,9 +392,7 @@ def test_update_route_success_full_replaces_all_fields() -> None:
         name="Nova",
         route_type="inbound",
         origin=make_address_create_helper(label="Casa"),
-        destination=make_address_create_helper(
-            label="PUCRS", street="Av. Ipiranga", number="6681", zip="90619-900"
-        ),
+        destination=make_address_create_helper(label="PUCRS", street="Av. Ipiranga", number="6681", zip="90619-900"),
         expected_time="09:00:00",
         recurrence="seg,qua,sex",
     )
@@ -465,9 +463,7 @@ def test_update_route_replaces_origin_creates_new_address() -> None:
     address_repo.save.return_value = new_origin_model
 
     service = RouteService(route_repo, address_repo, Mock())
-    service.update_route(
-        route.id, driver_id, make_route_update(origin=make_address_create_helper())
-    )
+    service.update_route(route.id, driver_id, make_route_update(origin=make_address_create_helper()))
 
     address_repo.save.assert_called_once()
     call_args = route_repo.update.call_args
@@ -492,11 +488,7 @@ def test_update_route_replaces_destination_creates_new_address() -> None:
     service.update_route(
         route.id,
         driver_id,
-        make_route_update(
-            destination=make_address_create_helper(
-                label="Novo", street="X", number="1", zip="90000-000"
-            )
-        ),
+        make_route_update(destination=make_address_create_helper(label="Novo", street="X", number="1", zip="90000-000")),
     )
 
     address_repo.save.assert_called_once()
@@ -1274,7 +1266,6 @@ def test_update_route_works_without_geocoding_service() -> None:
 # ===========================================================================
 
 
-
 def test_get_route_totals_returns_tuple_when_routing_service_available() -> None:
     """get_route_totals deve devolver (km, min) quando routing_service
     devolve um RouteInfoResult válido."""
@@ -1282,9 +1273,7 @@ def test_get_route_totals_returns_tuple_when_routing_service_available() -> None
     from src.domains.routing.dtos import RouteInfoResult
 
     routing_mock = Mock()
-    routing_mock.get_route_info.return_value = RouteInfoResult(
-        total_distance_km=10.0, estimated_duration_min=32
-    )
+    routing_mock.get_route_info.return_value = RouteInfoResult(total_distance_km=10.0, estimated_duration_min=32)
 
     service = RouteService(Mock(), Mock(), Mock(), routing_service=routing_mock)
     route = Mock()
@@ -1296,7 +1285,6 @@ def test_get_route_totals_returns_tuple_when_routing_service_available() -> None
 
     assert distance == pytest.approx(10.0)
     assert duration == 32
-
 
 
 def test_get_route_totals_returns_none_when_routing_service_none() -> None:
@@ -1315,7 +1303,6 @@ def test_get_route_totals_returns_none_when_routing_service_none() -> None:
     assert duration is None
 
 
-
 def test_get_route_totals_returns_none_when_address_missing_coords() -> None:
     """Endereço sem lat/lng → (None, None) sem chamar routing."""
     from src.domains.routes.service import RouteService
@@ -1332,7 +1319,6 @@ def test_get_route_totals_returns_none_when_address_missing_coords() -> None:
     assert distance is None
     assert duration is None
     routing_mock.get_route_info.assert_not_called()
-
 
 
 def test_get_route_totals_never_raises_on_routing_failure() -> None:
