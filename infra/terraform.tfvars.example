@@ -6,9 +6,7 @@ aws_region          = "us-east-2"
 environment         = "staging"
 instance_type       = "t3.micro"
 db_instance_class   = "db.t3.micro"
-
-# Precisa ser um nome unico globalmente (se der erro, mude este nome)
 bucket_name         = "vango-app-files-staging-seu-nome-aqui"
-
-# O token de registro obtido no painel de CI/CD do GitLab
-gitlab_runner_token = "GLRT-seu-token-de-registro-aqui"
+gitlab_runner_token = "GLRT-seu-token-de-autenticacao-aqui"
+db_password         = "SuaSenhaSeguraAqui123!"
+allowed_ssh_cidrs   = ["203.0.113.50/32", "198.51.100.0/24"] # Insira os IPs confiaveis do seu time
