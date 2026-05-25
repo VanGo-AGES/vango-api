@@ -11,13 +11,7 @@ from src.infrastructure.repositories.user_repository import UserRepositoryImpl
 def test_user_repository_find_by_id(db_session):
     repo = UserRepositoryImpl(db_session)
 
-    user = UserModel(
-        name="John",
-        email="john@email.com",
-        phone="54999999999",
-        password_hash="hash",
-        role="driver"
-    )
+    user = UserModel(name="John", email="john@email.com", phone="54999999999", password_hash="hash", role="driver")
 
     saved = repo.save(user)
 
@@ -35,13 +29,7 @@ def test_user_repository_find_by_id(db_session):
 def test_user_repository_find_by_email(db_session):
     repo = UserRepositoryImpl(db_session)
 
-    user = repo.save(UserModel(
-        name="John",
-        email="john@email.com",
-        phone="54999999999",
-        password_hash="hash",
-        role="driver"
-    ))
+    user = repo.save(UserModel(name="John", email="john@email.com", phone="54999999999", password_hash="hash", role="driver"))
 
     found = repo.find_by_email("john@email.com")
     assert found is not None
@@ -55,19 +43,22 @@ def test_user_repository_find_by_email(db_session):
 # Arquivo: src/infrastructure/repositories/user_repository.py
 # ===========================================================================
 
+
 # Teste 3: motorista salvo com CPF — CPF recuperável do banco
 def test_user_repository_save_with_cpf(db_session):
     """CPF informado deve ser persistido e recuperável pelo repositório."""
     repo = UserRepositoryImpl(db_session)
 
-    user = repo.save(UserModel(
-        name="João Motorista",
-        email="joao.cpf@email.com",
-        phone="54999999999",
-        password_hash="hash",
-        role="driver",
-        cpf="999.999.999-99"
-    ))
+    user = repo.save(
+        UserModel(
+            name="João Motorista",
+            email="joao.cpf@email.com",
+            phone="54999999999",
+            password_hash="hash",
+            role="driver",
+            cpf="999.999.999-99",
+        )
+    )
 
     found = repo.find_by_id(user.id)
 
@@ -80,13 +71,9 @@ def test_user_repository_save_without_cpf(db_session):
     """Usuário criado sem CPF deve ter cpf=None no banco."""
     repo = UserRepositoryImpl(db_session)
 
-    user = repo.save(UserModel(
-        name="Maria Passageira",
-        email="maria.nocpf@email.com",
-        phone="54999999999",
-        password_hash="hash",
-        role="passenger"
-    ))
+    user = repo.save(
+        UserModel(name="Maria Passageira", email="maria.nocpf@email.com", phone="54999999999", password_hash="hash", role="passenger")
+    )
 
     found = repo.find_by_id(user.id)
 
@@ -99,14 +86,16 @@ def test_user_repository_save_with_photo_url(db_session):
     """photo_url informada deve ser persistida e recuperável."""
     repo = UserRepositoryImpl(db_session)
 
-    user = repo.save(UserModel(
-        name="João",
-        email="joao.photo@email.com",
-        phone="54999999999",
-        password_hash="hash",
-        role="driver",
-        photo_url="https://storage.example.com/avatars/joao.jpg"
-    ))
+    user = repo.save(
+        UserModel(
+            name="João",
+            email="joao.photo@email.com",
+            phone="54999999999",
+            password_hash="hash",
+            role="driver",
+            photo_url="https://storage.example.com/avatars/joao.jpg",
+        )
+    )
 
     found = repo.find_by_id(user.id)
 
@@ -117,22 +106,14 @@ def test_user_repository_save_with_photo_url(db_session):
 # --- US02-TK01: implementar update e delete no UserRepositoryImpl ---
 # Para ativar: remova @pytest.mark.skip dos testes abaixo
 
+
 # Teste 6: update happy path
 def test_user_repository_update(db_session):
     repo = UserRepositoryImpl(db_session)
 
-    user = repo.save(UserModel(
-        name="Old Name",
-        email="user@email.com",
-        phone="54999999999",
-        password_hash="hash",
-        role="driver"
-    ))
+    user = repo.save(UserModel(name="Old Name", email="user@email.com", phone="54999999999", password_hash="hash", role="driver"))
 
-    updated = repo.update(user.id, {
-        "name": "New Name",
-        "phone": "54888888888"
-    })
+    updated = repo.update(user.id, {"name": "New Name", "phone": "54888888888"})
 
     assert updated.name == "New Name"
     assert updated.phone == "54888888888"
@@ -156,13 +137,7 @@ def test_user_repository_update_not_found(db_session):
 def test_user_repository_delete_cascade(db_session):
     repo = UserRepositoryImpl(db_session)
 
-    user = repo.save(UserModel(
-        name="John",
-        email="john@email.com",
-        phone="54999999999",
-        password_hash="hash",
-        role="driver"
-    ))
+    user = repo.save(UserModel(name="John", email="john@email.com", phone="54999999999", password_hash="hash", role="driver"))
 
     # cria dependências com os campos corretos do modelo
     vehicle = VehicleModel(driver_id=user.id, plate="ABC1234", capacity=4)
@@ -205,20 +180,24 @@ def test_user_repository_find_all_returns_all_users(db_session):
     """find_all deve retornar todos os usuários presentes no banco."""
     repo = UserRepositoryImpl(db_session)
 
-    repo.save(UserModel(
-        name="Alice",
-        email=f"alice_{uuid4()}@email.com",
-        phone="54999999999",
-        password_hash="hash",
-        role="driver",
-    ))
-    repo.save(UserModel(
-        name="Bob",
-        email=f"bob_{uuid4()}@email.com",
-        phone="54888888888",
-        password_hash="hash",
-        role="passenger",
-    ))
+    repo.save(
+        UserModel(
+            name="Alice",
+            email=f"alice_{uuid4()}@email.com",
+            phone="54999999999",
+            password_hash="hash",
+            role="driver",
+        )
+    )
+    repo.save(
+        UserModel(
+            name="Bob",
+            email=f"bob_{uuid4()}@email.com",
+            phone="54888888888",
+            password_hash="hash",
+            role="passenger",
+        )
+    )
 
     result = repo.find_all()
 
@@ -248,13 +227,15 @@ def test_update_push_token_persists_token(db_session):
     """update_push_token deve salvar o token no campo push_token do usuário."""
     repo = UserRepositoryImpl(db_session)
 
-    user = repo.save(UserModel(
-        name="Alice",
-        email="alice.pushtoken@email.com",
-        phone="54999999999",
-        password_hash="hash",
-        role="guardian",
-    ))
+    user = repo.save(
+        UserModel(
+            name="Alice",
+            email="alice.pushtoken@email.com",
+            phone="54999999999",
+            password_hash="hash",
+            role="guardian",
+        )
+    )
 
     updated = repo.update_push_token(user.id, "fcm-token-xyz")
 
@@ -265,24 +246,24 @@ def test_update_push_token_persists_token(db_session):
     assert reloaded.push_token == "fcm-token-xyz"
 
 
-
 def test_update_push_token_overwrites_existing_token(db_session):
     """update_push_token deve substituir token previamente registrado."""
     repo = UserRepositoryImpl(db_session)
 
-    user = repo.save(UserModel(
-        name="Bob",
-        email="bob.pushtoken@email.com",
-        phone="54988888888",
-        password_hash="hash",
-        role="driver",
-    ))
+    user = repo.save(
+        UserModel(
+            name="Bob",
+            email="bob.pushtoken@email.com",
+            phone="54988888888",
+            password_hash="hash",
+            role="driver",
+        )
+    )
 
     repo.update_push_token(user.id, "old-token")
     updated = repo.update_push_token(user.id, "new-token")
 
     assert updated.push_token == "new-token"
-
 
 
 def test_update_push_token_user_not_found_returns_none(db_session):

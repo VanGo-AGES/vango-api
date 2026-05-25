@@ -287,9 +287,7 @@ def test_integration_create_absence_success(integration_client, db_session) -> N
     assert body["reason"] == "Consulta"
 
 
-def test_integration_create_absence_route_not_found_returns_404(
-    integration_client, db_session
-) -> None:
+def test_integration_create_absence_route_not_found_returns_404(integration_client, db_session) -> None:
     passenger = make_integration_passenger(db_session)
     headers = {"X-User-Id": str(passenger.id), "X-User-Role": "guardian"}
 
@@ -302,9 +300,7 @@ def test_integration_create_absence_route_not_found_returns_404(
     assert response.status_code == 404
 
 
-def test_integration_create_absence_outsider_returns_403(
-    integration_client, db_session
-) -> None:
+def test_integration_create_absence_outsider_returns_403(integration_client, db_session) -> None:
     driver = make_integration_driver(db_session)
     outsider = make_integration_passenger(db_session, "Outsider")
     route = make_integration_route(db_session, driver.id)
@@ -319,9 +315,7 @@ def test_integration_create_absence_outsider_returns_403(
     assert response.status_code == 403
 
 
-def test_integration_create_absence_duplicate_returns_409(
-    integration_client, db_session
-) -> None:
+def test_integration_create_absence_duplicate_returns_409(integration_client, db_session) -> None:
     driver = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)
     route = make_integration_route(db_session, driver.id)
@@ -337,9 +331,7 @@ def test_integration_create_absence_duplicate_returns_409(
     assert second.status_code == 409
 
 
-def test_integration_create_absence_persists_in_db(
-    integration_client, db_session
-) -> None:
+def test_integration_create_absence_persists_in_db(integration_client, db_session) -> None:
     from src.domains.trips.entity import AbsenceModel
 
     driver = make_integration_driver(db_session)
@@ -358,9 +350,7 @@ def test_integration_create_absence_persists_in_db(
     assert len(stored) == 1
 
 
-def test_integration_create_absence_invalid_recurrence_returns_409(
-    integration_client, db_session
-) -> None:
+def test_integration_create_absence_invalid_recurrence_returns_409(integration_client, db_session) -> None:
     """Rota recorre só em segundas; avisar ausência em sábado deve dar 409."""
     driver = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)

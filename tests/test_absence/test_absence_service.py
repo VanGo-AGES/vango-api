@@ -11,7 +11,7 @@ Cobre:
 """
 
 import uuid
-from datetime import date, datetime, timezone,timedelta
+from datetime import date, datetime, timezone, timedelta
 from unittest.mock import Mock
 
 import pytest
@@ -20,6 +20,7 @@ import pytest
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def future_weekday() -> date:
     target = date.today() + timedelta(days=5)
 
@@ -27,6 +28,7 @@ def future_weekday() -> date:
         target += timedelta(days=1)
 
     return target
+
 
 def make_route_mock(driver_id: uuid.UUID, status: str = "ativa", recurrence: str = "seg,ter,qua,qui,sex"):
     from src.domains.routes.entity import RouteModel
@@ -269,7 +271,6 @@ def test_create_absence_does_not_notify_on_validation_error() -> None:
 # ===========================================================================
 # US10-TK08 — optimize_stop_order wiring em create_absence
 # ===========================================================================
-
 
 
 def test_create_absence_calls_optimize_stop_order() -> None:

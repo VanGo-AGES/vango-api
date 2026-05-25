@@ -698,9 +698,7 @@ def test_passanger_route_detail_response_driver_plate_populated_when_trip_active
     from src.domains.route_passangers.dtos import PassangerRouteDetailResponse
 
     trip_id = uuid4()
-    response = PassangerRouteDetailResponse(
-        **make_detail_payload(status="em_andamento", current_trip_id=trip_id, driver_plate="ABC-1234")
-    )
+    response = PassangerRouteDetailResponse(**make_detail_payload(status="em_andamento", current_trip_id=trip_id, driver_plate="ABC-1234"))
     assert response.driver_plate == "ABC-1234"
     assert response.current_trip_id == trip_id
 
@@ -709,9 +707,7 @@ def test_passanger_route_detail_response_accepts_dependent_fields_when_guardian(
     from src.domains.route_passangers.dtos import PassangerRouteDetailResponse
 
     dep_id = uuid4()
-    response = PassangerRouteDetailResponse(
-        **make_detail_payload(dependent_id=dep_id, dependent_name="Valentina Fonseca")
-    )
+    response = PassangerRouteDetailResponse(**make_detail_payload(dependent_id=dep_id, dependent_name="Valentina Fonseca"))
     assert response.dependent_id == dep_id
     assert response.dependent_name == "Valentina Fonseca"
 
@@ -720,9 +716,7 @@ def test_passanger_route_detail_response_accepts_current_trip_id_when_in_progres
     from src.domains.route_passangers.dtos import PassangerRouteDetailResponse
 
     trip_id = uuid4()
-    response = PassangerRouteDetailResponse(
-        **make_detail_payload(status="em_andamento", current_trip_id=trip_id)
-    )
+    response = PassangerRouteDetailResponse(**make_detail_payload(status="em_andamento", current_trip_id=trip_id))
     assert response.status == "em_andamento"
     assert response.current_trip_id == trip_id
 

@@ -120,7 +120,6 @@ def test_firebase_notify_trip_started_sends_fcm():
         mock_send.assert_called_once()
 
 
-
 def test_firebase_notify_trip_arriving_at_stop_sends_fcm():
     """notify_trip_arriving_at_stop deve chamar firebase_admin.messaging.send."""
     from src.infrastructure.notifications.firebase_notification_service import (
@@ -133,7 +132,6 @@ def test_firebase_notify_trip_arriving_at_stop_sends_fcm():
     with patch("firebase_admin.messaging.send") as mock_send:
         service.notify_trip_arriving_at_stop(tp)
         mock_send.assert_called_once()
-
 
 
 def test_firebase_notify_trip_finished_sends_fcm():
@@ -150,7 +148,6 @@ def test_firebase_notify_trip_finished_sends_fcm():
         mock_send.assert_called_once()
 
 
-
 def test_firebase_notify_passanger_boarded_sends_fcm():
     """notify_passanger_boarded deve chamar firebase_admin.messaging.send."""
     from src.infrastructure.notifications.firebase_notification_service import (
@@ -165,7 +162,6 @@ def test_firebase_notify_passanger_boarded_sends_fcm():
         mock_send.assert_called_once()
 
 
-
 def test_firebase_notify_passanger_absent_sends_fcm():
     """notify_passanger_absent deve chamar firebase_admin.messaging.send."""
     from src.infrastructure.notifications.firebase_notification_service import (
@@ -178,7 +174,6 @@ def test_firebase_notify_passanger_absent_sends_fcm():
     with patch("firebase_admin.messaging.send") as mock_send:
         service.notify_passanger_absent(tp)
         mock_send.assert_called_once()
-
 
 
 def test_firebase_notify_passanger_accepted_sends_fcm():
@@ -348,7 +343,6 @@ def test_firebase_notify_passanger_driver_arrived_sends_fcm():
 # ===========================================================================
 
 
-
 def test_firebase_notify_trip_started_data_payload():
     """notify_trip_started deve incluir data={type:'trip_started', routeId, passengerId:''}."""
     from src.infrastructure.notifications.firebase_notification_service import (
@@ -365,7 +359,6 @@ def test_firebase_notify_trip_started_data_payload():
         assert message.data.get("type") == "trip_started"
         assert message.data.get("routeId") == str(trip.route_id)
         assert message.data.get("passengerId", "") == ""
-
 
 
 def test_firebase_notify_trip_arriving_at_stop_data_payload():
@@ -386,7 +379,6 @@ def test_firebase_notify_trip_arriving_at_stop_data_payload():
         assert message.data.get("passengerId") == str(tp.route_passanger_id)
 
 
-
 def test_firebase_notify_trip_arrived_at_stop_data_payload():
     """notify_trip_arrived_at_stop deve incluir data={type:'trip_arrived', routeId, passengerId}."""
     from src.infrastructure.notifications.firebase_notification_service import (
@@ -403,7 +395,6 @@ def test_firebase_notify_trip_arrived_at_stop_data_payload():
         assert message.data.get("type") == "trip_arrived"
         assert message.data.get("routeId") == str(tp.route_passanger.route_id)
         assert message.data.get("passengerId") == str(tp.route_passanger_id)
-
 
 
 def test_firebase_notify_trip_finished_data_payload():
@@ -428,7 +419,6 @@ def test_firebase_notify_trip_finished_data_payload():
         assert message.data.get("routeId") == str(trip.route_id)
 
 
-
 def test_firebase_notify_passanger_boarded_data_payload():
     """notify_passanger_boarded deve incluir data={type:'passenger_boarded', routeId, passengerId}.
 
@@ -449,7 +439,6 @@ def test_firebase_notify_passanger_boarded_data_payload():
         assert message.data.get("type") == "passenger_boarded"
         assert message.data.get("routeId") == str(tp.route_passanger.route_id)
         assert message.data.get("passengerId") == str(tp.route_passanger_id)
-
 
 
 def test_firebase_notify_passanger_absent_data_payload():
@@ -474,7 +463,6 @@ def test_firebase_notify_passanger_absent_data_payload():
         assert message.data.get("passengerId") == str(tp.route_passanger_id)
 
 
-
 def test_firebase_notify_passanger_accepted_data_payload():
     """notify_passanger_accepted deve incluir data={type:'passenger_accepted', routeId, passengerId}."""
     from src.infrastructure.notifications.firebase_notification_service import (
@@ -491,7 +479,6 @@ def test_firebase_notify_passanger_accepted_data_payload():
         assert message.data.get("type") == "passenger_accepted"
         assert message.data.get("routeId") == str(rp.route_id)
         assert message.data.get("passengerId") == str(rp.id)
-
 
 
 def test_firebase_notify_passanger_rejected_data_payload():
@@ -512,7 +499,6 @@ def test_firebase_notify_passanger_rejected_data_payload():
         assert message.data.get("passengerId") == str(rp.id)
 
 
-
 def test_firebase_notify_passanger_removed_data_payload():
     """notify_passanger_removed deve incluir data={type:'passenger_removed', routeId, passengerId}."""
     from src.infrastructure.notifications.firebase_notification_service import (
@@ -529,7 +515,6 @@ def test_firebase_notify_passanger_removed_data_payload():
         assert message.data.get("type") == "passenger_removed"
         assert message.data.get("routeId") == str(rp.route_id)
         assert message.data.get("passengerId") == str(rp.id)
-
 
 
 def test_firebase_notify_driver_passanger_requested_data_payload():
@@ -550,7 +535,6 @@ def test_firebase_notify_driver_passanger_requested_data_payload():
         assert message.data.get("passengerId") == str(rp.id)
 
 
-
 def test_firebase_notify_driver_passanger_left_data_payload():
     """notify_driver_passanger_left deve incluir data={type:'driver_passenger_left', routeId, passengerId}."""
     from src.infrastructure.notifications.firebase_notification_service import (
@@ -567,7 +551,6 @@ def test_firebase_notify_driver_passanger_left_data_payload():
         assert message.data.get("type") == "driver_passenger_left"
         assert message.data.get("routeId") == str(rp.route_id)
         assert message.data.get("passengerId") == str(rp.id)
-
 
 
 def test_firebase_notify_driver_passanger_absence_reported_data_payload():
@@ -588,7 +571,6 @@ def test_firebase_notify_driver_passanger_absence_reported_data_payload():
         assert message.data.get("passengerId") == str(rp.id)
 
 
-
 def test_firebase_notify_passanger_route_cancelled_data_payload():
     """notify_passanger_route_cancelled deve incluir data={type:'route_cancelled', routeId, passengerId}."""
     from src.infrastructure.notifications.firebase_notification_service import (
@@ -605,7 +587,6 @@ def test_firebase_notify_passanger_route_cancelled_data_payload():
         assert message.data.get("type") == "route_cancelled"
         assert message.data.get("routeId") == str(rp.route_id)
         assert message.data.get("passengerId") == str(rp.id)
-
 
 
 def test_firebase_notify_passanger_driver_approaching_data_payload():
@@ -631,7 +612,6 @@ def test_firebase_notify_passanger_driver_approaching_data_payload():
         assert message.data.get("passengerId", "") == ""
 
 
-
 def test_firebase_notify_passanger_driver_arrived_data_payload():
     """notify_passanger_driver_arrived deve incluir data={type:'trip_arrived', routeId, passengerId:''}."""
     from src.infrastructure.notifications.firebase_notification_service import (
@@ -649,7 +629,6 @@ def test_firebase_notify_passanger_driver_arrived_data_payload():
         assert message.data.get("type") == "trip_arrived"
         assert message.data.get("routeId") == route_id
         assert message.data.get("passengerId", "") == ""
-
 
 
 def test_firebase_notify_data_values_are_all_strings():
