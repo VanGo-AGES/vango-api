@@ -136,9 +136,7 @@ def test_add_vehicle_repository_not_called_when_guardian():
 def test_add_vehicle_duplicate_plate_raises_error():
     """Se a placa já existe no repositório, deve lançar VehiclePlateAlreadyExistsError."""
     repo = make_mock_repo()
-    repo.get_by_plate.return_value = VehicleModel(
-        id=uuid.uuid4(), driver_id=uuid.uuid4(), plate="ABC1D23", capacity=4
-    )
+    repo.get_by_plate.return_value = VehicleModel(id=uuid.uuid4(), driver_id=uuid.uuid4(), plate="ABC1D23", capacity=4)
     service = VehicleService(repo)
 
     data = VehicleCreate(plate="ABC1D23", capacity=4)
@@ -149,9 +147,7 @@ def test_add_vehicle_duplicate_plate_raises_error():
 def test_add_vehicle_duplicate_plate_repo_create_not_called():
     """Repositório create não deve ser chamado quando a placa já existe."""
     repo = make_mock_repo()
-    repo.get_by_plate.return_value = VehicleModel(
-        id=uuid.uuid4(), driver_id=uuid.uuid4(), plate="ABC1D23", capacity=4
-    )
+    repo.get_by_plate.return_value = VehicleModel(id=uuid.uuid4(), driver_id=uuid.uuid4(), plate="ABC1D23", capacity=4)
     service = VehicleService(repo)
 
     data = VehicleCreate(plate="ABC1D23", capacity=4)

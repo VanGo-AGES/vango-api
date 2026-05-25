@@ -36,13 +36,15 @@ def test_create_user_success():
     )
 
     service = UserService(repo, hasher)
-    result = service.create_user(UserCreate(
-        name="John Doe",
-        email="john@email.com",
-        phone="54999999999",
-        password="senha123",
-        role="driver",
-    ))
+    result = service.create_user(
+        UserCreate(
+            name="John Doe",
+            email="john@email.com",
+            phone="54999999999",
+            password="senha123",
+            role="driver",
+        )
+    )
 
     repo.find_by_email.assert_called_once_with("john@email.com")
     hasher.hash.assert_called_once_with("senha123")
@@ -67,13 +69,15 @@ def test_create_user_duplicate_email_raises_error():
     service = UserService(repo, hasher)
 
     with pytest.raises(DuplicateEmailError):
-        service.create_user(UserCreate(
-            name="John Doe",
-            email="john@email.com",
-            phone="54999999999",
-            password="senha123",
-            role="driver",
-        ))
+        service.create_user(
+            UserCreate(
+                name="John Doe",
+                email="john@email.com",
+                phone="54999999999",
+                password="senha123",
+                role="driver",
+            )
+        )
 
     repo.save.assert_not_called()
 
@@ -89,13 +93,15 @@ def test_create_user_stores_password_hash():
     repo.save.return_value = Mock()
 
     service = UserService(repo, hasher)
-    service.create_user(UserCreate(
-        name="John Doe",
-        email="john@email.com",
-        phone="54999999999",
-        password="plain_password",
-        role="driver",
-    ))
+    service.create_user(
+        UserCreate(
+            name="John Doe",
+            email="john@email.com",
+            phone="54999999999",
+            password="plain_password",
+            role="driver",
+        )
+    )
 
     saved_model = repo.save.call_args[0][0]
 
@@ -114,15 +120,17 @@ def test_create_user_maps_cpf_and_photo_url():
     repo.save.return_value = Mock()
 
     service = UserService(repo, hasher)
-    service.create_user(UserCreate(
-        name="João Motorista",
-        email="joao@email.com",
-        phone="54999999999",
-        password="senha123",
-        role="driver",
-        cpf="999.999.999-99",
-        photo_url="https://storage.example.com/avatars/joao.jpg",
-    ))
+    service.create_user(
+        UserCreate(
+            name="João Motorista",
+            email="joao@email.com",
+            phone="54999999999",
+            password="senha123",
+            role="driver",
+            cpf="999.999.999-99",
+            photo_url="https://storage.example.com/avatars/joao.jpg",
+        )
+    )
 
     saved_model = repo.save.call_args[0][0]
 
@@ -141,13 +149,15 @@ def test_create_user_without_cpf_saves_none():
     repo.save.return_value = Mock()
 
     service = UserService(repo, hasher)
-    service.create_user(UserCreate(
-        name="Maria Passageira",
-        email="maria@email.com",
-        phone="54999999999",
-        password="senha123",
-        role="passenger",
-    ))
+    service.create_user(
+        UserCreate(
+            name="Maria Passageira",
+            email="maria@email.com",
+            phone="54999999999",
+            password="senha123",
+            role="passenger",
+        )
+    )
 
     saved_model = repo.save.call_args[0][0]
 
@@ -177,6 +187,7 @@ def make_existing_user(**kwargs):
 # Para ativar: remova @pytest.mark.skip dos testes abaixo
 
 # ----- GET USER -----
+
 
 # Teste 1: get_user retorna o usuário quando encontrado
 def test_get_user_success():
@@ -209,6 +220,7 @@ def test_get_user_not_found():
 
 
 # ----- UPDATE USER -----
+
 
 # Teste 3: update_user com senha chama o hasher e salva o hash
 def test_update_user_with_password_hashing():
@@ -266,6 +278,7 @@ def test_update_user_not_found():
 
 
 # ----- DELETE USER -----
+
 
 # Teste 6: delete_user verifica existência e chama repo.delete
 def test_delete_user_success():
@@ -401,7 +414,6 @@ def test_login_invalid_password():
 # ===========================================================================
 
 
-
 def test_register_push_token_success():
     """register_push_token deve chamar update_push_token e retornar o UserModel."""
     from src.domains.users.dtos import RegisterPushTokenRequest
@@ -426,7 +438,6 @@ def test_register_push_token_success():
 
     repo.update_push_token.assert_called_once()
     assert result.push_token == "fcm-token-abc"
-
 
 
 def test_register_push_token_user_not_found_raises():

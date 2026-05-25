@@ -10,14 +10,12 @@ import pytest
 # ===========================================================================
 
 
-
 def test_irouting_service_is_abstract():
     """IRoutingService deve ser abstrata (não instanciável diretamente)."""
     from src.domains.routing.service import IRoutingService
 
     with pytest.raises(TypeError):
         IRoutingService()  # type: ignore[abstract]
-
 
 
 def test_irouting_service_has_optimize_stop_order():
@@ -27,13 +25,11 @@ def test_irouting_service_has_optimize_stop_order():
     assert hasattr(IRoutingService, "optimize_stop_order")
 
 
-
 def test_irouting_service_has_get_route_info():
     """IRoutingService deve expor get_route_info."""
     from src.domains.routing.service import IRoutingService
 
     assert hasattr(IRoutingService, "get_route_info")
-
 
 
 def test_route_info_result_valid():
@@ -45,7 +41,6 @@ def test_route_info_result_valid():
     assert result.estimated_duration_min == 20
 
 
-
 def test_mapbox_routing_service_implements_interface():
     """MapboxRoutingService deve implementar IRoutingService."""
     from src.domains.routing.service import IRoutingService
@@ -55,13 +50,11 @@ def test_mapbox_routing_service_implements_interface():
     assert isinstance(service, IRoutingService)
 
 
-
 def test_mapbox_api_key_in_settings():
     """Settings deve expor mapbox_api_key."""
     from src.config import Settings
 
     assert hasattr(Settings.model_fields, "mapbox_api_key") or hasattr(Settings, "mapbox_api_key")
-
 
 
 def test_get_routing_service_returns_instance():

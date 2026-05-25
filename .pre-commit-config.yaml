@@ -3,7 +3,7 @@ fail_fast: true
 repos:
   # 1. Ruff para Linter e Formatter
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.3.0
+    rev: v0.15.6
     hooks:
       # Roda o Linter para checar tipagem (ANN), bugs e imports
       - id: ruff
@@ -70,7 +70,7 @@ repos:
         pass_filenames: false
       - id: regen-openapi
         name: Regenerate OpenAPI schema
-        entry: bash -c 'python scripts/regen_openapi.py && git add openapi.json'
+        entry: bash -c 'python3 scripts/regen_openapi.py && git add openapi.json'
         language: system
         pass_filenames: false
       - id: bandit

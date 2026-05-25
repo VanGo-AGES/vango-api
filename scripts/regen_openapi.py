@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OPENAPI_PATH = REPO_ROOT / "openapi.json"
+
+sys.path.insert(0, str(REPO_ROOT))
 
 
 def main() -> None:

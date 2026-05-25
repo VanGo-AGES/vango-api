@@ -201,6 +201,12 @@ async def join_session(sid: str, data: dict) -> None:
 
         tracking_sessions[trip_id]["followers"].append(sid)
 
+        stop_lat_raw = data.get("stop_lat") if isinstance(data, dict) else None
+        stop_lng_raw = data.get("stop_lng") if isinstance(data, dict) else None
+
+        sid_meta[sid]["stop_lat"] = float(stop_lat_raw) if isinstance(stop_lat_raw, int | float) else None
+        sid_meta[sid]["stop_lng"] = float(stop_lng_raw) if isinstance(stop_lng_raw, int | float) else None
+
         await sio.enter_room(sid, f"trip:{trip_id}")
 
         await sio.emit(
@@ -329,7 +335,20 @@ async def emit_passenger_boarded(trip_id: str, trip_passanger_id: str, user_name
     Payload: {"trip_passanger_id": str, "user_name": str}
     Silenciosamente ignorado se não houver sessão ativa para o trip_id.
     """
-    pass
+    if trip_id not in tracking_sessions:
+        return
+
+    payload = {"trip_passanger_id": trip_passanger_id, "user_name": user_name}
+
+    try:
+        await sio.emit("passenger_boarded", payload, room=f"trip:{trip_id}")
+    except Exception:
+        logger.warning(
+            "SOCKETIO: falha em passenger_boarded para trip_id=%s trip_passanger_id=%s",
+            trip_id,
+            trip_passanger_id,
+            exc_info=True,
+        )
 
 
 # US11-TK06
@@ -365,7 +384,11 @@ async def emit_trip_finished(trip_id: str) -> None:
     Chamado pelo TripService após finalizar a viagem.
     Silenciosamente ignorado se não houver sessão ativa para o trip_id.
     """
-    pass
+    if trip_id not in tracking_sessions:
+        return
+
+    await sio.emit("trip_finished", {}, room=f"trip:{trip_id}")
+    tracking_sessions.pop(trip_id, None)
 
 
 # US12-TK06
@@ -398,6 +421,7 @@ async def _notify_proximity_if_needed(follower_sid: str, distance_km: float) -> 
             follower_sid,
             exc_info=True,
         )
+
 
 
 # US12-TK07

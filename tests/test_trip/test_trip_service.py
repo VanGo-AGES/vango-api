@@ -88,6 +88,9 @@ def make_route_mock(driver_id=None, status: str = "ativa") -> RouteModel:
     route.driver_id = driver_id or uuid.uuid4()
     route.status = status
     route.name = "PUCRS Manhã"
+    route.driver = Mock()
+    route.driver.name = "Motorista Teste"
+    route.driver.photo_url = None
     return route
 
 
@@ -119,6 +122,9 @@ def make_trip_mock(route_id=None, status: str = "iniciada") -> TripModel:
     trip.started_at = datetime.now(timezone.utc)
     trip.finished_at = None
     trip.total_km = None
+    # CurrentTripResponse precisa de vehicle_plate (str | None)
+    trip.vehicle = Mock()
+    trip.vehicle.plate = None
     return trip
 
 
@@ -130,6 +136,10 @@ def make_tp_mock(trip_id=None, status: str = "pendente") -> TripPassangerModel:
     tp.status = status
     tp.boarded_at = None
     tp.alighted_at = None
+    tp.route_passanger = Mock()
+    tp.route_passanger.dependent_id = None
+    tp.route_passanger.user = Mock()
+    tp.route_passanger.user.photo_url = None
     return tp
 
 
@@ -686,14 +696,20 @@ def test_finish_trip_raises_when_wrong_owner() -> None:
 
 
 def test_get_current_trip_for_passanger_returns_response_when_trip_in_progress() -> None:
-    """Passageiro com vínculo ativo e viagem em andamento recebe CurrentTripResponse."""
+    """Passageiro com vínculo ativo e viagem em andamento recebe CurrentTripResponse
+    com info do motorista e do veículo."""
     from src.domains.trips.dtos import CurrentTripResponse
     from src.domains.trips.errors import TripNotFoundError
 
     service, mocks = make_service()
     route = make_route_mock()
+    route.driver = Mock(name="João Silva", photo_url="https://cdn.vango.app/u/joao.jpg")
+    route.driver.name = "João Silva"
+    route.driver.photo_url = "https://cdn.vango.app/u/joao.jpg"
     rp = make_rp_mock(route_id=route.id, status="accepted")
     trip = make_trip_mock(route_id=route.id, status="iniciada")
+    trip.vehicle = Mock()
+    trip.vehicle.plate = "ABC-1234"
 
     mocks["route_repo"].find_by_id.return_value = route
     mocks["rp_repo"].find_active_by_user_and_route.return_value = rp
@@ -705,6 +721,36 @@ def test_get_current_trip_for_passanger_returns_response_when_trip_in_progress()
     assert result.trip_id == trip.id
     assert result.status == "iniciada"
     assert result.started_at == trip.started_at
+    assert result.driver_name == "João Silva"
+    assert result.driver_photo_url == "https://cdn.vango.app/u/joao.jpg"
+    assert result.vehicle_plate == "ABC-1234"
+
+
+def test_get_current_trip_for_passanger_handles_missing_photo_and_plate() -> None:
+    """driver_photo_url e vehicle_plate viram None quando o motorista não tem foto
+    e o veículo não tem placa."""
+    from src.domains.trips.dtos import CurrentTripResponse
+
+    service, mocks = make_service()
+    route = make_route_mock()
+    route.driver = Mock()
+    route.driver.name = "Maria Souza"
+    route.driver.photo_url = None
+    rp = make_rp_mock(route_id=route.id, status="accepted")
+    trip = make_trip_mock(route_id=route.id, status="iniciada")
+    trip.vehicle = Mock()
+    trip.vehicle.plate = None
+
+    mocks["route_repo"].find_by_id.return_value = route
+    mocks["rp_repo"].find_active_by_user_and_route.return_value = rp
+    mocks["trip_repo"].find_in_progress_by_route.return_value = trip
+
+    result = service.get_current_trip_for_passanger(route.id, rp.user_id)
+
+    assert isinstance(result, CurrentTripResponse)
+    assert result.driver_name == "Maria Souza"
+    assert result.driver_photo_url is None
+    assert result.vehicle_plate is None
 
 
 def test_get_current_trip_for_passanger_returns_none_when_no_trip() -> None:
@@ -777,16 +823,13 @@ def test_get_current_trip_for_passanger_forwards_dependent_id() -> None:
 
     service.get_current_trip_for_passanger(route.id, rp.user_id, dependent_id=dep_id)
 
-    mocks["rp_repo"].find_active_by_user_and_route.assert_called_once_with(
-        rp.user_id, dep_id, route.id
-    )
+    mocks["rp_repo"].find_active_by_user_and_route.assert_called_once_with(rp.user_id, dep_id, route.id)
 
 
 # ===========================================================================
 # US12-TK05 — wiring de notificações em board_passanger / mark_passanger_absent
 # Arquivo: src/domains/trips/service.py
 # ===========================================================================
-
 
 
 def test_board_passanger_calls_notify_passanger_boarded():
@@ -812,6 +855,7 @@ def test_board_passanger_calls_notify_passanger_boarded():
     tp.route_passanger = Mock()
     tp.route_passanger.dependent_id = None
     tp.route_passanger.user = Mock(name="Alice", phone="51999990000")
+    tp.route_passanger.user.photo_url = None
     tp.route_passanger.pickup_address = Mock(label="Rua X")
     tp.boarded_at = None
     tp.alighted_at = None
@@ -832,7 +876,6 @@ def test_board_passanger_calls_notify_passanger_boarded():
     service.board_passanger(trip_id, tp_id, driver_id)
 
     mocks["notification"].notify_passanger_boarded.assert_called_once_with(updated_tp)
-
 
 
 def test_mark_passanger_absent_calls_notify_passanger_absent():
@@ -858,6 +901,7 @@ def test_mark_passanger_absent_calls_notify_passanger_absent():
     tp.route_passanger = Mock()
     tp.route_passanger.dependent_id = None
     tp.route_passanger.user = Mock(name="Alice", phone="51999990000")
+    tp.route_passanger.user.photo_url = None
     tp.route_passanger.pickup_address = Mock(label="Rua X")
     tp.boarded_at = None
     tp.alighted_at = None
@@ -880,13 +924,11 @@ def test_mark_passanger_absent_calls_notify_passanger_absent():
     mocks["notification"].notify_passanger_absent.assert_called_once_with(updated_tp)
 
 
-
 def test_notification_service_interface_has_passanger_boarded():
     """INotificationService deve expor notify_passanger_boarded."""
     from src.domains.notifications.service import INotificationService
 
     assert hasattr(INotificationService, "notify_passanger_boarded")
-
 
 
 def test_notification_service_interface_has_passanger_absent():
@@ -901,7 +943,6 @@ def test_notification_service_interface_has_passanger_absent():
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US11-TK05")
 def test_board_passanger_calls_emit_passenger_boarded() -> None:
     """board_passanger deve chamar emit_passenger_boarded após atualizar o status."""
     from unittest.mock import patch, AsyncMock
@@ -927,7 +968,12 @@ def test_board_passanger_calls_emit_passenger_boarded() -> None:
     updated_tp.trip_id = trip.id
     updated_tp.status = "presente"
     updated_tp.boarded_at = datetime.now(timezone.utc)
+    updated_tp.alighted_at = None
     updated_tp.route_passanger_id = tp.route_passanger_id
+    updated_tp.route_passanger = Mock()
+    updated_tp.route_passanger.dependent_id = None
+    updated_tp.route_passanger.user = Mock()
+    updated_tp.route_passanger.user.photo_url = None
 
     service, mocks = make_service()
     mocks["trip_repo"].find_by_id.return_value = trip
@@ -944,7 +990,6 @@ def test_board_passanger_calls_emit_passenger_boarded() -> None:
         assert str(trip.id) in call_args
 
 
-@pytest.mark.skip(reason="US11-TK05")
 def test_board_passanger_emit_not_called_on_invalid_status() -> None:
     """board_passanger não deve chamar emit se o status do tp não for pendente."""
     from unittest.mock import patch, AsyncMock
@@ -982,7 +1027,6 @@ def test_board_passanger_emit_not_called_on_invalid_status() -> None:
 # ===========================================================================
 
 
-
 def test_mark_passanger_absent_calls_emit_passenger_absent() -> None:
     """mark_passanger_absent deve chamar emit_passenger_absent após atualizar o status."""
     from unittest.mock import patch, AsyncMock
@@ -1008,7 +1052,12 @@ def test_mark_passanger_absent_calls_emit_passenger_absent() -> None:
     updated_tp.trip_id = trip.id
     updated_tp.status = "ausente"
     updated_tp.boarded_at = None
+    updated_tp.alighted_at = None
     updated_tp.route_passanger_id = tp.route_passanger_id
+    updated_tp.route_passanger = Mock()
+    updated_tp.route_passanger.dependent_id = None
+    updated_tp.route_passanger.user = Mock()
+    updated_tp.route_passanger.user.photo_url = None
 
     service, mocks = make_service()
     mocks["trip_repo"].find_by_id.return_value = trip
@@ -1023,7 +1072,6 @@ def test_mark_passanger_absent_calls_emit_passenger_absent() -> None:
         mock_emit.assert_called_once()
         call_args = mock_emit.call_args[0]
         assert str(trip.id) in call_args
-
 
 
 def test_skip_stop_calls_emit_passenger_absent_for_each_pending_tp() -> None:
@@ -1063,7 +1111,12 @@ def test_skip_stop_calls_emit_passenger_absent_for_each_pending_tp() -> None:
     updated_tp.trip_id = trip.id
     updated_tp.status = "ausente"
     updated_tp.boarded_at = None
+    updated_tp.alighted_at = None
     updated_tp.route_passanger_id = rp_id
+    updated_tp.route_passanger = Mock()
+    updated_tp.route_passanger.dependent_id = None
+    updated_tp.route_passanger.user = Mock()
+    updated_tp.route_passanger.user.photo_url = None
 
     service, mocks = make_service()
     mocks["trip_repo"].find_by_id.return_value = trip
@@ -1077,3 +1130,92 @@ def test_skip_stop_calls_emit_passenger_absent_for_each_pending_tp() -> None:
     ) as mock_emit:
         service.skip_stop(trip.id, stop.id, driver_id)
         assert mock_emit.call_count == 2
+
+
+# ===========================================================================
+# US10-TK17 — get_next_stop_with_coordinates
+# ===========================================================================
+
+
+def make_stop_with_address(lat: float | None = -30.0, lng: float | None = -51.0) -> StopModel:
+    stop = Mock(spec=StopModel)
+    stop.id = uuid.uuid4()
+    stop.route_passanger_id = uuid.uuid4()
+    stop.address = Mock()
+    stop.address.latitude = lat
+    stop.address.longitude = lng
+    return stop
+
+
+def test_get_next_stop_with_coordinates_returns_coords_for_first_pending() -> None:
+    """Retorna stop_id, lat e lng da primeira parada com status 'pendente'."""
+    service, mocks = make_service()
+    trip_id = uuid.uuid4()
+
+    tp = make_tp_mock(trip_id=trip_id, status="pendente")
+    stop = make_stop_with_address(lat=-30.123, lng=-51.456)
+    stop.route_passanger_id = tp.route_passanger_id
+
+    mocks["tp_repo"].find_by_trip.return_value = [tp]
+    mocks["stop_repo"].find_by_route_passanger_id.return_value = stop
+
+    result = service.get_next_stop_with_coordinates(trip_id)
+
+    assert result is not None
+    assert result["stop_id"] == stop.id
+    assert result["lat"] == -30.123
+    assert result["lng"] == -51.456
+
+
+def test_get_next_stop_with_coordinates_returns_none_when_no_pending() -> None:
+    """Retorna None quando todos os trip_passangers não estão mais pendentes."""
+    service, mocks = make_service()
+    trip_id = uuid.uuid4()
+
+    tp_present = make_tp_mock(trip_id=trip_id, status="presente")
+    tp_absent = make_tp_mock(trip_id=trip_id, status="ausente")
+
+    mocks["tp_repo"].find_by_trip.return_value = [tp_present, tp_absent]
+
+    result = service.get_next_stop_with_coordinates(trip_id)
+
+    assert result is None
+    mocks["stop_repo"].find_by_route_passanger_id.assert_not_called()
+
+
+def test_get_next_stop_with_coordinates_returns_none_when_address_has_no_coordinates() -> None:
+    """Retorna None quando a parada pendente existe mas não tem coordenadas."""
+    service, mocks = make_service()
+    trip_id = uuid.uuid4()
+
+    tp = make_tp_mock(trip_id=trip_id, status="pendente")
+    stop = make_stop_with_address(lat=None, lng=None)
+    stop.route_passanger_id = tp.route_passanger_id
+
+    mocks["tp_repo"].find_by_trip.return_value = [tp]
+    mocks["stop_repo"].find_by_route_passanger_id.return_value = stop
+
+    result = service.get_next_stop_with_coordinates(trip_id)
+
+    assert result is None
+
+
+def test_get_next_stop_with_coordinates_skips_missing_stop_and_finds_next() -> None:
+    """Pula trip_passangers cujo stop não existe no repo e continua para o próximo."""
+    service, mocks = make_service()
+    trip_id = uuid.uuid4()
+
+    tp_no_stop = make_tp_mock(trip_id=trip_id, status="pendente")
+    tp_with_stop = make_tp_mock(trip_id=trip_id, status="pendente")
+    stop = make_stop_with_address(lat=-30.0, lng=-51.0)
+    stop.route_passanger_id = tp_with_stop.route_passanger_id
+
+    mocks["tp_repo"].find_by_trip.return_value = [tp_no_stop, tp_with_stop]
+    mocks["stop_repo"].find_by_route_passanger_id.side_effect = [None, stop]
+
+    result = service.get_next_stop_with_coordinates(trip_id)
+
+    assert result is not None
+    assert result["stop_id"] == stop.id
+    assert result["lat"] == -30.0
+    assert result["lng"] == -51.0

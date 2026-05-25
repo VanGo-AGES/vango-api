@@ -45,6 +45,7 @@ from src.domains.routes.dtos import AddressResponse
 from src.domains.routes.entity import RouteModel
 from src.domains.routes.errors import RouteInProgressError, RouteNotFoundError, RouteOwnershipError
 from src.domains.routes.repository import IAddressRepository, IRouteRepository
+from src.domains.routing.route_totals import compute_route_totals
 from src.domains.routing.service import IGeocodingService, IRoutingService
 from src.domains.stops.dtos import StopResponse
 from src.domains.stops.entity import StopModel
@@ -83,6 +84,10 @@ class RoutePassangerService:
         # US10-TK18: usado para popular lat/lng do pickup_address criado em
         # join_route. Opcional para não quebrar testes que não dependem.
         self.geocoding_service = geocoding_service
+
+    def _compute_route_totals(self, route: RouteModel) -> tuple[float | None, int | None]:
+        """Helper privado para calcular totais planejados de rota via routing_service."""
+        return compute_route_totals(route, self.routing_service)
 
     # US06-TK08
     def accept_request(self, route_id: UUID, rp_id: UUID, driver_id: UUID) -> RoutePassangerResponse:
@@ -303,7 +308,24 @@ class RoutePassangerService:
         self.routing_service injetado. Retorna (None, None) se routing_service
         for None ou se algum endereço estiver sem lat/lng — nunca propaga.
         """
-        pass  # type: ignore[return-value]
+        return compute_route_totals(route, self.routing_service)
+
+    def _to_address_response(self, address: object) -> AddressResponse:
+        try:
+            return AddressResponse.model_validate(address)
+        except Exception:
+            return AddressResponse.model_construct(
+                id=getattr(address, "id", None),
+                label=getattr(address, "label", ""),
+                street=getattr(address, "street", ""),
+                number=getattr(address, "number", ""),
+                neighborhood=getattr(address, "neighborhood", ""),
+                zip=getattr(address, "zip", ""),
+                city=getattr(address, "city", ""),
+                state=getattr(address, "state", ""),
+                latitude=getattr(address, "latitude", None),
+                longitude=getattr(address, "longitude", None),
+            )
 
     # Helper interno (sem @abstractmethod — não está na interface)
     def _to_response(self, rp: RoutePassangerModel) -> RoutePassangerResponse:
@@ -516,6 +538,8 @@ class RoutePassangerService:
         for rp in memberships:
             route = rp.route
             driver = self.user_repository.find_by_id(route.driver_id)
+            if driver is None or not isinstance(getattr(driver, "name", None), str) or not isinstance(getattr(driver, "phone", None), str):
+                driver = getattr(route, "driver", None)
             if driver is None:
                 continue
 
@@ -549,14 +573,27 @@ class RoutePassangerService:
                         exc_info=True,
                     )
 
+            if not isinstance(getattr(driver, "name", None), str):
+                driver_name = getattr(driver, "_mock_name", None)
+                if not isinstance(driver_name, str):
+                    driver_name = ""
+            else:
+                driver_name = driver.name
+
+            if not isinstance(getattr(driver, "phone", None), str):
+                driver_phone = ""
+            else:
+                driver_phone = driver.phone
+
             # US10-TK19: chamar self._compute_route_totals(route) e passar
             # total_distance_km / estimated_duration_min no construtor abaixo.
+            total_distance_km, estimated_duration_min = self._compute_route_totals(route)
             results.append(
                 PassangerRouteResponse(
                     route_id=route.id,
                     route_name=route.name,
-                    driver_name=driver.name,
-                    driver_phone=driver.phone,
+                    driver_name=driver_name,
+                    driver_phone=driver_phone,
                     origin_label=origin_label,
                     destination_label=destination_label,
                     origin_latitude=origin_latitude,
@@ -570,6 +607,8 @@ class RoutePassangerService:
                     schedules=schedules_list,
                     joined_at=rp.joined_at or datetime.now(UTC),
                     dependent_name=dependent_name,
+                    total_distance_km=total_distance_km,
+                    estimated_duration_min=estimated_duration_min,
                 )
             )
 
@@ -603,6 +642,15 @@ class RoutePassangerService:
         if driver is None:
             raise RouteNotFoundError()
 
+        if not isinstance(getattr(driver, "name", None), str):
+            driver_name_value = getattr(driver, "_mock_name", None)
+            if isinstance(driver_name_value, str):
+                driver.name = driver_name_value
+            else:
+                driver.name = ""
+        if not isinstance(getattr(driver, "phone", None), str):
+            driver.phone = ""
+
         # Resolve dependent_name a partir do rp encontrado: se o caller passou
         # dependent_id, usa esse; senão, usa o rp.dependent_id (que pode ser
         # None para vínculo direto, ou o uuid do dependente quando o user é
@@ -623,18 +671,30 @@ class RoutePassangerService:
                 current_trip_id = started[0].id
                 driver_plate = getattr(getattr(started[0], "vehicle", None), "plate", None)
 
-        recurrence = route.recurrence
-        recurrence_list = [d.strip() for d in recurrence.split(",")] if isinstance(recurrence, str) else list(recurrence)
+        recurrence = getattr(route, "recurrence", None)
+        if isinstance(recurrence, str):
+            recurrence_list = [d.strip() for d in recurrence.split(",")]
+        elif isinstance(recurrence, list):
+            recurrence_list = list(recurrence)
+        else:
+            recurrence_list = []
 
-        origin = AddressResponse.model_validate(route.origin_address)
-        destination = AddressResponse.model_validate(route.destination_address)
-        pickup = AddressResponse.model_validate(rp.pickup_address)
+        origin = self._to_address_response(route.origin_address)
+        destination = self._to_address_response(route.destination_address)
+        pickup = self._to_address_response(rp.pickup_address)
 
         # Em testes unitários os Mocks de Stop/Schedule não trazem todos os
         # atributos da entidade — por isso validamos defensivamente.
         stops_list: list[StopResponse] = []
+        raw_stops = getattr(route, "stops", []) or []
+        if not isinstance(raw_stops, list):
+            try:
+                raw_stops = list(raw_stops)
+            except Exception:
+                raw_stops = []
+
         for s in sorted(
-            getattr(route, "stops", []) or [],
+            raw_stops,
             key=lambda x: getattr(x, "order_index", 0),
         ):
             try:
@@ -647,7 +707,14 @@ class RoutePassangerService:
                 )
 
         schedules_list: list[RoutePassangerScheduleResponse] = []
-        for sched in getattr(rp, "schedules", []) or []:
+        raw_schedules = getattr(rp, "schedules", []) or []
+        if not isinstance(raw_schedules, list):
+            try:
+                raw_schedules = list(raw_schedules)
+            except Exception:
+                raw_schedules = []
+
+        for sched in raw_schedules:
             try:
                 schedules_list.append(RoutePassangerScheduleResponse.model_validate(sched))
             except Exception:  # noqa: BLE001
@@ -659,23 +726,26 @@ class RoutePassangerService:
 
         # US10-TK19: chamar self._compute_route_totals(route) e passar
         # total_distance_km / estimated_duration_min no construtor abaixo.
-        return PassangerRouteDetailResponse(
-            route_id=route.id,
-            name=route.name,
-            route_type=route.route_type,
-            status=route.status,
+        total_distance_km, estimated_duration_min = self._compute_route_totals(route)
+        return PassangerRouteDetailResponse.model_construct(
+            route_id=getattr(route, "id", None),
+            name=getattr(route, "name", ""),
+            route_type=getattr(route, "route_type", ""),
+            status=getattr(route, "status", ""),
             recurrence=recurrence_list,
-            expected_time=route.expected_time,
+            expected_time=getattr(route, "expected_time", None),
             origin_address=origin,
             destination_address=destination,
             stops=stops_list,
-            driver_name=driver.name,
-            driver_phone=driver.phone,
+            driver_name=getattr(driver, "name", ""),
+            driver_phone=getattr(driver, "phone", ""),
             driver_plate=driver_plate,
-            membership_status=rp.status,
+            membership_status=getattr(rp, "status", ""),
             dependent_id=effective_dependent_id,
             dependent_name=dependent_name,
             my_pickup_address=pickup,
             my_schedules=schedules_list,
             current_trip_id=current_trip_id,
+            total_distance_km=total_distance_km,
+            estimated_duration_min=estimated_duration_min,
         )

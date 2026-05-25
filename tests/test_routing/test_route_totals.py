@@ -48,7 +48,6 @@ def _make_route_mock(stops=None, origin_coords=(-30.0, -51.0), destination_coord
     return route
 
 
-@pytest.mark.skip(reason="US10-TK19")
 def test_compute_route_totals_returns_tuple_when_all_addresses_have_coords():
     """Caso happy path: retorna (distance_km, duration_min) do IRoutingService.get_route_info."""
     from src.domains.routing.dtos import RouteInfoResult
@@ -62,9 +61,7 @@ def test_compute_route_totals_returns_tuple_when_all_addresses_have_coords():
     )
 
     routing_mock = MagicMock()
-    routing_mock.get_route_info.return_value = RouteInfoResult(
-        total_distance_km=10.5, estimated_duration_min=32
-    )
+    routing_mock.get_route_info.return_value = RouteInfoResult(total_distance_km=10.5, estimated_duration_min=32)
 
     distance, duration = compute_route_totals(route, routing_mock)
 
@@ -72,7 +69,6 @@ def test_compute_route_totals_returns_tuple_when_all_addresses_have_coords():
     assert duration == 32
 
 
-@pytest.mark.skip(reason="US10-TK19")
 def test_compute_route_totals_returns_none_when_routing_service_none():
     """routing_service=None → (None, None) sem nenhuma chamada externa."""
     from src.domains.routing.route_totals import compute_route_totals
@@ -84,7 +80,6 @@ def test_compute_route_totals_returns_none_when_routing_service_none():
     assert duration is None
 
 
-@pytest.mark.skip(reason="US10-TK19")
 def test_compute_route_totals_returns_none_when_origin_missing_coords():
     """origin.latitude/longitude None → (None, None) sem chamar routing."""
     from src.domains.routing.route_totals import compute_route_totals
@@ -99,7 +94,6 @@ def test_compute_route_totals_returns_none_when_origin_missing_coords():
     routing_mock.get_route_info.assert_not_called()
 
 
-@pytest.mark.skip(reason="US10-TK19")
 def test_compute_route_totals_returns_none_when_destination_missing_coords():
     """destination sem coords → (None, None) sem chamar routing."""
     from src.domains.routing.route_totals import compute_route_totals
@@ -114,7 +108,6 @@ def test_compute_route_totals_returns_none_when_destination_missing_coords():
     routing_mock.get_route_info.assert_not_called()
 
 
-@pytest.mark.skip(reason="US10-TK19")
 def test_compute_route_totals_returns_none_when_routing_raises():
     """Exceção em get_route_info → (None, None) sem propagar."""
     from src.domains.routing.route_totals import compute_route_totals
@@ -129,7 +122,6 @@ def test_compute_route_totals_returns_none_when_routing_raises():
     assert duration is None
 
 
-@pytest.mark.skip(reason="US10-TK19")
 def test_compute_route_totals_passes_waypoints_in_order_index_order():
     """Stops devem ser enviadas como waypoints na ordem de order_index crescente."""
     from src.domains.routing.dtos import RouteInfoResult
@@ -145,9 +137,7 @@ def test_compute_route_totals_passes_waypoints_in_order_index_order():
     )
 
     routing_mock = MagicMock()
-    routing_mock.get_route_info.return_value = RouteInfoResult(
-        total_distance_km=12.0, estimated_duration_min=40
-    )
+    routing_mock.get_route_info.return_value = RouteInfoResult(total_distance_km=12.0, estimated_duration_min=40)
 
     compute_route_totals(route, routing_mock)
 
@@ -162,7 +152,6 @@ def test_compute_route_totals_passes_waypoints_in_order_index_order():
     assert waypoints[2]["lat"] == pytest.approx(-30.30)
 
 
-@pytest.mark.skip(reason="US10-TK19")
 def test_compute_route_totals_works_without_stops():
     """Rota sem stops (só origem+destino) deve calcular normalmente."""
     from src.domains.routing.dtos import RouteInfoResult
@@ -170,9 +159,7 @@ def test_compute_route_totals_works_without_stops():
 
     route = _make_route_mock(stops=[])
     routing_mock = MagicMock()
-    routing_mock.get_route_info.return_value = RouteInfoResult(
-        total_distance_km=5.0, estimated_duration_min=15
-    )
+    routing_mock.get_route_info.return_value = RouteInfoResult(total_distance_km=5.0, estimated_duration_min=15)
 
     distance, duration = compute_route_totals(route, routing_mock)
 

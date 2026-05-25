@@ -19,6 +19,7 @@ from src.domains.routes.errors import (
     RouteOwnershipError,
 )
 from src.domains.routes.repository import IAddressRepository, IRouteRepository
+from src.domains.routing.route_totals import compute_route_totals
 from src.domains.routing.service import IGeocodingService, IRoutingService
 from src.domains.trips.repository import IAbsenceRepository
 from src.domains.vehicles.repository import IVehicleRepository
@@ -243,7 +244,7 @@ class RouteService:
         compute_route_totals do helper compartilhado retornar (None, None).
         Nunca propaga exceção — totais são best-effort.
         """
-        pass  # type: ignore[return-value]
+        return compute_route_totals(route, self.routing_service)
 
     def get_route_absences(self, route_id: UUID, caller_id: UUID, absence_date: datetime) -> list:
         """Retorna ausências avisadas para a rota numa data específica.

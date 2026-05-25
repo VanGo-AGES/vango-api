@@ -90,9 +90,7 @@ def build_service(**overrides):
     schedule_repo = overrides.pop("schedule_repo", Mock())
     address_repo = overrides.pop("address_repo", Mock())
     return (
-        RoutePassangerService(
-            rp_repo, route_repo, user_repo, dep_repo, notif, stop_repo, schedule_repo, address_repo
-        ),
+        RoutePassangerService(rp_repo, route_repo, user_repo, dep_repo, notif, stop_repo, schedule_repo, address_repo),
         rp_repo,
         route_repo,
         user_repo,
@@ -832,7 +830,6 @@ def test_list_by_status_resolves_dependent_and_guardian_names() -> None:
     assert result[0].guardian_name == "Responsável João"
 
 
-
 # ===========================================================================
 # US08-TK07 — RoutePassangerService.join_route
 # ===========================================================================
@@ -1018,9 +1015,7 @@ def test_leave_route_notifies_driver_before_delete() -> None:
     service.leave_route(route.id, user_id)
 
     call_names = [c[0] for c in manager.mock_calls]
-    assert call_names.index("notify") < call_names.index("delete_rp"), (
-        f"notify deve vir antes do delete_rp, mas ordem foi: {call_names}"
-    )
+    assert call_names.index("notify") < call_names.index("delete_rp"), f"notify deve vir antes do delete_rp, mas ordem foi: {call_names}"
     if "delete_stop" in call_names:
         assert call_names.index("notify") < call_names.index("delete_stop"), (
             f"notify deve vir antes do delete_stop, mas ordem foi: {call_names}"
@@ -1106,10 +1101,7 @@ def make_update_request(days=("monday",), address_id=None):
     )
 
     address_id = address_id or uuid.uuid4()
-    schedules = [
-        RoutePassangerScheduleRequest(day_of_week=day, address_id=address_id)
-        for day in days
-    ]
+    schedules = [RoutePassangerScheduleRequest(day_of_week=day, address_id=address_id) for day in days]
     return UpdateSchedulesRequest(schedules=schedules)
 
 
@@ -1188,9 +1180,7 @@ def test_update_schedules_with_dependent_id_uses_dependent_scope() -> None:
     route_repo.find_by_id.return_value = route
     rp_repo.find_active_by_user_and_route.return_value = rp
 
-    service.update_schedules(
-        route.id, guardian_id, make_update_request(), dependent_id=dep_id
-    )
+    service.update_schedules(route.id, guardian_id, make_update_request(), dependent_id=dep_id)
 
     call_kwargs = rp_repo.find_active_by_user_and_route.call_args.kwargs
     call_args = rp_repo.find_active_by_user_and_route.call_args.args
@@ -1341,8 +1331,11 @@ def test_list_my_routes_exposes_membership_status() -> None:
     user_id = uuid.uuid4()
     driver = make_user_mock()
     rp = make_rp_with_route_mock(
-        uuid.uuid4(), user_id, driver.id,
-        status="pending", route_status="ativa",
+        uuid.uuid4(),
+        user_id,
+        driver.id,
+        status="pending",
+        route_status="ativa",
     )
 
     service, rp_repo, _, user_repo, _, _, _, _ = build_service()
@@ -1360,8 +1353,11 @@ def test_list_my_routes_resolves_dependent_name_when_present() -> None:
     dep = make_dependent_mock("Maria Dependente", guardian_id=guardian_id)
     driver = make_user_mock("Motorista")
     rp = make_rp_with_route_mock(
-        uuid.uuid4(), guardian_id, driver.id,
-        status="accepted", dependent_id=dep.id,
+        uuid.uuid4(),
+        guardian_id,
+        driver.id,
+        status="accepted",
+        dependent_id=dep.id,
     )
 
     service, rp_repo, _, user_repo, dep_repo, _, _, _ = build_service()
@@ -1577,9 +1573,7 @@ def test_get_my_route_detail_looks_up_membership_with_correct_args() -> None:
 
     service.get_my_route_detail(route.id, user_id, dependent_id=dependent_id)
 
-    rp_repo.find_active_by_user_and_route.assert_called_once_with(
-        user_id, dependent_id, route.id
-    )
+    rp_repo.find_active_by_user_and_route.assert_called_once_with(user_id, dependent_id, route.id)
 
 
 def test_get_my_route_detail_resolves_dependent_name_when_dependent_id_present() -> None:
@@ -1724,7 +1718,6 @@ def test_get_my_route_detail_my_pickup_address_comes_from_rp() -> None:
 # ===========================================================================
 
 
-
 def test_accept_request_calls_optimize_stop_order() -> None:
     """accept_request deve chamar routing_service.optimize_stop_order após salvar a stop."""
     from src.domains.routing.service import IRoutingService
@@ -1749,7 +1742,6 @@ def test_accept_request_calls_optimize_stop_order() -> None:
     service.accept_request(route.id, rp.id, driver_id)
 
     routing_mock.optimize_stop_order.assert_called_once()
-
 
 
 def test_remove_passanger_calls_optimize_stop_order() -> None:
@@ -1899,15 +1891,12 @@ def test_join_route_works_without_geocoding_service() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US10-TK19")
 def test_compute_route_totals_returns_tuple_when_routing_service_available() -> None:
     """_compute_route_totals devolve (km, min) quando routing_service responde."""
     from src.domains.routing.dtos import RouteInfoResult
 
     routing_mock = Mock()
-    routing_mock.get_route_info.return_value = RouteInfoResult(
-        total_distance_km=8.5, estimated_duration_min=22
-    )
+    routing_mock.get_route_info.return_value = RouteInfoResult(total_distance_km=8.5, estimated_duration_min=22)
 
     service, _rp_repo, _route_repo, _, _, _, _, _ = build_service()
     service.routing_service = routing_mock
@@ -1923,7 +1912,6 @@ def test_compute_route_totals_returns_tuple_when_routing_service_available() -> 
     assert duration == 22
 
 
-@pytest.mark.skip(reason="US10-TK19")
 def test_compute_route_totals_returns_none_when_routing_service_none() -> None:
     """Sem routing_service, _compute_route_totals retorna (None, None)."""
     service, _rp_repo, _route_repo, _, _, _, _, _ = build_service()
@@ -1937,7 +1925,6 @@ def test_compute_route_totals_returns_none_when_routing_service_none() -> None:
     assert duration is None
 
 
-@pytest.mark.skip(reason="US10-TK19")
 def test_list_my_routes_populates_totals_in_each_item() -> None:
     """Cada PassangerRouteResponse devolvido por list_my_routes deve ter
     total_distance_km e estimated_duration_min preenchidos com o resultado
@@ -1984,7 +1971,6 @@ def test_list_my_routes_populates_totals_in_each_item() -> None:
     assert results[0].estimated_duration_min == 32
 
 
-@pytest.mark.skip(reason="US10-TK19")
 def test_list_my_routes_totals_none_when_routing_unavailable() -> None:
     """Quando _compute_route_totals devolve (None, None), os campos saem
     None no PassangerRouteResponse — não levanta exceção."""
@@ -2021,7 +2007,6 @@ def test_list_my_routes_totals_none_when_routing_unavailable() -> None:
     assert results[0].estimated_duration_min is None
 
 
-@pytest.mark.skip(reason="US10-TK19")
 def test_get_my_route_detail_populates_totals_from_compute_helper() -> None:
     """PassangerRouteDetailResponse devolvido por get_my_route_detail deve
     ter total_distance_km e estimated_duration_min preenchidos com o
