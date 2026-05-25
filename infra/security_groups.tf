@@ -38,8 +38,8 @@ resource "aws_security_group" "ec2" {
 }
 
 resource "aws_security_group" "rds" {
-  name        = "vango-sg-rds-staging"
-  description = "Firewall para o RDS de staging"
+  name        = "vango-sg-rds-${var.environment}"
+  description = "Firewall para o RDS de ${var.environment}"
   vpc_id      = data.aws_vpc.default.id
 
   ingress {
@@ -58,7 +58,7 @@ resource "aws_security_group" "rds" {
   }
 
   tags = {
-    Name        = "vango-sg-rds-staging"
+    Name        = "vango-sg-rds-${var.environment}"
     Environment = var.environment
   }
 }

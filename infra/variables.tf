@@ -45,6 +45,18 @@ variable "db_deletion_protection" {
   default     = false
 }
 
+variable "db_backup_retention_period" {
+  description = "Numero de dias de retencao de backups automaticos do RDS (0 desativa; use >= 7 em producao)"
+  type        = number
+  default     = 1
+}
+
+variable "db_skip_final_snapshot" {
+  description = "Pular snapshot final ao destruir o RDS (true em staging, false em producao)"
+  type        = bool
+  default     = true
+}
+
 variable "s3_force_destroy" {
   description = "Forcar exclusao do bucket no destroy"
   type        = bool
