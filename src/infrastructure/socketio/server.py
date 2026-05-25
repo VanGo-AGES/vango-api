@@ -423,6 +423,7 @@ async def _notify_proximity_if_needed(follower_sid: str, distance_km: float) -> 
         )
 
 
+
 # US12-TK07
 async def _notify_arrival_if_needed(follower_sid: str, distance_km: float) -> None:
     """Envia push "Seu motorista chegou" quando distance_km < ARRIVAL_THRESHOLD_KM.
