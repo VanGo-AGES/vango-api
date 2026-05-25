@@ -1,4 +1,4 @@
-import random
+import secrets
 import string
 from datetime import datetime
 from uuid import UUID
@@ -19,7 +19,8 @@ from src.domains.routes.errors import (
     RouteOwnershipError,
 )
 from src.domains.routes.repository import IAddressRepository, IRouteRepository
-from src.domains.routing.service import IGeocodingService
+from src.domains.routing.route_totals import compute_route_totals
+from src.domains.routing.service import IGeocodingService, IRoutingService
 from src.domains.trips.repository import IAbsenceRepository
 from src.domains.vehicles.repository import IVehicleRepository
 
@@ -34,6 +35,7 @@ class RouteService:
         notification_service: INotificationService | None = None,
         absence_repository: IAbsenceRepository | None = None,
         geocoding_service: IGeocodingService | None = None,
+        routing_service: IRoutingService | None = None,
     ):
         self.route_repository = route_repository
         self.address_repository = address_repository
@@ -43,6 +45,10 @@ class RouteService:
         self.route_passanger_repository = route_passanger_repository
         # Usado pela US06-TK18 (delete_route). Opcional pelo mesmo motivo.
         self.notification_service = notification_service
+        # US10-TK19: usado pra calcular total_distance_km e
+        # estimated_duration_min dos RouteResponse devolvidos por get_route
+        # e get_routes. Opcional pra não quebrar testes existentes.
+        self.routing_service = routing_service
         # Usado pelo GET /routes/{route_id}/absences (view do motorista).
         self.absence_repository = absence_repository
         # US10-TK18: usado para preencher lat/lng dos AddressModel criados
@@ -109,7 +115,8 @@ class RouteService:
         return self.route_repository.update_invite_code(route_id, new_code)
 
     def _generate_invite_code(self) -> str:
-        return "".join(random.choices(string.ascii_uppercase + string.digits, k=5))
+        alphabet = string.ascii_uppercase + string.digits
+        return "".join(secrets.choice(alphabet) for _ in range(5))
 
     # US07 - TK03
 
@@ -224,6 +231,20 @@ class RouteService:
         if self.route_passanger_repository is None:
             return 0
         return self.route_passanger_repository.count_accepted_by_route(route_id)
+
+    # US10-TK19
+    def get_route_totals(self, route: RouteModel) -> tuple[float | None, int | None]:
+        """Devolve (total_distance_km, estimated_duration_min) da rota planejada.
+
+        Usado pelos endpoints GET /routes e GET /routes/{id} no controller
+        (via model_copy(update={...}), mesmo padrão de get_accepted_count) pra
+        popular RouteResponse.total_distance_km e RouteResponse.estimated_duration_min.
+
+        Retorna (None, None) se self.routing_service for None ou se o
+        compute_route_totals do helper compartilhado retornar (None, None).
+        Nunca propaga exceção — totais são best-effort.
+        """
+        return compute_route_totals(route, self.routing_service)
 
     def get_route_absences(self, route_id: UUID, caller_id: UUID, absence_date: datetime) -> list:
         """Retorna ausências avisadas para a rota numa data específica.

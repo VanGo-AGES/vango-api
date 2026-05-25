@@ -190,7 +190,13 @@ async def test_location_update_saves_last_location():
 
 @pytest.mark.asyncio
 async def test_location_update_broadcasts_to_room():
-    """location_update deve fazer broadcast para o room da sessão."""
+    """location_update deve fazer broadcast para o room da sessão.
+
+    Nota: TK17 acrescentou um emit adicional de "driver_eta" para o tracker_sid
+    no mesmo handler, então não dá mais para assertar `called_once`. O que
+    importa neste teste é que UM dos emits seja location_update com room
+    contendo o trip_id.
+    """
     from src.infrastructure.socketio.server import sio, tracking_sessions, sid_meta
 
     trip_id = _make_trip_id()
@@ -202,9 +208,16 @@ async def test_location_update_broadcasts_to_room():
 
     with patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock) as mock_emit:
         await sio.handlers["/"]["location_update"](sid, payload)
-        mock_emit.assert_called_once()
-        call_room = mock_emit.call_args[1].get("room") or mock_emit.call_args[0][2]
-        assert trip_id in call_room
+
+        # Procurar o emit de location_update para o room
+        room_broadcasts = [
+            call for call in mock_emit.call_args_list
+            if len(call.args) > 0
+            and call.args[0] == "location_update"
+            and call.kwargs.get("room")
+        ]
+        assert len(room_broadcasts) >= 1
+        assert trip_id in room_broadcasts[0].kwargs.get("room")
 
     tracking_sessions.pop(trip_id, None)
     sid_meta.pop(sid, None)
@@ -449,12 +462,77 @@ async def test_join_session_follower_tracker_online_true_when_connected():
     sid_meta.pop(follower_sid, None)
 
 
+@pytest.mark.asyncio
+async def test_join_session_follower_populates_stop_coordinates():
+    """join_session de follower deve persistir stop_lat/stop_lng no sid_meta a
+    partir do payload recebido — necessário pro cálculo de ETA por follower."""
+    from src.infrastructure.socketio.server import sio, tracking_sessions, sid_meta
+
+    trip_id = _make_trip_id()
+    follower_sid = "follower-join-stop-001"
+
+    tracking_sessions[trip_id] = {"tracker_sid": "tracker-x", "followers": [], "last_location": None}
+    sid_meta[follower_sid] = {"trip_id": trip_id, "role": "follower", "user_id": _make_user_id()}
+
+    with patch("src.infrastructure.socketio.server.sio.enter_room", new_callable=AsyncMock), \
+         patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock):
+        await sio.handlers["/"]["join_session"](
+            follower_sid,
+            {"trip_id": trip_id, "role": "follower", "stop_lat": -30.0567, "stop_lng": -51.1734},
+        )
+
+    assert sid_meta[follower_sid]["stop_lat"] == pytest.approx(-30.0567)
+    assert sid_meta[follower_sid]["stop_lng"] == pytest.approx(-51.1734)
+    assert isinstance(sid_meta[follower_sid]["stop_lat"], float)
+    assert isinstance(sid_meta[follower_sid]["stop_lng"], float)
+
+    tracking_sessions.pop(trip_id, None)
+    sid_meta.pop(follower_sid, None)
+
+
+@pytest.mark.asyncio
+async def test_join_session_follower_defaults_missing_stop_coordinates_to_none():
+    """join_session sem stop_lat/stop_lng (ou com tipos inválidos) deve persistir
+    None no sid_meta — não pode crashar nem propagar valores inválidos."""
+    from src.infrastructure.socketio.server import sio, tracking_sessions, sid_meta
+
+    trip_id = _make_trip_id()
+    follower_sid = "follower-join-stop-002"
+
+    tracking_sessions[trip_id] = {"tracker_sid": "tracker-x", "followers": [], "last_location": None}
+    sid_meta[follower_sid] = {"trip_id": trip_id, "role": "follower", "user_id": _make_user_id()}
+
+    with patch("src.infrastructure.socketio.server.sio.enter_room", new_callable=AsyncMock), \
+         patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock):
+        # Sem stop_lat/stop_lng no payload
+        await sio.handlers["/"]["join_session"](follower_sid, {"trip_id": trip_id, "role": "follower"})
+
+    assert sid_meta[follower_sid]["stop_lat"] is None
+    assert sid_meta[follower_sid]["stop_lng"] is None
+
+    # Com tipos inválidos
+    sid_meta[follower_sid] = {"trip_id": trip_id, "role": "follower", "user_id": _make_user_id()}
+    tracking_sessions[trip_id] = {"tracker_sid": "tracker-x", "followers": [], "last_location": None}
+
+    with patch("src.infrastructure.socketio.server.sio.enter_room", new_callable=AsyncMock), \
+         patch("src.infrastructure.socketio.server.sio.emit", new_callable=AsyncMock):
+        await sio.handlers["/"]["join_session"](
+            follower_sid,
+            {"trip_id": trip_id, "role": "follower", "stop_lat": "abc", "stop_lng": None},
+        )
+
+    assert sid_meta[follower_sid]["stop_lat"] is None
+    assert sid_meta[follower_sid]["stop_lng"] is None
+
+    tracking_sessions.pop(trip_id, None)
+    sid_meta.pop(follower_sid, None)
+
+
 # ===========================================================================
 # US11-TK04 — trip_finished event + TripService integration
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US11-TK04")
 @pytest.mark.asyncio
 async def test_trip_finished_emits_to_room():
     """emit_trip_finished deve emitir trip_finished para todos no room da sessão."""
@@ -473,7 +551,6 @@ async def test_trip_finished_emits_to_room():
     tracking_sessions.pop(trip_id, None)
 
 
-@pytest.mark.skip(reason="US11-TK04")
 @pytest.mark.asyncio
 async def test_trip_finished_clears_session_state():
     """emit_trip_finished deve remover a sessão do estado em memória."""
@@ -488,7 +565,6 @@ async def test_trip_finished_clears_session_state():
     assert trip_id not in tracking_sessions
 
 
-@pytest.mark.skip(reason="US11-TK04")
 @pytest.mark.asyncio
 async def test_trip_finished_no_error_when_session_not_found():
     """emit_trip_finished com trip_id sem sessão ativa não deve levantar exceção."""
@@ -503,7 +579,7 @@ async def test_trip_finished_no_error_when_session_not_found():
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US10-TK08")
+
 @pytest.mark.asyncio
 async def test_location_update_broadcast_includes_eta_fields():
     """location_update broadcast para cada follower deve incluir eta_minutes e distance_km."""
@@ -544,7 +620,7 @@ async def test_location_update_broadcast_includes_eta_fields():
     sid_meta.pop(follower_sid, None)
 
 
-@pytest.mark.skip(reason="US10-TK08")
+
 @pytest.mark.asyncio
 async def test_location_update_eta_uses_follower_stop_coordinates():
     """_calculate_eta_for_follower é chamado com o sid do follower para obter suas stop coords."""
@@ -586,10 +662,16 @@ async def test_location_update_eta_uses_follower_stop_coordinates():
     sid_meta.pop(follower_sid, None)
 
 
-@pytest.mark.skip(reason="US10-TK08")
+
 @pytest.mark.asyncio
 async def test_location_update_eta_gracefully_none_when_routing_unavailable():
-    """Se routing service não disponível, eta_minutes e distance_km devem ser None no broadcast."""
+    """Se routing service não disponível, eta_minutes e distance_km devem ser None no broadcast.
+
+    Nota: TK17 acrescentou um emit adicional de "driver_eta" no mesmo handler,
+    então não dá mais para assertar `called_once`. O contrato aqui é: mesmo
+    sem ETA, o evento "location_update" deve ter sido emitido pelo menos uma
+    vez para o follower (não pode suprimir o evento).
+    """
     from src.infrastructure.socketio.server import sio, tracking_sessions, sid_meta
 
     trip_id = _make_trip_id()
@@ -617,7 +699,11 @@ async def test_location_update_eta_gracefully_none_when_routing_unavailable():
         await sio.handlers["/"]["location_update"](tracker_sid, payload)
 
         # broadcast deve ocorrer mesmo sem ETA (não pode suprimir o evento)
-        mock_emit.assert_called_once()
+        location_update_calls = [
+            call for call in mock_emit.call_args_list
+            if len(call.args) > 0 and call.args[0] == "location_update"
+        ]
+        assert len(location_update_calls) >= 1
 
     tracking_sessions.pop(trip_id, None)
     sid_meta.pop(tracker_sid, None)
@@ -636,7 +722,7 @@ async def test_location_update_eta_gracefully_none_when_routing_unavailable():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US10-TK08")
+
 @pytest.mark.asyncio
 async def test_calculate_eta_for_follower_returns_dict_when_stop_coordinates_present():
     """Quando sid_meta[follower_sid] tem stop_lat/stop_lng e routing responde,
@@ -672,7 +758,7 @@ async def test_calculate_eta_for_follower_returns_dict_when_stop_coordinates_pre
     sid_meta.pop(follower_sid, None)
 
 
-@pytest.mark.skip(reason="US10-TK08")
+
 @pytest.mark.asyncio
 async def test_calculate_eta_for_follower_returns_none_when_stop_coordinates_missing():
     """Se sid_meta[follower_sid] não tem stop_lat/stop_lng (ou está com None),
@@ -702,7 +788,7 @@ async def test_calculate_eta_for_follower_returns_none_when_stop_coordinates_mis
     sid_meta.pop(follower_sid, None)
 
 
-@pytest.mark.skip(reason="US10-TK08")
+
 @pytest.mark.asyncio
 async def test_calculate_eta_for_follower_returns_none_when_follower_not_in_sid_meta():
     """Se o follower_sid não existir em sid_meta, o helper retorna None
@@ -722,7 +808,7 @@ async def test_calculate_eta_for_follower_returns_none_when_follower_not_in_sid_
     routing_mock.get_route_info.assert_not_called()
 
 
-@pytest.mark.skip(reason="US10-TK08")
+
 @pytest.mark.asyncio
 async def test_calculate_eta_for_follower_passes_correct_origin_and_destination():
     """O helper deve chamar IRoutingService.get_route_info com origin =
@@ -770,7 +856,7 @@ async def test_calculate_eta_for_follower_passes_correct_origin_and_destination(
     sid_meta.pop(follower_sid, None)
 
 
-@pytest.mark.skip(reason="US10-TK08")
+
 @pytest.mark.asyncio
 async def test_calculate_eta_for_follower_returns_none_when_routing_raises():
     """Se IRoutingService.get_route_info levantar exceção, o helper devolve
@@ -807,7 +893,7 @@ async def test_calculate_eta_for_follower_returns_none_when_routing_raises():
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US11-TK05")
+
 @pytest.mark.asyncio
 async def test_emit_passenger_boarded_emits_to_room():
     """emit_passenger_boarded deve emitir evento passenger_boarded para o room da sessão."""
@@ -825,7 +911,7 @@ async def test_emit_passenger_boarded_emits_to_room():
     tracking_sessions.pop(trip_id, None)
 
 
-@pytest.mark.skip(reason="US11-TK05")
+
 @pytest.mark.asyncio
 async def test_emit_passenger_boarded_payload_contains_user_name():
     """Payload de passenger_boarded deve conter trip_passanger_id e user_name."""
@@ -844,7 +930,7 @@ async def test_emit_passenger_boarded_payload_contains_user_name():
     tracking_sessions.pop(trip_id, None)
 
 
-@pytest.mark.skip(reason="US11-TK05")
+
 @pytest.mark.asyncio
 async def test_emit_passenger_boarded_no_error_when_session_not_found():
     """emit_passenger_boarded com trip_id sem sessão ativa não deve levantar exceção."""
@@ -859,7 +945,7 @@ async def test_emit_passenger_boarded_no_error_when_session_not_found():
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US11-TK06")
+
 @pytest.mark.asyncio
 async def test_emit_passenger_absent_emits_to_room():
     """emit_passenger_absent deve emitir evento passenger_absent para o room da sessão."""
@@ -877,7 +963,7 @@ async def test_emit_passenger_absent_emits_to_room():
     tracking_sessions.pop(trip_id, None)
 
 
-@pytest.mark.skip(reason="US11-TK06")
+
 @pytest.mark.asyncio
 async def test_emit_passenger_absent_payload_contains_user_name():
     """Payload de passenger_absent deve conter trip_passanger_id e user_name."""
@@ -896,7 +982,7 @@ async def test_emit_passenger_absent_payload_contains_user_name():
     tracking_sessions.pop(trip_id, None)
 
 
-@pytest.mark.skip(reason="US11-TK06")
+
 @pytest.mark.asyncio
 async def test_emit_passenger_absent_no_error_when_session_not_found():
     """emit_passenger_absent com trip_id sem sessão ativa não deve levantar exceção."""
@@ -1178,7 +1264,7 @@ async def test_arrival_threshold_smaller_than_proximity_threshold():
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US10-TK17")
+
 @pytest.mark.asyncio
 async def test_location_update_emits_driver_eta_to_tracker():
     """location_update deve emitir 'driver_eta' diretamente para o tracker_sid."""
@@ -1216,7 +1302,7 @@ async def test_location_update_emits_driver_eta_to_tracker():
     sid_meta.pop(tracker_sid, None)
 
 
-@pytest.mark.skip(reason="US10-TK17")
+
 @pytest.mark.asyncio
 async def test_driver_eta_payload_contains_eta_and_distance_fields():
     """driver_eta payload deve conter eta_minutes e distance_km vindos do calculo."""
@@ -1247,7 +1333,7 @@ async def test_driver_eta_payload_contains_eta_and_distance_fields():
     sid_meta.pop(tracker_sid, None)
 
 
-@pytest.mark.skip(reason="US10-TK17")
+
 @pytest.mark.asyncio
 async def test_driver_eta_emitted_with_null_when_no_pending_stop():
     """Se _calculate_eta_for_tracker retornar None, emit ocorre com eta_minutes e
@@ -1279,7 +1365,7 @@ async def test_driver_eta_emitted_with_null_when_no_pending_stop():
     sid_meta.pop(tracker_sid, None)
 
 
-@pytest.mark.skip(reason="US10-TK17")
+
 @pytest.mark.asyncio
 async def test_driver_eta_failure_does_not_block_follower_broadcast():
     """Falha em _calculate_eta_for_tracker (exceção) não pode interromper o
@@ -1306,19 +1392,22 @@ async def test_driver_eta_failure_does_not_block_follower_broadcast():
         # location_update não deve propagar a exceção
         await sio.handlers["/"]["location_update"](tracker_sid, payload)
 
-        # broadcast pro room dos followers deve ter ocorrido normalmente
-        room_calls = [
+        # broadcast pro follower deve ter ocorrido normalmente — pode ser
+        # via room (followers fora de sid_meta) OU emit per-follower
+        # (followers em sid_meta com ou sem stop coords). O essencial é
+        # que pelo menos um evento "location_update" tenha sido emitido.
+        location_update_calls = [
             call for call in mock_emit.call_args_list
-            if call.kwargs.get("room") and "trip" in str(call.kwargs.get("room"))
+            if len(call.args) > 0 and call.args[0] == "location_update"
         ]
-        assert len(room_calls) >= 1
+        assert len(location_update_calls) >= 1
 
     tracking_sessions.pop(trip_id, None)
     sid_meta.pop(tracker_sid, None)
     sid_meta.pop(follower_sid, None)
 
 
-@pytest.mark.skip(reason="US10-TK17")
+
 @pytest.mark.asyncio
 async def test_calculate_eta_for_tracker_returns_dict_when_pending_stop_exists():
     """_calculate_eta_for_tracker deve devolver dict com eta_minutes/distance_km
@@ -1355,7 +1444,7 @@ async def test_calculate_eta_for_tracker_returns_dict_when_pending_stop_exists()
     assert result.get("stop_id") == "stop-pending-001"
 
 
-@pytest.mark.skip(reason="US10-TK17")
+
 @pytest.mark.asyncio
 async def test_calculate_eta_for_tracker_returns_none_when_no_pending_stop():
     """Se não houver parada pendente (todos embarcados/ausentes), retorna None."""
@@ -1370,7 +1459,7 @@ async def test_calculate_eta_for_tracker_returns_none_when_no_pending_stop():
     assert result is None
 
 
-@pytest.mark.skip(reason="US10-TK17")
+
 @pytest.mark.asyncio
 async def test_calculate_eta_for_tracker_returns_none_when_address_missing_coordinates():
     """Se a próxima parada pendente tiver address.latitude/longitude None, retorna None."""
@@ -1389,7 +1478,7 @@ async def test_calculate_eta_for_tracker_returns_none_when_address_missing_coord
     assert result is None
 
 
-@pytest.mark.skip(reason="US10-TK17")
+
 @pytest.mark.asyncio
 async def test_calculate_eta_for_tracker_returns_none_when_routing_unavailable():
     """Se routing_service não estiver disponível (ou levantar exceção), retorna None."""

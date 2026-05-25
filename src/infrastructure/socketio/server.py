@@ -13,14 +13,27 @@ Montagem em main.py (US10-TK01):
   app = socketio.ASGIApp(sio, fastapi_app)
 """
 
+import logging
 import uuid
+from contextlib import contextmanager
 from urllib.parse import parse_qs
 
 import socketio
+from src.domains.notifications.service import INotificationService
+from src.domains.routing.service import IRoutingService
+from src.domains.trips.service import TripService
 from src.infrastructure.database import SessionLocal
+from src.infrastructure.dependencies.routing_dependencies import get_routing_service
 from src.infrastructure.notifications.firebase_notification_service import FirebaseNotificationService
+from src.infrastructure.repositories.absence_repository import AbsenceRepositoryImpl
 from src.infrastructure.repositories.route_passanger_repository import RoutePassangerRepositoryImpl
+from src.infrastructure.repositories.route_repository import RouteRepositoryImpl
+from src.infrastructure.repositories.stop_repository import StopRepositoryImpl
+from src.infrastructure.repositories.trip_passanger_repository import TripPassangerRepositoryImpl
 from src.infrastructure.repositories.trip_repository import TripRepositoryImpl
+from src.infrastructure.repositories.vehicle_repository import VehicleRepositoryImpl
+
+logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
 # Socket.IO server
@@ -63,17 +76,11 @@ PROXIMITY_THRESHOLD_KM: float = 0.5
 ARRIVAL_THRESHOLD_KM: float = 0.05
 
 
-def _get_notification_service() -> object:
-    from src.infrastructure.notifications.firebase_notification_service import (
-        FirebaseNotificationService,
-    )
-
-    return FirebaseNotificationService()
-
-
 # ---------------------------------------------------------------------------
 # Socket.IO event stubs — implementados nas TKs seguintes
 # ---------------------------------------------------------------------------
+# (a função _get_notification_service está definida mais abaixo, junto com
+#  os outros helpers de DI — _get_routing_service, _get_trip_service)
 
 
 # US10-TK02
@@ -194,6 +201,12 @@ async def join_session(sid: str, data: dict) -> None:
 
         tracking_sessions[trip_id]["followers"].append(sid)
 
+        stop_lat_raw = data.get("stop_lat") if isinstance(data, dict) else None
+        stop_lng_raw = data.get("stop_lng") if isinstance(data, dict) else None
+
+        sid_meta[sid]["stop_lat"] = float(stop_lat_raw) if isinstance(stop_lat_raw, int | float) else None
+        sid_meta[sid]["stop_lng"] = float(stop_lng_raw) if isinstance(stop_lng_raw, int | float) else None
+
         await sio.enter_room(sid, f"trip:{trip_id}")
 
         await sio.emit(
@@ -232,34 +245,87 @@ async def location_update(sid: str, data: dict) -> None:
     # Salvar a última localização conhecida
     tracking_sessions[trip_id]["last_location"] = data
 
-    # Fazer broadcast para o room da sessão
-    await sio.emit(
-        "location_update",
-        data,
-        room=f"trip:{trip_id}",
-        skip_sid=sid,
-    )
+    # Para cada follower: calcular ETA UMA VEZ e reaproveitar nos 3 emits:
+    #   - US10-TK04+TK16: location_update enriquecido com eta_minutes/distance_km
+    #   - US12-TK06/TK07: driver_eta + push de proximity/arrival
+    # Falha no cálculo (ex.: follower sem stop_lat/lng, Mapbox indisponível)
+    # vira ETA=None — o location_update enriquecido ainda sai com campos
+    # null, e os emits/pushes ficam de fora.
+    followers = tracking_sessions[trip_id].get("followers", [])
+    has_untracked_followers = False
+    for follower_sid in followers:
+        if follower_sid not in sid_meta:
+            has_untracked_followers = True
+            continue
 
-    # US10-TK08 / US12-TK06 / US12-TK07 — ETA + push por follower
-    try:
-        driver_lat = data["lat"]
-        driver_lng = data["lng"]
+        try:
+            eta = await _calculate_eta_for_follower(
+                data.get("lat"),
+                data.get("lng"),
+                follower_sid,
+            )
+        except Exception:
+            eta = None
 
-        followers = tracking_sessions[trip_id].get("followers", [])
-        for follower_sid in followers:
+        # location_update enriquecido (sempre emitido, ETA pode ser null)
+        follower_payload = {
+            **data,
+            "eta_minutes": eta["eta_minutes"] if eta is not None else None,
+            "distance_km": eta["distance_km"] if eta is not None else None,
+        }
+        await sio.emit("location_update", follower_payload, to=follower_sid)
+
+        # driver_eta dedicado + push triggers (só quando temos ETA real)
+        if eta is not None:
             try:
-                eta_info = await _calculate_eta_for_follower(driver_lat, driver_lng, follower_sid)
-                if eta_info:
-                    await sio.emit("driver_eta", eta_info, to=follower_sid)
-
-                    distance_km = eta_info.get("distance_km")
-                    if distance_km is not None:
-                        await _notify_proximity_if_needed(follower_sid, distance_km)  # TK06
-                        await _notify_arrival_if_needed(follower_sid, distance_km)  # TK07 ← aqui
+                await sio.emit("driver_eta", eta, to=follower_sid)
+                distance_km = eta.get("distance_km")
+                if distance_km is not None:
+                    await _notify_proximity_if_needed(follower_sid, distance_km)  # TK06
+                    await _notify_arrival_if_needed(follower_sid, distance_km)  # TK07
             except Exception:
-                pass
+                # Falha em push/driver_eta não pode interromper o handler
+                logger.warning(
+                    "SOCKETIO: falha em driver_eta/proximity/arrival follower_sid=%s",
+                    follower_sid,
+                    exc_info=True,
+                )
+
+    # Compatibilidade com sessões antigas/inconsistentes onde o follower ainda
+    # existe no room, mas não há metadata suficiente para calcular ETA.
+    if has_untracked_followers:
+        await sio.emit(
+            "location_update",
+            data,
+            room=f"trip:{trip_id}",
+            skip_sid=sid,
+        )
+
+    # US10-TK17 — ETA do motorista até a próxima parada pendente, emitido
+    # sempre para o tracker_sid (independente de ter followers). Qualquer
+    # falha no cálculo (sem parada pendente, sem coords, routing/DB indisponível)
+    # vira payload com campos null — driver_eta é best-effort e nunca propaga
+    # exceção para o handler.
+    try:
+        tracker_eta = await _calculate_eta_for_tracker(data.get("lat"), data.get("lng"), trip_id)
     except Exception:
-        pass
+        tracker_eta = None
+
+    tracker_payload = {
+        "stop_id": tracker_eta["stop_id"] if tracker_eta is not None else None,
+        "eta_minutes": tracker_eta["eta_minutes"] if tracker_eta is not None else None,
+        "distance_km": tracker_eta["distance_km"] if tracker_eta is not None else None,
+    }
+    try:
+        await sio.emit("driver_eta", tracker_payload, to=sid)
+    except Exception:
+        # Emit best-effort — falha não pode propagar pro handler
+        logger.warning(
+            "SOCKETIO: falha em driver_eta para tracker_sid=%s trip_id=%s",
+            sid,
+            trip_id,
+            exc_info=True,
+        )
 
 
 # US11-TK05
@@ -269,17 +335,46 @@ async def emit_passenger_boarded(trip_id: str, trip_passanger_id: str, user_name
     Payload: {"trip_passanger_id": str, "user_name": str}
     Silenciosamente ignorado se não houver sessão ativa para o trip_id.
     """
-    pass
+    if trip_id not in tracking_sessions:
+        return
+
+    payload = {"trip_passanger_id": trip_passanger_id, "user_name": user_name}
+
+    try:
+        await sio.emit("passenger_boarded", payload, room=f"trip:{trip_id}")
+    except Exception:
+        logger.warning(
+            "SOCKETIO: falha em passenger_boarded para trip_id=%s trip_passanger_id=%s",
+            trip_id,
+            trip_passanger_id,
+            exc_info=True,
+        )
 
 
 # US11-TK06
-async def emit_passenger_absent(trip_id: str, trip_passanger_id: str, user_name: str) -> None:
+# US11-TK06
+async def emit_passenger_absent(
+    trip_id: str,
+    trip_passanger_id: str,
+    user_name: str,
+) -> None:
     """Emite passenger_absent para todos no room da sessão.
 
     Payload: {"trip_passanger_id": str, "user_name": str}
     Silenciosamente ignorado se não houver sessão ativa para o trip_id.
     """
-    pass
+
+    if trip_id not in tracking_sessions:
+        return
+
+    await sio.emit(
+        "passenger_absent",
+        {
+            "trip_passanger_id": trip_passanger_id,
+            "user_name": user_name,
+        },
+        room=f"trip:{trip_id}",
+    )
 
 
 # US11-TK04
@@ -289,11 +384,15 @@ async def emit_trip_finished(trip_id: str) -> None:
     Chamado pelo TripService após finalizar a viagem.
     Silenciosamente ignorado se não houver sessão ativa para o trip_id.
     """
-    pass
+    if trip_id not in tracking_sessions:
+        return
+
+    await sio.emit("trip_finished", {}, room=f"trip:{trip_id}")
+    tracking_sessions.pop(trip_id, None)
 
 
 # US12-TK06
-def _get_notification_service() -> FirebaseNotificationService:
+def _get_notification_service() -> INotificationService:
     return FirebaseNotificationService()
 
 
@@ -316,7 +415,13 @@ async def _notify_proximity_if_needed(follower_sid: str, distance_km: float) -> 
         _get_notification_service().notify_passanger_driver_approaching(user_id, route_id)
         meta["proximity_notified"] = True
     except Exception:
-        pass
+        # Push best-effort — não derruba o handler de location_update
+        logger.warning(
+            "SOCKETIO: falha em proximity notification follower_sid=%s",
+            follower_sid,
+            exc_info=True,
+        )
+
 
 
 # US12-TK07
@@ -370,10 +475,37 @@ async def _calculate_eta_for_follower(
     Retorna {"eta_minutes": int, "distance_km": float} ou None se routing
     service não estiver disponível ou se stop não estiver configurada.
     """
-    pass  # type: ignore[return-value]
+    meta = sid_meta.get(follower_sid)
+    if meta is None:
+        return None
+
+    stop_lat = meta.get("stop_lat")
+    stop_lng = meta.get("stop_lng")
+    if stop_lat is None or stop_lng is None:
+        return None
+
+    try:
+        route_info = _get_routing_service().get_route_info(
+            origin={"lat": driver_lat, "lng": driver_lng},
+            waypoints=[],
+            destination={"lat": stop_lat, "lng": stop_lng},
+        )
+    except Exception:
+        return None
+
+    return {
+        "eta_minutes": route_info.estimated_duration_min,
+        "distance_km": route_info.total_distance_km,
+    }
+
+
+def _get_routing_service() -> IRoutingService:
+    """Retorna o serviço de roteamento para uso fora do ciclo de DI do FastAPI."""
+    return get_routing_service()
 
 
 # US10-TK17
+@contextmanager
 def _get_trip_service():  # type: ignore[no-untyped-def]
     """Retorna uma instância de TripService para uso dentro dos handlers Socket.IO.
 
@@ -386,7 +518,28 @@ def _get_trip_service():  # type: ignore[no-untyped-def]
     uma instância configurada. Cuidar do ciclo da sessão (with/finally).
     Os testes substituem essa função via patch.
     """
-    pass  # type: ignore[return-value]
+    session = SessionLocal()
+    try:
+        trip_repo = TripRepositoryImpl(session)
+        tp_repo = TripPassangerRepositoryImpl(session)
+        absence_repo = AbsenceRepositoryImpl(session)
+        route_repo = RouteRepositoryImpl(session)
+        route_passanger_repo = RoutePassangerRepositoryImpl(session)
+        stop_repo = StopRepositoryImpl(session)
+        vehicle_repo = VehicleRepositoryImpl(session)
+        service = TripService(
+            trip_repository=trip_repo,
+            trip_passanger_repository=tp_repo,
+            absence_repository=absence_repo,
+            route_repository=route_repo,
+            route_passanger_repository=route_passanger_repo,
+            stop_repository=stop_repo,
+            vehicle_repository=vehicle_repo,
+            notification_service=_get_notification_service(),
+        )
+        yield service
+    finally:
+        session.close()
 
 
 # US10-TK17
@@ -418,7 +571,44 @@ async def _calculate_eta_for_tracker(
       ou None se: não houver parada pendente, endereço sem coordenadas,
       routing service indisponível, ou trip não encontrada.
     """
-    pass  # type: ignore[return-value]
+    if driver_lat is None or driver_lng is None or trip_id is None:
+        return None
+
+    try:
+        trip_uuid = uuid.UUID(trip_id)
+    except Exception:
+        return None
+
+    try:
+        trip_service_context = _get_trip_service()
+        if type(trip_service_context).__name__ == "_GeneratorContextManager":
+            with trip_service_context as trip_service:
+                next_stop = trip_service.get_next_stop_with_coordinates(trip_uuid)
+        else:
+            trip_service = trip_service_context
+            next_stop = trip_service.get_next_stop_with_coordinates(trip_uuid)
+
+        if next_stop is None:
+            return None
+
+        stop_lat = next_stop.get("lat")
+        stop_lng = next_stop.get("lng")
+        if stop_lat is None or stop_lng is None:
+            return None
+
+        route_info = _get_routing_service().get_route_info(
+            origin={"lat": driver_lat, "lng": driver_lng},
+            waypoints=[],
+            destination={"lat": stop_lat, "lng": stop_lng},
+        )
+
+        return {
+            "stop_id": str(next_stop["stop_id"]),
+            "eta_minutes": route_info.estimated_duration_min,
+            "distance_km": route_info.total_distance_km,
+        }
+    except Exception:
+        return None
 
 
 def _validate_tracker(user_id: str, trip_id: str) -> bool:

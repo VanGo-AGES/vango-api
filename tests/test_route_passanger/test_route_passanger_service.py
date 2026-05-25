@@ -1,3 +1,4 @@
+import datetime
 import uuid
 from unittest.mock import MagicMock, Mock
 
@@ -1366,7 +1367,7 @@ def test_list_my_routes_resolves_dependent_name_when_present() -> None:
     service, rp_repo, _, user_repo, dep_repo, _, _, _ = build_service()
     rp_repo.find_active_with_route_by_user.return_value = [rp]
     user_repo.find_by_id.return_value = driver
-    dep_repo.find_by_id.return_value = dep
+    dep_repo.get_by_id.return_value = dep
 
     result = service.list_my_routes(guardian_id)
 
@@ -1572,7 +1573,7 @@ def test_get_my_route_detail_looks_up_membership_with_correct_args() -> None:
     route_repo.find_by_id.return_value = route
     rp_repo.find_active_by_user_and_route.return_value = rp
     user_repo.find_by_id.return_value = driver
-    dep_repo.find_by_id.return_value = make_dependent_mock("Filha", guardian_id=user_id)
+    dep_repo.get_by_id.return_value = make_dependent_mock("Filha", guardian_id=user_id)
 
     service.get_my_route_detail(route.id, user_id, dependent_id=dependent_id)
 
@@ -1594,7 +1595,7 @@ def test_get_my_route_detail_resolves_dependent_name_when_dependent_id_present()
     route_repo.find_by_id.return_value = route
     rp_repo.find_active_by_user_and_route.return_value = rp
     user_repo.find_by_id.return_value = driver
-    dep_repo.find_by_id.return_value = dep
+    dep_repo.get_by_id.return_value = dep
 
     result = service.get_my_route_detail(route.id, user_id, dependent_id=dependent_id)
 
@@ -1616,7 +1617,7 @@ def test_get_my_route_detail_dependent_name_none_for_self_membership() -> None:
     result = service.get_my_route_detail(route.id, user_id)
 
     assert result.dependent_name is None
-    dep_repo.find_by_id.assert_not_called()
+    dep_repo.get_by_id.assert_not_called()
 
 
 def test_get_my_route_detail_current_trip_id_set_when_in_progress() -> None:
@@ -1723,7 +1724,7 @@ def test_get_my_route_detail_my_pickup_address_comes_from_rp() -> None:
 # ===========================================================================
 
 
-@pytest.mark.skip(reason="US10-TK08")
+
 def test_accept_request_calls_optimize_stop_order() -> None:
     """accept_request deve chamar routing_service.optimize_stop_order após salvar a stop."""
     from src.domains.routing.service import IRoutingService
@@ -1750,7 +1751,7 @@ def test_accept_request_calls_optimize_stop_order() -> None:
     routing_mock.optimize_stop_order.assert_called_once()
 
 
-@pytest.mark.skip(reason="US10-TK08")
+
 def test_remove_passanger_calls_optimize_stop_order() -> None:
     """remove_passanger deve chamar routing_service.optimize_stop_order após remover a stop."""
     from src.domains.routing.service import IRoutingService
@@ -1890,3 +1891,154 @@ def test_join_route_works_without_geocoding_service() -> None:
     # não deve levantar exceção
     service.join_route(route.id, user_id, req)
     rp_repo.save.assert_called_once()
+
+
+# ===========================================================================
+# US10-TK19 — RoutePassangerService._compute_route_totals + injeção nos
+# DTOs de resposta (list_my_routes e get_my_route_detail)
+# ===========================================================================
+
+
+
+def test_compute_route_totals_returns_tuple_when_routing_service_available() -> None:
+    """_compute_route_totals devolve (km, min) quando routing_service responde."""
+    from src.domains.routing.dtos import RouteInfoResult
+
+    routing_mock = Mock()
+    routing_mock.get_route_info.return_value = RouteInfoResult(
+        total_distance_km=8.5, estimated_duration_min=22
+    )
+
+    service, _rp_repo, _route_repo, _, _, _, _, _ = build_service()
+    service.routing_service = routing_mock
+
+    route = Mock()
+    route.origin_address = Mock(latitude=-30.0, longitude=-51.0)
+    route.destination_address = Mock(latitude=-30.1, longitude=-51.1)
+    route.stops = []
+
+    distance, duration = service._compute_route_totals(route)
+
+    assert distance == pytest.approx(8.5)
+    assert duration == 22
+
+
+
+def test_compute_route_totals_returns_none_when_routing_service_none() -> None:
+    """Sem routing_service, _compute_route_totals retorna (None, None)."""
+    service, _rp_repo, _route_repo, _, _, _, _, _ = build_service()
+    # build_service() não injeta routing_service por default
+    assert service.routing_service is None
+
+    route = Mock()
+    distance, duration = service._compute_route_totals(route)
+
+    assert distance is None
+    assert duration is None
+
+
+
+def test_list_my_routes_populates_totals_in_each_item() -> None:
+    """Cada PassangerRouteResponse devolvido por list_my_routes deve ter
+    total_distance_km e estimated_duration_min preenchidos com o resultado
+    de _compute_route_totals(route) (mockado aqui)."""
+    from src.domains.routes.entity import RouteModel
+    from src.domains.users.entity import UserModel
+
+    driver = Mock(spec=UserModel)
+    driver.id = uuid.uuid4()
+    driver.name = "Motorista"
+    driver.phone = "51999999999"
+
+    origin = Mock(label="Casa", latitude=-30.0, longitude=-51.0)
+    destination = Mock(label="PUCRS", latitude=-30.1, longitude=-51.1)
+    route = Mock(spec=RouteModel)
+    route.id = uuid.uuid4()
+    route.name = "PUCRS Manhã"
+    route.driver_id = driver.id
+    route.driver = driver
+    route.recurrence = "seg,ter"
+    route.expected_time = "07:30"
+    route.status = "ativa"
+    route.origin_address = origin
+    route.destination_address = destination
+
+    rp = make_rp_mock(route.id, uuid.uuid4(), status="accepted")
+    rp.route = route
+    rp.dependent_id = None
+    rp.schedules = []
+    rp.joined_at = datetime.datetime.now(datetime.UTC) if hasattr(datetime, "UTC") else datetime.datetime.utcnow()
+
+    service, rp_repo, _route_repo, _, _, _, _, _ = build_service()
+    rp_repo.find_active_with_route_by_user.return_value = [rp]
+
+    # Mockando o helper interno via patch — o teste valida que o RESULTADO
+    # do helper aparece no DTO de resposta, não a impl interna do helper.
+    from unittest.mock import patch as _patch
+
+    with _patch.object(service, "_compute_route_totals", return_value=(10.5, 32)):
+        results = service.list_my_routes(rp.user_id)
+
+    assert len(results) == 1
+    assert results[0].total_distance_km == pytest.approx(10.5)
+    assert results[0].estimated_duration_min == 32
+
+
+
+def test_list_my_routes_totals_none_when_routing_unavailable() -> None:
+    """Quando _compute_route_totals devolve (None, None), os campos saem
+    None no PassangerRouteResponse — não levanta exceção."""
+    from src.domains.routes.entity import RouteModel
+
+    driver = Mock(id=uuid.uuid4(), name="M", phone="51")
+    route = Mock(spec=RouteModel)
+    route.id = uuid.uuid4()
+    route.name = "X"
+    route.driver = driver
+    route.driver_id = driver.id
+    route.recurrence = "seg"
+    route.expected_time = "07:30"
+    route.status = "ativa"
+    route.origin_address = Mock(label="A", latitude=None, longitude=None)
+    route.destination_address = Mock(label="B", latitude=None, longitude=None)
+
+    rp = make_rp_mock(route.id, uuid.uuid4(), status="accepted")
+    rp.route = route
+    rp.dependent_id = None
+    rp.schedules = []
+    rp.joined_at = datetime.datetime.now(datetime.UTC) if hasattr(datetime, "UTC") else datetime.datetime.utcnow()
+
+    service, rp_repo, _route_repo, _, _, _, _, _ = build_service()
+    rp_repo.find_active_with_route_by_user.return_value = [rp]
+
+    from unittest.mock import patch as _patch
+
+    with _patch.object(service, "_compute_route_totals", return_value=(None, None)):
+        results = service.list_my_routes(rp.user_id)
+
+    assert len(results) == 1
+    assert results[0].total_distance_km is None
+    assert results[0].estimated_duration_min is None
+
+
+
+def test_get_my_route_detail_populates_totals_from_compute_helper() -> None:
+    """PassangerRouteDetailResponse devolvido por get_my_route_detail deve
+    ter total_distance_km e estimated_duration_min preenchidos com o
+    resultado de _compute_route_totals(route) (mockado aqui)."""
+    route = make_route_mock(uuid.uuid4(), status="ativa")
+    user_id = uuid.uuid4()
+    rp = make_rp_mock(route.id, user_id, status="accepted")
+
+    service, rp_repo, route_repo, user_repo, _, _, _, _ = build_service()
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_active_for_user_or_as_guardian.return_value = rp
+    user_repo.find_by_id.return_value = Mock(name="João", phone="51")
+
+    from unittest.mock import patch as _patch
+
+    with _patch.object(service, "_compute_route_totals", return_value=(12.0, 35)):
+        detail = service.get_my_route_detail(route.id, user_id)
+
+    assert detail.total_distance_km == pytest.approx(12.0)
+    assert detail.estimated_duration_min == 35

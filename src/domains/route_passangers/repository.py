@@ -76,3 +76,22 @@ class IRoutePassangerRepository(ABC):
         Ordenação: joined_at desc.
         """
         pass
+
+    @abstractmethod
+    def find_active_for_user_or_as_guardian(
+        self,
+        user_id: UUID,
+        route_id: UUID,
+    ) -> RoutePassangerModel | None:
+        """Retorna o vínculo ATIVO (status pending ou accepted) do user_id
+        na rota, seja como passageiro direto (rp.user_id == user_id E
+        rp.dependent_id IS NULL) ou como guardian de algum dependente
+        (rp.dependent_id pertence a um DependentModel onde guardian_id ==
+        user_id). Usado pelo GET /routes/{id}/me quando o caller não passa
+        ?dependent_id e o backend precisa descobrir o vínculo automaticamente.
+
+        Se o usuário tiver múltiplos vínculos elegíveis (ex.: guardian de
+        dois dependentes na mesma rota), retorna o primeiro encontrado —
+        o caller deve passar ?dependent_id explicitamente nesses casos.
+        """
+        pass

@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -455,6 +455,10 @@ from src.domains.routes.entity import RouteModel
 from src.domains.users.entity import UserModel
 from src.domains.vehicles.entity import VehicleModel
 from src.infrastructure.database import get_db
+from src.infrastructure.dependencies.routing_dependencies import (
+    get_geocoding_service,
+    get_routing_service,
+)
 
 
 @pytest.fixture
@@ -463,6 +467,16 @@ def integration_client(db_session):
         yield db_session
 
     app.dependency_overrides[get_db] = override_db
+    # US10-TK19: depois que routing_service e geocoding_service viraram
+    # dependências obrigatórias no get_route_passanger_service, os
+    # integration tests acabam recebendo o MapboxRoutingService /
+    # MapboxGeocodingService real. Em CI sem internet/credencial isso
+    # quebra accept_request, remove_passanger, join_route e create_route
+    # (todos chamam _trigger_route_optimization / _geocode_address).
+    # Override para Mocks neutros — testes que precisam de routing real
+    # devem mockar com return_value específico.
+    app.dependency_overrides[get_routing_service] = lambda: MagicMock()
+    app.dependency_overrides[get_geocoding_service] = lambda: MagicMock()
     yield TestClient(app, raise_server_exceptions=False)
     app.dependency_overrides.clear()
 

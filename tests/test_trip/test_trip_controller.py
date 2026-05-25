@@ -11,13 +11,17 @@ Convenções:
 
 import uuid
 from datetime import datetime, timezone
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock
 
 import pytest
 from fastapi.testclient import TestClient
 
 from src.domains.trips.service import TripService
 from src.infrastructure.database import get_db
+from src.infrastructure.dependencies.routing_dependencies import (
+    get_geocoding_service,
+    get_routing_service,
+)
 from src.infrastructure.dependencies.trip_dependencies import get_trip_service
 from src.main import fastapi_app as app
 from tests.test_trip._helpers import (
@@ -667,6 +671,11 @@ def integration_client(db_session):
         yield db_session
 
     app.dependency_overrides[get_db] = override_db
+    # US10-TK19: routing_service e geocoding_service viraram dependências
+    # injetadas em vários services. Override por Mocks neutros pra evitar
+    # chamada Mapbox real no CI sem credencial.
+    app.dependency_overrides[get_routing_service] = lambda: MagicMock()
+    app.dependency_overrides[get_geocoding_service] = lambda: MagicMock()
     yield TestClient(app, raise_server_exceptions=False)
     app.dependency_overrides.clear()
 
@@ -1155,6 +1164,9 @@ def make_current_trip_response():
         trip_id=uuid.uuid4(),
         status="iniciada",
         started_at=datetime(2026, 5, 10, 7, 30, tzinfo=timezone.utc),
+        driver_name="João Silva",
+        driver_photo_url="https://cdn.vango.app/u/joao.jpg",
+        vehicle_plate="ABC-1234",
     )
 
 
