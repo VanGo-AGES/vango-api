@@ -213,9 +213,8 @@ class TripService:
                 passanger_name = rp.dependent.name if rp.dependent_id else rp.user.name
                 passanger_phone = rp.user.phone
 
-                address_label = (
-                    ", ".join(part for part in [rp.pickup_address.street, rp.pickup_address.number] if part) or rp.pickup_address.label
-                )
+                address_parts = [rp.pickup_address.street, rp.pickup_address.number]
+                address_label = ", ".join(part for part in address_parts if isinstance(part, str) and part) or rp.pickup_address.label
 
                 return TripNextStopResponse.model_construct(
                     stop_id=stop.id,
