@@ -349,7 +349,8 @@ def seed(db: Session) -> None:  # noqa: PLR0914 (muitas variáveis locais, ok pa
         recurrence="seg,ter,qua,qui,sex",
         expected_time=time(7, 0),
         max_passengers=vehicle1.capacity,
-        status="ativa",
+        # Tem viagem em andamento hoje (trip2) → rota fica em_andamento, como o start_trip grava.
+        status="em_andamento",
     )
     db.add(route1)
     db.flush()
@@ -670,7 +671,8 @@ def seed(db: Session) -> None:  # noqa: PLR0914 (muitas variáveis locais, ok pa
         recurrence="seg,qua,sex",
         expected_time=time(17, 45),
         max_passengers=vehicle2.capacity,
-        status="ativa",
+        # Tem viagem em andamento hoje (trip3) → rota fica em_andamento.
+        status="em_andamento",
     )
     db.add(route2)
     db.flush()
@@ -845,6 +847,171 @@ def seed(db: Session) -> None:  # noqa: PLR0914 (muitas variáveis locais, ok pa
     # rp6 não entra na trip pois ainda está pendente na rota
 
     # -----------------------------------------------------------------------
+    # CENÁRIO 3 — Rota de Sábado (para testar Iniciar rota + ETA + otimizador)
+    # Motorista: Carlos Eduardo Oliveira (reusa driver1 / vehicle1)
+    # Rota: Zona Norte → Beira-Rio (outbound, sáb, 09:00). SEM viagem iniciada.
+    # 3 paradas com coordenadas; order_index propositalmente subótimo para o
+    # otimizador ter o que reordenar.
+    # -----------------------------------------------------------------------
+    print("  [Cenário 3] Criando rota de sábado...")
+
+    addr_origin3 = _make_address(
+        user_id=driver1.id,
+        label="Garagem (Sábado)",
+        street="Avenida Assis Brasil",
+        number="3970",
+        neighborhood="Passo d'Areia",
+        zip_code="91010-000",
+        latitude=-30.0151,
+        longitude=-51.1694,
+    )
+    addr_dest3 = _make_address(
+        user_id=driver1.id,
+        label="Estádio Beira-Rio",
+        street="Avenida Padre Cacique",
+        number="891",
+        neighborhood="Praia de Belas",
+        zip_code="90810-240",
+        latitude=-30.0656,
+        longitude=-51.2360,
+    )
+    db.add_all([addr_origin3, addr_dest3])
+    db.flush()
+
+    route3 = _make_route(
+        driver_id=driver1.id,
+        origin_address_id=addr_origin3.id,
+        destination_address_id=addr_dest3.id,
+        name="Rota Treino Sábado — Manhã",
+        route_type="outbound",
+        recurrence="sab",
+        expected_time=time(9, 0),
+        max_passengers=vehicle1.capacity,
+        status="ativa",
+    )
+    db.add(route3)
+    db.flush()
+
+    # Passageiro A: Marcos Pereira (guardian) + dependente Pedro — mais ao norte
+    guardian_sat = _make_user(
+        name="Marcos Pereira",
+        email="marcos.pereira@example.com",
+        phone="51955660010",
+        role="guardian",
+    )
+    db.add(guardian_sat)
+    db.flush()
+
+    dep_sat = DependentModel(
+        id=uuid.uuid4(),
+        name="Pedro Pereira",
+        guardian_id=guardian_sat.id,
+    )
+    db.add(dep_sat)
+    db.flush()
+
+    addr_sat_a = _make_address(
+        user_id=guardian_sat.id,
+        label="Casa",
+        street="Rua Doutor Pereira Neto",
+        number="200",
+        neighborhood="Cristo Redentor",
+        zip_code="91040-320",
+        latitude=-30.0045,
+        longitude=-51.1580,
+        is_default=True,
+    )
+    db.add(addr_sat_a)
+    db.flush()
+
+    rp_sat_a = _make_route_passanger(
+        route_id=route3.id,
+        user_id=guardian_sat.id,
+        pickup_address_id=addr_sat_a.id,
+        status="accepted",
+        dependent_id=dep_sat.id,
+    )
+    db.add(rp_sat_a)
+    db.flush()
+    db.add(_make_schedule(rp_sat_a.id, addr_sat_a.id, "saturday"))
+
+    # Passageiro B: Lucas Almeida (passenger direto) — meio do caminho
+    passenger_sat_b = _make_user(
+        name="Lucas Almeida",
+        email="lucas.almeida@example.com",
+        phone="51955660011",
+        role="passenger",
+    )
+    db.add(passenger_sat_b)
+    db.flush()
+
+    addr_sat_b = _make_address(
+        user_id=passenger_sat_b.id,
+        label="Casa",
+        street="Avenida Plínio Brasil Milano",
+        number="1500",
+        neighborhood="Higienópolis",
+        zip_code="90520-001",
+        latitude=-30.0205,
+        longitude=-51.1810,
+        is_default=True,
+    )
+    db.add(addr_sat_b)
+    db.flush()
+
+    rp_sat_b = _make_route_passanger(
+        route_id=route3.id,
+        user_id=passenger_sat_b.id,
+        pickup_address_id=addr_sat_b.id,
+        status="accepted",
+    )
+    db.add(rp_sat_b)
+    db.flush()
+    db.add(_make_schedule(rp_sat_b.id, addr_sat_b.id, "saturday"))
+
+    # Passageiro C: Gabriel Souza (passenger direto) — mais ao sul
+    passenger_sat_c = _make_user(
+        name="Gabriel Souza",
+        email="gabriel.souza@example.com",
+        phone="51955660012",
+        role="passenger",
+    )
+    db.add(passenger_sat_c)
+    db.flush()
+
+    addr_sat_c = _make_address(
+        user_id=passenger_sat_c.id,
+        label="Casa",
+        street="Rua Anita Garibaldi",
+        number="1200",
+        neighborhood="Mont Serrat",
+        zip_code="90450-001",
+        latitude=-30.0220,
+        longitude=-51.1955,
+        is_default=True,
+    )
+    db.add(addr_sat_c)
+    db.flush()
+
+    rp_sat_c = _make_route_passanger(
+        route_id=route3.id,
+        user_id=passenger_sat_c.id,
+        pickup_address_id=addr_sat_c.id,
+        status="accepted",
+    )
+    db.add(rp_sat_c)
+    db.flush()
+    db.add(_make_schedule(rp_sat_c.id, addr_sat_c.id, "saturday"))
+
+    # Stops em ordem subótima de propósito (B → A → C). Saindo da garagem (norte),
+    # a ordem geográfica natural seria A → B → C; o otimizador deve reordenar.
+    db.add(_make_stop(route3.id, rp_sat_b.id, addr_sat_b.id, order_index=1))
+    db.add(_make_stop(route3.id, rp_sat_a.id, addr_sat_a.id, order_index=2))
+    db.add(_make_stop(route3.id, rp_sat_c.id, addr_sat_c.id, order_index=3))
+    db.flush()
+    # Nenhuma viagem criada — a rota fica pronta para "Iniciar rota" do zero.
+
+    # -----------------------------------------------------------------------
     # Commit final
     # -----------------------------------------------------------------------
     db.commit()
@@ -870,12 +1037,17 @@ def _print_summary() -> None:
     print("  mariana.costa@example.com     — passenger (aceita)")
     print("  thiago.becker@example.com     — passenger (aceito)")
     print("  juliana.fonseca@example.com   — passenger (pendente)")
+    print("  marcos.pereira@example.com    — guardian  (+ dep. Pedro, Rota Sábado)")
+    print("  lucas.almeida@example.com     — passenger (aceito, Rota Sábado)")
+    print("  gabriel.souza@example.com     — passenger (aceito, Rota Sábado)")
     print()
     print("Rotas:")
     print("  Rota Escolar Zona Norte — Manhã  (outbound, seg–sex, 07:00)")
     print("    3 stops | 1 viagem finalizada + 1 em andamento")
     print("  Rota Empresarial Centro — Tarde  (inbound, seg/qua/sex, 17:45)")
     print("    2 stops | 1 viagem em andamento | 1 passageiro pendente")
+    print("  Rota Treino Sábado — Manhã       (outbound, sáb, 09:00)")
+    print("    3 stops | SEM viagem | pronta para 'Iniciar rota' (Carlos)")
     print("=" * 60)
 
 
@@ -903,7 +1075,7 @@ def main() -> None:
         else:
             existing = db.query(UserModel).filter_by(email=SEED_ANCHOR_EMAIL).first()
             if existing:
-                print("Seed já executado anteriormente. " "Use --reset para limpar e re-popular.")
+                print("Seed já executado anteriormente. Use --reset para limpar e re-popular.")
                 return
 
         seed(db)

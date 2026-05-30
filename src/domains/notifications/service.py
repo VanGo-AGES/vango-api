@@ -127,6 +127,15 @@ class INotificationService(ABC):
         """Notifica guardian/passageiro que o passageiro foi marcado ausente."""
         pass
 
+    # -----------------------------------------------------------------
+    # Helper de teste — envio manual de push para um token específico
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def send_test_notification(self, token: str, title: str, body: str) -> str:
+        """Envia uma notificação de teste direta para um token e retorna o message_id."""
+        pass
+
 
 class LoggingNotificationService(INotificationService):
     """Implementação stub que apenas registra as notificações em log."""
@@ -207,3 +216,12 @@ class LoggingNotificationService(INotificationService):
             trip.id,
             trip.route_id,
         )
+
+    def send_test_notification(self, token: str, title: str, body: str) -> str:
+        logger.info(
+            "send_test_notification (stub): token=%s title=%s body=%s",
+            token,
+            title,
+            body,
+        )
+        return "logging-stub"

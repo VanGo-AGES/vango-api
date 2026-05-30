@@ -101,6 +101,63 @@ def test_optimize_stop_order_calls_mapbox_optimization_api():
     assert len(result) == 3
 
 
+def test_optimize_stop_order_anchors_origin_and_destination():
+    """Com origin e destination, ancora source=first/destination=last/roundtrip=false
+    e retorna só a ordem das paradas intermediárias (sem origem/destino)."""
+    from src.infrastructure.routing.mapbox_routing_service import MapboxRoutingService
+
+    service = MapboxRoutingService(api_key="test-key")
+    origin = {"lat": -30.00, "lng": -51.10}
+    destination = {"lat": -30.30, "lng": -51.40}
+    stops = [
+        {"id": "A", "lat": -30.01, "lng": -51.11},
+        {"id": "B", "lat": -30.02, "lng": -51.12},
+        {"id": "C", "lat": -30.03, "lng": -51.13},
+    ]
+
+    # Entrada: [origem(0), A(1), B(2), C(3), destino(4)].
+    # Ordem ótima de visita: origem, A, C, B, destino → waypoint_index por entrada:
+    #   origem=0, A=1, B=3, C=2, destino=4
+    with patch("requests.get") as mock_get:
+        mock_get.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {
+                "trips": [{"geometry": {}}],
+                "waypoints": [
+                    {"waypoint_index": 0},  # origem
+                    {"waypoint_index": 1},  # A
+                    {"waypoint_index": 3},  # B
+                    {"waypoint_index": 2},  # C
+                    {"waypoint_index": 4},  # destino
+                ],
+            },
+        )
+        result = service.optimize_stop_order(stops, origin, destination)
+
+    # Ancorou via querystring
+    _, kwargs = mock_get.call_args
+    params = kwargs["params"]
+    assert params["source"] == "first"
+    assert params["destination"] == "last"
+    assert params["roundtrip"] == "false"
+
+    # Só as paradas intermediárias, na ordem de visita A, C, B → índices 0, 2, 1
+    assert result == [0, 2, 1]
+
+
+def test_optimize_stop_order_empty_returns_empty_without_calling_mapbox():
+    """Sem paradas intermediárias não há o que otimizar nem chamada externa."""
+    from src.infrastructure.routing.mapbox_routing_service import MapboxRoutingService
+
+    service = MapboxRoutingService(api_key="test-key")
+
+    with patch("requests.get") as mock_get:
+        result = service.optimize_stop_order([], {"lat": -30.0, "lng": -51.0}, {"lat": -30.1, "lng": -51.1})
+
+    assert result == []
+    mock_get.assert_not_called()
+
+
 def test_get_route_info_calls_mapbox_directions_api():
     """get_route_info deve chamar a Mapbox Directions API."""
     from src.infrastructure.routing.mapbox_routing_service import MapboxRoutingService
