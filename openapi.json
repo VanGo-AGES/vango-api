@@ -1458,6 +1458,28 @@
             "title": "Address Label",
             "type": "string"
           },
+          "latitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latitude"
+          },
+          "longitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Longitude"
+          },
           "order_index": {
             "title": "Order Index",
             "type": "integer"

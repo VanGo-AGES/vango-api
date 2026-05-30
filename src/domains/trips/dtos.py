@@ -119,6 +119,8 @@ class TripNextStopResponse(BaseModel):
     passanger_phone: str
     trip_passanger_id: UUID
     trip_passanger_status: str
+    latitude: float | None = None
+    longitude: float | None = None
 
 
 # US11-TK01 (nova — viagem atual para o passageiro)
