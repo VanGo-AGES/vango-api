@@ -21,7 +21,7 @@ from src.domains.routes.errors import (
 from src.domains.routes.repository import IAddressRepository, IRouteRepository
 from src.domains.routing.route_totals import compute_route_totals
 from src.domains.routing.service import IGeocodingService, IRoutingService
-from src.domains.trips.repository import IAbsenceRepository
+from src.domains.trips.repository import IAbsenceRepository, ITripRepository
 from src.domains.vehicles.repository import IVehicleRepository
 
 
@@ -36,6 +36,7 @@ class RouteService:
         absence_repository: IAbsenceRepository | None = None,
         geocoding_service: IGeocodingService | None = None,
         routing_service: IRoutingService | None = None,
+        trip_repository: ITripRepository | None = None,
     ):
         self.route_repository = route_repository
         self.address_repository = address_repository
@@ -55,6 +56,8 @@ class RouteService:
         # em create_route (origin e destination). Opcional para não quebrar
         # testes/instanciações que não dependem de geocoding.
         self.geocoding_service = geocoding_service
+        # US09 — usado para popular active_trip_id em RouteResponse.
+        self.trip_repository = trip_repository
 
     # US05 - TK03
     def create_route(self, driver_id: UUID, data: RouteCreate) -> RouteModel:
@@ -231,6 +234,17 @@ class RouteService:
         if self.route_passanger_repository is None:
             return 0
         return self.route_passanger_repository.count_accepted_by_route(route_id)
+
+    def get_active_trip_id(self, route_id: UUID) -> UUID | None:
+        """Retorna o id da trip com status='iniciada' da rota, ou None se não houver.
+
+        Usado pelo controller para popular active_trip_id em RouteResponse.
+        Silenciosamente retorna None se trip_repository não foi injetado.
+        """
+        if self.trip_repository is None:
+            return None
+        trip = self.trip_repository.find_in_progress_by_route(route_id)
+        return trip.id if trip is not None else None
 
     # US10-TK19
     def get_route_totals(self, route: RouteModel) -> tuple[float | None, int | None]:

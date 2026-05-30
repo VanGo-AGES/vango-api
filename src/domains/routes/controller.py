@@ -31,6 +31,13 @@ def _safe_route_totals(service: RouteService, route: object) -> tuple[float | No
     return None, None
 
 
+def _safe_active_trip_id(service: RouteService, route_id: UUID) -> UUID | None:
+    result = service.get_active_trip_id(route_id)
+    if result is None or isinstance(result, UUID):
+        return result
+    return None
+
+
 _DESCRIPTION_CREATE = (
     "Cria uma rota para o motorista com origem, destino, horário e recorrência. "
     "Gera automaticamente o código de convite e salva com status inativa."
@@ -90,16 +97,16 @@ def list_routes(
 ) -> list[RouteResponse]:
     driver_id = UUID(x_user_id)
     routes = service.get_routes(driver_id)
-    # US10-TK19: enriquecer cada RouteResponse com total_distance_km e
-    # estimated_duration_min via service.get_route_totals(route).model_copy(update={...}).
     responses: list[RouteResponse] = []
     for route in routes:
         total_distance_km, estimated_duration_min = _safe_route_totals(service, route)
+        active_trip_id = _safe_active_trip_id(service, route.id)
         responses.append(
             RouteResponse.from_orm(route).model_copy(
                 update={
                     "total_distance_km": total_distance_km,
                     "estimated_duration_min": estimated_duration_min,
+                    "active_trip_id": active_trip_id,
                 }
             )
         )
@@ -203,13 +210,13 @@ def get_route(
         route = service.get_route(route_id, driver_id)
         accepted_count = service.get_accepted_count(route_id)
         total_distance_km, estimated_duration_min = _safe_route_totals(service, route)
-        # US10-TK19: incluir total_distance_km e estimated_duration_min no model_copy
-        # via service.get_route_totals(route).
+        active_trip_id = _safe_active_trip_id(service, route_id)
         return RouteResponse.from_orm(route).model_copy(
             update={
                 "accepted_count": accepted_count,
                 "total_distance_km": total_distance_km,
                 "estimated_duration_min": estimated_duration_min,
+                "active_trip_id": active_trip_id,
             }
         )
     except RouteNotFoundError as exc:
