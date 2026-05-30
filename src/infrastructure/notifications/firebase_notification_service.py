@@ -25,7 +25,7 @@ EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send"
 
 def _is_expo_token(token: str) -> bool:
     """True se o token for um Expo push token (entregue via Expo Push Service)."""
-    return token.startswith("ExponentPushToken[") or token.startswith("ExpoPushToken[")
+    return isinstance(token, str) and (token.startswith("ExponentPushToken[") or token.startswith("ExpoPushToken["))
 
 
 class FirebaseNotificationService(INotificationService):
