@@ -3,9 +3,19 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Header, HTTPException, status
 
+from src.domains.notifications.service import INotificationService
+from src.infrastructure.dependencies.notification_dependencies import get_notification_service
 from src.infrastructure.dependencies.user_dependencies import get_user_service
 
-from .dtos import LoginRequest, RegisterPushTokenRequest, UserCreate, UserResponse, UserUpdate
+from .dtos import (
+    LoginRequest,
+    RegisterPushTokenRequest,
+    SendTestNotificationRequest,
+    SendTestNotificationResponse,
+    UserCreate,
+    UserResponse,
+    UserUpdate,
+)
 from .errors import DuplicateEmailError, InvalidCredentialsError, UserNotFoundError
 from .service import UserService
 
@@ -129,3 +139,50 @@ def register_push_token(
         return service.register_push_token(x_user_id, body)
     except UserNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+
+@router.post(
+    "/me/send-test-notification",
+    response_model=SendTestNotificationResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Enviar notificação de teste para o usuário logado",
+    description=(
+        "Helper de teste: envia um push para o push_token do usuário autenticado, "
+        "para validar o pipeline FCM ponta a ponta sem disparar um evento real. "
+        "Body é opcional (title/body têm default). "
+        "404 se o usuário não existir, 400 se não houver push_token registrado, "
+        "502 se o FCM rejeitar o envio."
+    ),
+)
+def send_test_notification(
+    service: Annotated[UserService, Depends(get_user_service)],
+    notification_service: Annotated[INotificationService, Depends(get_notification_service)],
+    x_user_id: Annotated[UUID, Header(alias="X-User-Id")],
+    body: SendTestNotificationRequest | None = None,
+) -> SendTestNotificationResponse:
+    payload = body or SendTestNotificationRequest()
+
+    try:
+        user = service.get_user(x_user_id)
+    except UserNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+
+    if not user.push_token:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Usuário não possui push_token registrado. Abra o app logado para registrar o token.",
+        )
+
+    try:
+        message_id = notification_service.send_test_notification(user.push_token, payload.title, payload.body)
+    except Exception as exc:  # noqa: BLE001 — reporta qualquer falha de envio FCM ao chamador
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Falha ao enviar push via FCM: {exc}",
+        ) from exc
+
+    return SendTestNotificationResponse(
+        success=True,
+        message_id=str(message_id),
+        detail="Notificação de teste enviada com sucesso.",
+    )

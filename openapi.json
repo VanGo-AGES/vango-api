@@ -1306,6 +1306,57 @@
         "title": "RouteUpdate",
         "type": "object"
       },
+      "SendTestNotificationRequest": {
+        "description": "Payload opcional para customizar a notificação de teste.\n\nAmbos os campos têm default, então um POST com body vazio já funciona.",
+        "properties": {
+          "body": {
+            "default": "Se você está vendo isso, o pipeline de push está funcionando.",
+            "maxLength": 240,
+            "minLength": 1,
+            "title": "Body",
+            "type": "string"
+          },
+          "title": {
+            "default": "Teste de push VanGo",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "title": "SendTestNotificationRequest",
+        "type": "object"
+      },
+      "SendTestNotificationResponse": {
+        "description": "Resultado do envio de teste.",
+        "properties": {
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message Id"
+          },
+          "success": {
+            "title": "Success",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success",
+          "detail"
+        ],
+        "title": "SendTestNotificationResponse",
+        "type": "object"
+      },
       "StartTripRequest": {
         "description": "Payload enviado pelo motorista para iniciar a viagem.\n\nFields esperados:\n- vehicle_id: UUID — veículo que vai executar a viagem (precisa pertencer\n  ao motorista dono da rota)\n- trip_date: datetime | None — data/hora da viagem. Default: now()",
         "properties": {
@@ -4191,6 +4242,67 @@
           }
         },
         "summary": "Registrar FCM push token do dispositivo",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/users/me/send-test-notification": {
+      "post": {
+        "description": "Helper de teste: envia um push para o push_token do usuário autenticado, para validar o pipeline FCM ponta a ponta sem disparar um evento real. Body é opcional (title/body têm default). 404 se o usuário não existir, 400 se não houver push_token registrado, 502 se o FCM rejeitar o envio.",
+        "operationId": "send_test_notification_users_me_send_test_notification_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/SendTestNotificationRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SendTestNotificationResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Enviar notificação de teste para o usuário logado",
         "tags": [
           "Users"
         ]

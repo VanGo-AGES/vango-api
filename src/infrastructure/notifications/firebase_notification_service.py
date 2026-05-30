@@ -281,6 +281,19 @@ class FirebaseNotificationService(INotificationService):
                 e,
             )
 
+    def send_test_notification(self, token: str, title: str, body: str) -> str:
+        """Envia uma notificação de teste direta para o token e retorna o message_id.
+
+        Diferente dos demais métodos, propaga exceções para o chamador, para que
+        o endpoint de teste consiga reportar a falha (token inválido, etc.).
+        """
+        message = messaging.Message(
+            notification=messaging.Notification(title=title, body=body),
+            data={"type": "test_notification", "routeId": "", "passengerId": ""},
+            token=token,
+        )
+        return messaging.send(message)
+
     def notify_passanger_driver_arrived(self, user_id: str, route_id: str) -> None:
         try:
             message = messaging.Message(
