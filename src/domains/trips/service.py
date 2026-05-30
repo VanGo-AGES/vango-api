@@ -221,6 +221,8 @@ class TripService:
                     passanger_phone=passanger_phone,
                     trip_passanger_id=tp.id,
                     trip_passanger_status=tp.status,
+                    latitude=rp.pickup_address.latitude,
+                    longitude=rp.pickup_address.longitude,
                 )
 
         return None

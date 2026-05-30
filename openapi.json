@@ -1144,6 +1144,19 @@
             "title": "Accepted Count",
             "type": "integer"
           },
+          "active_trip_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "ID da trip em andamento para esta rota, null se não houver",
+            "title": "Active Trip Id"
+          },
           "destination_address": {
             "$ref": "#/components/schemas/AddressResponse"
           },
@@ -1444,6 +1457,28 @@
           "address_label": {
             "title": "Address Label",
             "type": "string"
+          },
+          "latitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latitude"
+          },
+          "longitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Longitude"
           },
           "order_index": {
             "title": "Order Index",

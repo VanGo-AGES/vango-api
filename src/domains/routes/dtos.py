@@ -89,6 +89,11 @@ class RouteResponse(BaseModel):
         default=None,
         description="Duração estimada planejada origem→stops→destino em minutos",
     )
+    # US09 — ID da trip ativa (status='iniciada'), null quando não há viagem em andamento
+    active_trip_id: UUID | None = Field(
+        default=None,
+        description="ID da trip em andamento para esta rota, null se não houver",
+    )
 
 
 # US08-TK01
