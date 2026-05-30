@@ -266,8 +266,7 @@ class RoutePassangerService:
             coordinates.append({"id": stop.id, "lat": latitude, "lng": longitude})
             optimizable_stops.append(stop)
 
-        # Origem e destino são âncoras fixas: não reordenam, só servem para
-        # ancorar a otimização das paradas intermediárias entre elas.
+        # Origem e destino entram como âncoras fixas (não reordenam).
         route = self.route_repository.find_by_id(route_id)
         origin = _address_to_coordinate(getattr(route, "origin_address", None)) if route else None
         destination = _address_to_coordinate(getattr(route, "destination_address", None)) if route else None
