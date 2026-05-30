@@ -492,21 +492,24 @@ class TripService:
         """Retorna a viagem em andamento da rota para um passageiro autenticado.
 
         - 404 RouteNotFoundError se a rota não existir.
-        - 403 NotRoutePassangerError se o usuário não tiver vínculo ativo (pending
-          ou accepted) na rota — inclui guardian atuando por dependente.
+        - 403 NotRoutePassangerError se o usuário não for o motorista dono da rota
+          nem tiver vínculo ativo (pending ou accepted) — inclui guardian atuando
+          por dependente.
         - Retorna None quando nenhuma viagem está em andamento na rota.
-        - Não valida ownership do motorista — qualquer passageiro da rota pode
-          consultar.
+        - O motorista dono da rota também pode consultar (usado pelo app do
+          motorista para abrir a viagem em andamento a partir da home).
         """
         # Valida que a rota existe
         route = self.route_repository.find_by_id(route_id)
         if route is None:
             raise RouteNotFoundError(f"Rota {route_id} não encontrada.")
 
-        # Valida que o usuário/dependente tem vínculo ativo na rota
-        active_link = self.route_passanger_repository.find_active_by_user_and_route(user_id, dependent_id, route_id)
-        if active_link is None:
-            raise NotRoutePassangerError("Usuário não possui vínculo ativo nesta rota.")
+        # O dono da rota pode consultar sempre; senão, exige vínculo ativo
+        # (passageiro/guardião) na rota.
+        if route.driver_id != user_id:
+            active_link = self.route_passanger_repository.find_active_by_user_and_route(user_id, dependent_id, route_id)
+            if active_link is None:
+                raise NotRoutePassangerError("Usuário não possui vínculo ativo nesta rota.")
 
         # Busca viagem em andamento
         trip = self.trip_repository.find_in_progress_by_route(route_id)

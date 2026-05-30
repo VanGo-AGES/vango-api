@@ -127,6 +127,48 @@ python -m scripts.seed --reset
 
 ---
 
+## Cenário 3 — Rota Treino Sábado (Carlos Oliveira)
+
+**Veículo:** Sprinter branca — placa `IJK-1A23`, 8 lugares (mesmo do Cenário 1)
+
+Rota dedicada para testar o fluxo **Iniciar rota** + ETA + otimizador hoje (sábado). **Não tem viagem em andamento**, então o botão "Iniciar rota" cria a Trip do zero.
+
+### Rota
+
+| Campo | Valor |
+|---|---|
+| Nome | Rota Treino Sábado — Manhã |
+| Tipo | `outbound` (ida) |
+| Recorrência | sab |
+| Horário | 09:00 |
+| Status | ativa |
+| Origem | Av. Assis Brasil, 3970 — Passo d'Areia |
+| Destino | Av. Padre Cacique, 891 — Praia de Belas (Beira-Rio) |
+
+### Passageiros da rota
+
+| Passageiro | Dependente | Endereço de embarque | Dias | Status |
+|---|---|---|---|---|
+| Marcos Pereira | Pedro Pereira | Rua Dr. Pereira Neto, 200 — Cristo Redentor | sáb | aceito |
+| Lucas Almeida | — | Av. Plínio Brasil Milano, 1500 — Higienópolis | sáb | aceito |
+| Gabriel Souza | — | Rua Anita Garibaldi, 1200 — Mont Serrat | sáb | aceito |
+
+### Stops (paradas)
+
+Ordenados de propósito de forma **subótima** (B → A → C) para validar o otimizador — a ordem geográfica natural saindo da garagem é A → B → C.
+
+| Ordem (seed) | Endereço | Tipo | Passageiro |
+|---|---|---|---|
+| 1 | Av. Plínio Brasil Milano, 1500 — Higienópolis | embarque | Lucas Almeida |
+| 2 | Rua Dr. Pereira Neto, 200 — Cristo Redentor | embarque | Pedro Pereira (Marcos) |
+| 3 | Rua Anita Garibaldi, 1200 — Mont Serrat | embarque | Gabriel Souza |
+
+### Viagens
+
+Nenhuma — a rota fica pronta para iniciar do zero.
+
+---
+
 ## Regras de negócio refletidas no seed
 
 - **Stop** só existe para passageiros com status `accepted` — Juliana (pendente) não tem stop nem schedule.

@@ -11,16 +11,27 @@ class IRoutingService(ABC):
 
     # US10-TK07
     @abstractmethod
-    def optimize_stop_order(self, stop_coordinates: list[dict]) -> list[int]:
+    def optimize_stop_order(
+        self,
+        stop_coordinates: list[dict],
+        origin: dict | None = None,
+        destination: dict | None = None,
+    ) -> list[int]:
         """Reordena as paradas pelo menor tempo de percurso via Mapbox Optimization API v1.
 
-        Parâmetro:
+        Parâmetros:
           stop_coordinates: lista de dicts { "id": any, "lat": float, "lng": float }
-            na ordem atual das paradas.
+            com as paradas intermediárias (embarques) na ordem atual.
+          origin, destination: dicts { "lat": float, "lng": float } com os pontos
+            fixos de início e fim da rota. Quando AMBOS são informados, são tratados
+            como âncoras (source=first / destination=last / roundtrip=false): só as
+            paradas intermediárias são reordenadas, mantendo origem em 1º e destino
+            por último. Se algum for None, cai no modo livre (sem âncoras).
 
         Retorno:
-          Lista de índices originais na nova ordem otimizada.
-          Ex.: [0, 2, 1] significa que a parada 0 fica em 1º, a 2 em 2º e a 1 em 3º.
+          Sequência de visita das paradas: lista de índices de `stop_coordinates`
+          na nova ordem. Ex.: [0, 2, 1] significa visitar a parada 0, depois a 2,
+          depois a 1. Origem/destino NÃO entram no retorno.
         """
         pass
 

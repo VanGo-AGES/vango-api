@@ -1744,6 +1744,38 @@ def test_accept_request_calls_optimize_stop_order() -> None:
     routing_mock.optimize_stop_order.assert_called_once()
 
 
+def test_accept_request_succeeds_when_optimize_stop_order_raises() -> None:
+    """A otimização de paradas é best-effort: se optimize_stop_order falhar
+    (ex.: Mapbox indisponível ou < 2 paradas), accept_request NÃO deve propagar
+    o erro — o passageiro continua aceito e a notificação é enviada."""
+    from src.domains.routing.service import IRoutingService
+
+    driver_id = uuid.uuid4()
+    route = make_route_mock(driver_id, status="ativa", max_passengers=5)
+    rp = make_rp_mock(route.id, uuid.uuid4(), status="pending")
+
+    routing_mock = Mock(spec=IRoutingService)
+    routing_mock.optimize_stop_order.side_effect = RuntimeError("Mapbox indisponível")
+
+    service, rp_repo, route_repo, user_repo, _, notif, stop_repo, _ = build_service()
+    service.routing_service = routing_mock
+
+    route_repo.find_by_id.return_value = route
+    rp_repo.find_by_id.return_value = rp
+    rp_repo.count_accepted_by_route.return_value = 0
+    rp_repo.update_status.return_value = make_rp_mock(route.id, rp.user_id, status="accepted")
+    user_repo.find_by_id.return_value = make_user_mock()
+    stop_repo.find_by_route_id.return_value = []
+
+    # Não deve levantar, mesmo com a otimização falhando.
+    response = service.accept_request(route.id, rp.id, driver_id)
+
+    assert response.status == "accepted"
+    rp_repo.update_status.assert_called_once_with(rp.id, "accepted")
+    routing_mock.optimize_stop_order.assert_called_once()
+    notif.notify_passanger_accepted.assert_called_once()
+
+
 def test_remove_passanger_calls_optimize_stop_order() -> None:
     """remove_passanger deve chamar routing_service.optimize_stop_order após remover a stop."""
     from src.domains.routing.service import IRoutingService

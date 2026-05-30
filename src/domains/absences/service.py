@@ -13,6 +13,7 @@ Regras gerais:
 - Notifica o motorista via INotificationService.
 """
 
+import logging
 from datetime import UTC, date, datetime
 from uuid import UUID
 
@@ -23,6 +24,7 @@ from src.domains.route_passangers.errors import NotRoutePassangerError
 from src.domains.route_passangers.repository import IRoutePassangerRepository
 from src.domains.routes.errors import RouteNotFoundError
 from src.domains.routes.repository import IRouteRepository
+from src.domains.routing.route_totals import _address_to_coordinate
 from src.domains.routing.service import IRoutingService
 from src.domains.stops.repository import IStopRepository
 from src.domains.trips.entity import AbsenceModel
@@ -37,6 +39,8 @@ _RECURRENCE_MAP = {
     "sab": 5,
     "dom": 6,
 }
+
+logger = logging.getLogger(__name__)
 
 
 class AbsenceService:
@@ -124,7 +128,12 @@ class AbsenceService:
         coordenadas {id, lat, lng} a partir dos endereços e chama
         routing_service.optimize_stop_order. Em seguida atualiza order_index
         de cada stop de acordo com a nova ordem.
-        Silenciosamente ignorado se routing_service ou stop_repository forem None.
+
+        Best-effort: a otimização NUNCA deve derrubar o aviso de ausência (que já
+        foi persistido). Ignora silenciosamente se routing_service/stop_repository
+        forem None e captura qualquer erro da chamada externa (ex.: a Optimization
+        API do Mapbox exige >= 2 pontos e responde erro com 0/1 parada),
+        registrando apenas um warning, sem propagar 500.
         """
         if self.routing_service is None or self.stop_repository is None:
             return
@@ -141,9 +150,18 @@ class AbsenceService:
             coordinates.append({"id": stop.id, "lat": latitude, "lng": longitude})
             optimizable_stops.append(stop)
 
-        optimized_order = self.routing_service.optimize_stop_order(coordinates)
-        for order_index, original_index in enumerate(optimized_order):
-            if 0 <= original_index < len(optimizable_stops):
-                stop = optimizable_stops[original_index]
-                stop.order_index = order_index
-                self.stop_repository.save(stop)
+        # Origem e destino são âncoras fixas (não reordenam) para ancorar a
+        # otimização das paradas intermediárias entre elas.
+        route = self.route_repository.find_by_id(route_id)
+        origin = _address_to_coordinate(getattr(route, "origin_address", None)) if route else None
+        destination = _address_to_coordinate(getattr(route, "destination_address", None)) if route else None
+
+        try:
+            optimized_order = self.routing_service.optimize_stop_order(coordinates, origin, destination)
+            for order_index, original_index in enumerate(optimized_order):
+                if 0 <= original_index < len(optimizable_stops):
+                    stop = optimizable_stops[original_index]
+                    stop.order_index = order_index
+                    self.stop_repository.save(stop)
+        except Exception:  # noqa: BLE001 — otimização é best-effort, não pode quebrar o aviso de ausência
+            logger.warning("Falha ao otimizar a ordem das paradas da rota %s", route_id, exc_info=True)
