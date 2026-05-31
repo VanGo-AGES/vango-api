@@ -17,6 +17,9 @@ before_script:
   - echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" >> .env
   - echo "AWS_S3_BUCKET_NAME=$AWS_S3_BUCKET_NAME" >> .env
   - echo "AWS_REGION=$AWS_REGION" >> .env
+  - echo "GF_ADMIN_USER=$GF_ADMIN_USER" >> .env
+  - echo "GF_ADMIN_PASSWORD=$GF_ADMIN_PASSWORD" >> .env
+  - echo "MAPBOX_API_KEY=$MAPBOX_API_KEY" >> .env
   - touch firebase_service_account.json
   - echo "$FIREBASE_JSON_CONTENT" > ./firebase_service_account.json
   
