@@ -44,6 +44,7 @@ deploy_to_ec2:
     - vango-ec2
   script:
     - export IMAGE_TAG=$CI_COMMIT_SHA
-    - docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d db api
+    - docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --wait db api
+    - docker exec vango_api alembic upgrade head
   only:
     - main
