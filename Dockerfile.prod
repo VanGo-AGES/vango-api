@@ -1,0 +1,48 @@
+# ==============================================================================
+# ESTÁGIO 1: Builder (Prepara as dependências)
+# ==============================================================================
+FROM python:3.12-slim AS builder
+
+WORKDIR /code
+
+# Mantém as bibliotecas do sistema estritamente para compilar pacotes do requirements.txt
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc \
+    git \
+    make \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+
+# Instala as dependências em uma pasta separada (/install) para facilitar a transferência
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+
+# ==============================================================================
+# ESTÁGIO 2: Runtime (Imagem final super leve)
+# ==============================================================================
+FROM python:3.12-slim
+
+# Mantém as variáveis de ambiente necessárias para a aplicação
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/code
+
+WORKDIR /code
+
+# Copia apenas as dependências compiladas e prontas do Estágio 1
+COPY --from=builder /install /usr/local
+
+# Instala ferramentas essenciais de SO (ex: curl para Healthchecks no docker-compose)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copia o código fonte do projeto
+COPY . .
+
+EXPOSE 8000
+
+# Comando para rodar a aplicação em produção via Uvicorn
+# (Sobrepõe caso você não passe o command explicitamente no docker-compose.prod.yml)
+CMD ["uvicorn", "src.main:fastapi_app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]

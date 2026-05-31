@@ -1,6 +1,22 @@
 services:
   api:
+    # 1. Diz ao Compose para usar a sua nova imagem otimizada de 2 estágios
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+
     image: vango-api:${IMAGE_TAG:-latest}
     command: uvicorn src.main:app --host 0.0.0.0 --port 8000
     restart: always
     volumes: []
+
+    # 2. Exponha a porta para o servidor EC2 poder receber tráfego de fora
+    ports:
+      - "8000:8000"
+
+    # 3. Trava o crescimento infinito dos arquivos de texto (Máximo de 30MB guardados)
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
