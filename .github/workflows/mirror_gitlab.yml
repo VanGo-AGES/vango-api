@@ -15,4 +15,4 @@ jobs:
       - name: Push to vango-api GitLab
         run: |
           git remote add gitlab https://stefano.carraro:${{ secrets.GITLAB_TOKEN }}@tools.ages.pucrs.br/vango/vango-api.git
-          git push gitlab main --force
+          git push gitlab main
