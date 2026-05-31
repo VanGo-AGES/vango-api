@@ -22,9 +22,8 @@ run_tests:
   stage: test
   tags:
     - vango-ec2
-  before_script:
-    - docker compose down --volumes --remove-orphans || true
   script:
+    - docker compose down --volumes --remove-orphans || true
     - docker compose up -d db
     - docker compose run --rm api pytest -p no:cacheprovider -q
   after_script:
