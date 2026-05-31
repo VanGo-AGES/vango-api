@@ -67,7 +67,7 @@ class FirebaseNotificationService(INotificationService):
         )
         return messaging.send(message)
 
-    def _safe_send(self, token: str, title: str, body: str, data: dict[str, str]) -> None:
+    def _safe_send(self, token: str | None, title: str, body: str, data: dict[str, str]) -> None:
         """Versão tolerante a falhas para fluxos de negócio: nunca levanta exceção."""
         try:
             if token:
@@ -271,44 +271,38 @@ class FirebaseNotificationService(INotificationService):
         except (AttributeError, TypeError):
             pass
 
-    # -----------------------------------------------------------------
-    # Notificações por tópico (FCM) — usadas pelo Socket.IO.
-    # Mantidas no FCM; o app não se inscreve em tópicos hoje (pendência separada).
-    # -----------------------------------------------------------------
-    def notify_passanger_driver_approaching(self, user_id: str, route_id: str) -> None:
+    def _resolve_push_token(self, user_id: str) -> str | None:
+        """Busca o push_token do usuário no banco a partir do user_id."""
+        from uuid import UUID
+
+        from src.infrastructure.database import SessionLocal
+        from src.infrastructure.repositories.user_repository import UserRepositoryImpl
+
+        session = SessionLocal()
         try:
-            message = messaging.Message(
-                notification=messaging.Notification(title="Motorista chegando", body="Seu motorista está próximo da sua parada!"),
-                data={"type": "trip_arriving", "routeId": route_id, "passengerId": ""},
-                topic=f"user_{user_id}",
-            )
-            messaging.send(message)
-        except Exception as e:
-            logger.warning(
-                "FIREBASE: falha ao enviar push de aproximação user_id=%s route_id=%s: %s",
-                user_id,
-                route_id,
-                e,
-            )
+            user = UserRepositoryImpl(session).find_by_id(UUID(user_id))
+            return user.push_token if user else None
+        except Exception as e:  # noqa: BLE001 - resolução de token nunca quebra o fluxo
+            logger.warning("PUSH: falha ao resolver push_token user_id=%s: %s", user_id, e)
+            return None
+        finally:
+            session.close()
+
+    def notify_passanger_driver_approaching(self, user_id: str, route_id: str) -> None:
+        self._safe_send(
+            self._resolve_push_token(user_id),
+            "Motorista chegando",
+            "Seu motorista está próximo da sua parada!",
+            {"type": "trip_arriving", "routeId": route_id, "passengerId": ""},
+        )
 
     def notify_passanger_driver_arrived(self, user_id: str, route_id: str) -> None:
-        try:
-            message = messaging.Message(
-                notification=messaging.Notification(
-                    title="Motorista chegou",
-                    body="Seu motorista chegou à sua parada!",
-                ),
-                data={"type": "trip_arrived", "routeId": route_id, "passengerId": ""},
-                topic=f"user_{user_id}",
-            )
-            messaging.send(message)
-        except Exception as e:
-            logger.warning(
-                "FIREBASE: falha ao enviar push de chegada user_id=%s route_id=%s: %s",
-                user_id,
-                route_id,
-                e,
-            )
+        self._safe_send(
+            self._resolve_push_token(user_id),
+            "Motorista chegou",
+            "Seu motorista chegou à sua parada!",
+            {"type": "trip_arrived", "routeId": route_id, "passengerId": ""},
+        )
 
     # -----------------------------------------------------------------
     # Helper de teste — envio manual; propaga erros para o endpoint reportar.

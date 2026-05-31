@@ -304,7 +304,7 @@ def test_firebase_notify_passanger_driver_approaching_sends_fcm():
     service = FirebaseNotificationService()
     user_id = str(uuid.uuid4())
 
-    with patch("firebase_admin.messaging.send") as mock_send:
+    with patch.object(service, "_resolve_push_token", return_value="fake-token"), patch("firebase_admin.messaging.send") as mock_send:
         service.notify_passanger_driver_approaching(user_id, str(uuid.uuid4()))
         mock_send.assert_called_once()
 
@@ -318,7 +318,7 @@ def test_firebase_notify_passanger_driver_arrived_sends_fcm():
     service = FirebaseNotificationService()
     user_id = str(uuid.uuid4())
 
-    with patch("firebase_admin.messaging.send") as mock_send:
+    with patch.object(service, "_resolve_push_token", return_value="fake-token"), patch("firebase_admin.messaging.send") as mock_send:
         service.notify_passanger_driver_arrived(user_id, str(uuid.uuid4()))
         mock_send.assert_called_once()
 
@@ -603,7 +603,7 @@ def test_firebase_notify_passanger_driver_approaching_data_payload():
     user_id = str(uuid.uuid4())
     route_id = str(uuid.uuid4())
 
-    with patch("firebase_admin.messaging.send") as mock_send:
+    with patch.object(service, "_resolve_push_token", return_value="fake-token"), patch("firebase_admin.messaging.send") as mock_send:
         service.notify_passanger_driver_approaching(user_id, route_id)
         message = _sent_message(mock_send)
         assert message.data is not None
@@ -622,7 +622,7 @@ def test_firebase_notify_passanger_driver_arrived_data_payload():
     user_id = str(uuid.uuid4())
     route_id = str(uuid.uuid4())
 
-    with patch("firebase_admin.messaging.send") as mock_send:
+    with patch.object(service, "_resolve_push_token", return_value="fake-token"), patch("firebase_admin.messaging.send") as mock_send:
         service.notify_passanger_driver_arrived(user_id, route_id)
         message = _sent_message(mock_send)
         assert message.data is not None
