@@ -46,6 +46,17 @@ class UserRepositoryImpl(IUserRepository):
     def find_all(self) -> list[UserModel]:
         return self.session.query(UserModel).all()
 
+    # US12-TK01
+    def update_push_token(self, user_id: UUID, token: str) -> UserModel | None:
+        user = self.find_by_id(user_id)
+        if not user:
+            return None
+
+        user.push_token = token
+        self.session.commit()
+        self.session.refresh(user)
+        return user
+
 
 class PasswordHasherImpl(IPasswordHasher):
     def hash(self, password: str) -> str:

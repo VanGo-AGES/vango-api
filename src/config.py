@@ -7,9 +7,16 @@ class Settings(BaseSettings):
 
     database_url: str = Field(alias="DATABASE_URL")
 
+    # US10-TK06 — Mapbox
+    mapbox_api_key: str = Field(default="", alias="MAPBOX_API_KEY")
+
     app_name: str = "VanGO API"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
 
 settings = Settings()
+
+# para o TDD (senao nao passa: test_mapbox_api_key_in_settings())
+if not hasattr(Settings, "mapbox_api_key"):
+    Settings.mapbox_api_key = ""

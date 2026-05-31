@@ -1,0 +1,19 @@
+# Exemplo de arquivo de variaveis para o ambiente de Staging
+# Copie este arquivo para um arquivo chamado 'terraform.tfvars' e preencha com os valores reais.
+# NUNCA envie o arquivo 'terraform.tfvars' com senhas ou tokens para o GitHub!
+
+aws_region          = "us-east-2"
+environment         = "staging"
+instance_type       = "t3.micro"
+db_instance_class   = "db.t3.micro"
+bucket_name         = "vango-app-files-staging-seu-nome-aqui"
+gitlab_runner_token = "GLRT-seu-token-de-autenticacao-aqui"
+db_password         = "SuaSenhaSeguraAqui123!"
+allowed_ssh_cidrs   = ["203.0.113.50/32", "198.51.100.0/24"] # Insira os IPs confiaveis do seu time
+
+# Backup e protecao do RDS
+# Em staging: retencao minima, snapshot final ignorado
+# Em producao: db_backup_retention_period = 7, db_skip_final_snapshot = false, db_deletion_protection = true
+db_backup_retention_period = 1
+db_skip_final_snapshot     = true
+db_deletion_protection     = false

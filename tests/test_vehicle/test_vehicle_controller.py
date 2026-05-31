@@ -18,7 +18,7 @@ from src.domains.vehicles.errors import VehicleAccessDeniedError, VehiclePlateAl
 from src.domains.vehicles.service import VehicleService
 from src.infrastructure.dependencies.auth_dependencies import get_current_user
 from src.infrastructure.dependencies.vehicle_dependencies import get_vehicle_service
-from src.main import app
+from src.main import fastapi_app as app
 
 
 def make_mock_vehicle(plate: str = "ABC1D23", capacity: int = 4) -> VehicleModel:
@@ -482,9 +482,7 @@ def test_integration_create_vehicle_with_notes(integration_client, db_session):
     driver = make_driver_in_db(db_session)
     app.dependency_overrides[get_current_user] = lambda: {"id": str(driver.id), "role": "driver"}
 
-    response = integration_client.post(
-        "/vehicles/", json={"plate": "ITG0002", "capacity": 4, "notes": "Ar condicionado"}
-    )
+    response = integration_client.post("/vehicles/", json={"plate": "ITG0002", "capacity": 4, "notes": "Ar condicionado"})
 
     assert response.status_code == 201
     assert response.json()["notes"] == "Ar condicionado"

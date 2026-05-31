@@ -1,4 +1,4 @@
-import random
+import secrets
 import string
 from datetime import datetime
 from uuid import UUID
@@ -19,7 +19,9 @@ from src.domains.routes.errors import (
     RouteOwnershipError,
 )
 from src.domains.routes.repository import IAddressRepository, IRouteRepository
-from src.domains.trips.repository import IAbsenceRepository
+from src.domains.routing.route_totals import compute_route_totals
+from src.domains.routing.service import IGeocodingService, IRoutingService
+from src.domains.trips.repository import IAbsenceRepository, ITripRepository
 from src.domains.vehicles.repository import IVehicleRepository
 
 
@@ -32,6 +34,9 @@ class RouteService:
         route_passanger_repository: IRoutePassangerRepository | None = None,
         notification_service: INotificationService | None = None,
         absence_repository: IAbsenceRepository | None = None,
+        geocoding_service: IGeocodingService | None = None,
+        routing_service: IRoutingService | None = None,
+        trip_repository: ITripRepository | None = None,
     ):
         self.route_repository = route_repository
         self.address_repository = address_repository
@@ -41,8 +46,18 @@ class RouteService:
         self.route_passanger_repository = route_passanger_repository
         # Usado pela US06-TK18 (delete_route). Opcional pelo mesmo motivo.
         self.notification_service = notification_service
+        # US10-TK19: usado pra calcular total_distance_km e
+        # estimated_duration_min dos RouteResponse devolvidos por get_route
+        # e get_routes. Opcional pra não quebrar testes existentes.
+        self.routing_service = routing_service
         # Usado pelo GET /routes/{route_id}/absences (view do motorista).
         self.absence_repository = absence_repository
+        # US10-TK18: usado para preencher lat/lng dos AddressModel criados
+        # em create_route (origin e destination). Opcional para não quebrar
+        # testes/instanciações que não dependem de geocoding.
+        self.geocoding_service = geocoding_service
+        # US09 — usado para popular active_trip_id em RouteResponse.
+        self.trip_repository = trip_repository
 
     # US05 - TK03
     def create_route(self, driver_id: UUID, data: RouteCreate) -> RouteModel:
@@ -62,6 +77,7 @@ class RouteService:
             city=data.origin.city,
             state=data.origin.state,
         )
+        self._geocode_address(origin)
         destination = AddressModel(
             user_id=driver_id,
             label=data.destination.label,
@@ -72,6 +88,7 @@ class RouteService:
             city=data.destination.city,
             state=data.destination.state,
         )
+        self._geocode_address(destination)
 
         saved_origin = self.address_repository.save(origin)
         saved_destination = self.address_repository.save(destination)
@@ -101,7 +118,8 @@ class RouteService:
         return self.route_repository.update_invite_code(route_id, new_code)
 
     def _generate_invite_code(self) -> str:
-        return "".join(random.choices(string.ascii_uppercase + string.digits, k=5))
+        alphabet = string.ascii_uppercase + string.digits
+        return "".join(secrets.choice(alphabet) for _ in range(5))
 
     # US07 - TK03
 
@@ -138,6 +156,7 @@ class RouteService:
                 city=_origin_data["city"],
                 state=_origin_data["state"],
             )
+            self._geocode_address(origin)
             saved_origin = self.address_repository.save(origin)
             update_data["origin_address_id"] = saved_origin.id
 
@@ -153,6 +172,7 @@ class RouteService:
                 city=_destination_data["city"],
                 state=_destination_data["state"],
             )
+            self._geocode_address(destination)
             saved_destination = self.address_repository.save(destination)
             update_data["destination_address_id"] = saved_destination.id
 
@@ -214,6 +234,31 @@ class RouteService:
         if self.route_passanger_repository is None:
             return 0
         return self.route_passanger_repository.count_accepted_by_route(route_id)
+
+    def get_active_trip_id(self, route_id: UUID) -> UUID | None:
+        """Retorna o id da trip com status='iniciada' da rota, ou None se não houver.
+
+        Usado pelo controller para popular active_trip_id em RouteResponse.
+        Silenciosamente retorna None se trip_repository não foi injetado.
+        """
+        if self.trip_repository is None:
+            return None
+        trip = self.trip_repository.find_in_progress_by_route(route_id)
+        return trip.id if trip is not None else None
+
+    # US10-TK19
+    def get_route_totals(self, route: RouteModel) -> tuple[float | None, int | None]:
+        """Devolve (total_distance_km, estimated_duration_min) da rota planejada.
+
+        Usado pelos endpoints GET /routes e GET /routes/{id} no controller
+        (via model_copy(update={...}), mesmo padrão de get_accepted_count) pra
+        popular RouteResponse.total_distance_km e RouteResponse.estimated_duration_min.
+
+        Retorna (None, None) se self.routing_service for None ou se o
+        compute_route_totals do helper compartilhado retornar (None, None).
+        Nunca propaga exceção — totais são best-effort.
+        """
+        return compute_route_totals(route, self.routing_service)
 
     def get_route_absences(self, route_id: UUID, caller_id: UUID, absence_date: datetime) -> list:
         """Retorna ausências avisadas para a rota numa data específica.
@@ -289,3 +334,30 @@ class RouteService:
                 self.notification_service.notify_passanger_route_cancelled(rp)
 
         self.route_repository.delete(route_id)
+
+    # US10-TK18
+    def _geocode_address(self, address: AddressModel) -> None:
+        """Tenta resolver as coordenadas do endereço via geocoding_service e
+        popula address.latitude/longitude in-place. Silenciosamente ignorado
+        se geocoding_service for None ou se a API retornar None — endereço
+        permanece sem coords (FE pode optar por mostrar placeholder no mapa).
+
+        Chamado por create_route e update_route logo após instanciar o
+        AddressModel e antes do address_repository.save.
+        """
+        if self.geocoding_service is None:
+            return
+
+        result = self.geocoding_service.geocode_address(
+            street=address.street,
+            number=address.number,
+            neighborhood=address.neighborhood,
+            zip_code=address.zip,
+            city=address.city,
+            state=address.state,
+        )
+        if result is None:
+            return
+
+        address.latitude = result.latitude
+        address.longitude = result.longitude

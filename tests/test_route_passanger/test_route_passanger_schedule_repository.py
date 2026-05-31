@@ -157,10 +157,12 @@ def test_schedule_repository_save_many_persists_schedules(db_session) -> None:
     rp, pickup = setup_rp(db_session)
     repo = RoutePassangerScheduleRepositoryImpl(db_session)
 
-    saved = repo.save_many([
-        make_schedule(rp.id, pickup.id, "monday"),
-        make_schedule(rp.id, pickup.id, "wednesday"),
-    ])
+    saved = repo.save_many(
+        [
+            make_schedule(rp.id, pickup.id, "monday"),
+            make_schedule(rp.id, pickup.id, "wednesday"),
+        ]
+    )
 
     assert len(saved) == 2
     assert {s.day_of_week for s in saved} == {"monday", "wednesday"}
@@ -187,10 +189,12 @@ def test_schedule_repository_find_by_rp_returns_only_rp_schedules(db_session) ->
 
     rp, pickup = setup_rp(db_session)
     repo = RoutePassangerScheduleRepositoryImpl(db_session)
-    repo.save_many([
-        make_schedule(rp.id, pickup.id, "monday"),
-        make_schedule(rp.id, pickup.id, "tuesday"),
-    ])
+    repo.save_many(
+        [
+            make_schedule(rp.id, pickup.id, "monday"),
+            make_schedule(rp.id, pickup.id, "tuesday"),
+        ]
+    )
 
     result = repo.find_by_route_passanger_id(rp.id)
     assert len(result) == 2
@@ -235,11 +239,13 @@ def test_schedule_repository_delete_by_rp_removes_all(db_session) -> None:
 
     rp, pickup = setup_rp(db_session)
     repo = RoutePassangerScheduleRepositoryImpl(db_session)
-    repo.save_many([
-        make_schedule(rp.id, pickup.id, "monday"),
-        make_schedule(rp.id, pickup.id, "tuesday"),
-        make_schedule(rp.id, pickup.id, "friday"),
-    ])
+    repo.save_many(
+        [
+            make_schedule(rp.id, pickup.id, "monday"),
+            make_schedule(rp.id, pickup.id, "tuesday"),
+            make_schedule(rp.id, pickup.id, "friday"),
+        ]
+    )
 
     removed = repo.delete_by_route_passanger_id(rp.id)
 
@@ -287,10 +293,12 @@ def test_schedule_repository_replace_swaps_schedules(db_session) -> None:
 
     rp, pickup = setup_rp(db_session)
     repo = RoutePassangerScheduleRepositoryImpl(db_session)
-    repo.save_many([
-        make_schedule(rp.id, pickup.id, "monday"),
-        make_schedule(rp.id, pickup.id, "tuesday"),
-    ])
+    repo.save_many(
+        [
+            make_schedule(rp.id, pickup.id, "monday"),
+            make_schedule(rp.id, pickup.id, "tuesday"),
+        ]
+    )
 
     new_items = [
         make_schedule(rp.id, pickup.id, "wednesday"),

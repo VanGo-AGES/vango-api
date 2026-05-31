@@ -172,7 +172,7 @@ def test_join_route_request_accepts_multiple_schedules() -> None:
             make_schedule_item(day_of_week="monday"),
             make_schedule_item(day_of_week="wednesday"),
             make_schedule_item(day_of_week="friday"),
-        ]
+        ],
     )
     assert len(req.schedules) == 3
 

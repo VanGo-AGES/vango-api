@@ -13,7 +13,7 @@ from src.domains.users.errors import (
 )
 from src.domains.users.service import UserService
 from src.infrastructure.dependencies.user_dependencies import get_user_service
-from src.main import app
+from src.main import fastapi_app as app
 
 
 def make_user_response(**kwargs) -> UserResponse:
@@ -45,13 +45,16 @@ def test_register_user_success():
     app.dependency_overrides[get_user_service] = lambda: mock_service
     client = TestClient(app)
 
-    response = client.post("/users/", json={
-        "name": "John Doe",
-        "email": "john@email.com",
-        "phone": "54999999999",
-        "password": "senha123",
-        "role": "driver",
-    })
+    response = client.post(
+        "/users/",
+        json={
+            "name": "John Doe",
+            "email": "john@email.com",
+            "phone": "54999999999",
+            "password": "senha123",
+            "role": "driver",
+        },
+    )
 
     assert response.status_code == 201
     assert response.json()["email"] == "john@email.com"
@@ -68,13 +71,16 @@ def test_register_user_duplicate_email_returns_400():
     app.dependency_overrides[get_user_service] = lambda: mock_service
     client = TestClient(app)
 
-    response = client.post("/users/", json={
-        "name": "John Doe",
-        "email": "john@email.com",
-        "phone": "54999999999",
-        "password": "senha123",
-        "role": "driver",
-    })
+    response = client.post(
+        "/users/",
+        json={
+            "name": "John Doe",
+            "email": "john@email.com",
+            "phone": "54999999999",
+            "password": "senha123",
+            "role": "driver",
+        },
+    )
 
     assert response.status_code == 400
 
@@ -105,13 +111,16 @@ def test_register_user_invalid_role_returns_422():
     app.dependency_overrides[get_user_service] = lambda: mock_service
     client = TestClient(app)
 
-    response = client.post("/users/", json={
-        "name": "John Doe",
-        "email": "john@email.com",
-        "phone": "54999999999",
-        "password": "senha123",
-        "role": "admin",
-    })
+    response = client.post(
+        "/users/",
+        json={
+            "name": "John Doe",
+            "email": "john@email.com",
+            "phone": "54999999999",
+            "password": "senha123",
+            "role": "admin",
+        },
+    )
 
     assert response.status_code == 422
     mock_service.create_user.assert_not_called()
@@ -128,14 +137,17 @@ def test_register_user_with_cpf_returns_cpf_in_response():
     app.dependency_overrides[get_user_service] = lambda: mock_service
     client = TestClient(app)
 
-    response = client.post("/users/", json={
-        "name": "João Motorista",
-        "email": "joao@email.com",
-        "phone": "54999999999",
-        "password": "senha123",
-        "role": "driver",
-        "cpf": "999.999.999-99",
-    })
+    response = client.post(
+        "/users/",
+        json={
+            "name": "João Motorista",
+            "email": "joao@email.com",
+            "phone": "54999999999",
+            "password": "senha123",
+            "role": "driver",
+            "cpf": "999.999.999-99",
+        },
+    )
 
     assert response.status_code == 201
     assert response.json()["cpf"] == "999.999.999-99"
@@ -195,6 +207,7 @@ def test_list_users_empty_returns_200_with_empty_list():
 
 # ---- GET /users/{user_id} ----
 
+
 # Teste 1: retorna 200 com UserResponse quando usuário existe
 def test_get_user_success():
     user_id = str(uuid4())
@@ -229,6 +242,7 @@ def test_get_user_not_found():
 
 
 # ---- PUT /users/{user_id} ----
+
 
 # Teste 3: retorna 200 com dados atualizados
 def test_update_user_success():
@@ -280,6 +294,7 @@ def test_update_user_invalid_payload():
 
 
 # ---- DELETE /users/{user_id} ----
+
 
 # Teste 6: retorna 204 No Content quando exclusão ocorre com sucesso
 def test_delete_user_success():
@@ -420,17 +435,18 @@ def test_integration_register_passenger_success(integration_client):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US02-TK04")
 def test_integration_get_user_success(integration_client, db_session):
     """[Integração] GET /users/{id} deve retornar 200 com dados do usuário."""
     repo = UserRepositoryImpl(db_session)
-    user = repo.save(UserModelEntity(
-        name="Maria",
-        email=f"maria_{uuid4()}@test.com",
-        phone="54999999999",
-        password_hash="hashed",
-        role="passenger",
-    ))
+    user = repo.save(
+        UserModelEntity(
+            name="Maria",
+            email=f"maria_{uuid4()}@test.com",
+            phone="54999999999",
+            password_hash="hashed",
+            role="passenger",
+        )
+    )
 
     response = integration_client.get(f"/users/{user.id}")
 
@@ -438,7 +454,6 @@ def test_integration_get_user_success(integration_client, db_session):
     assert response.json()["email"] == user.email
 
 
-@pytest.mark.skip(reason="US02-TK04")
 def test_integration_get_user_not_found_returns_404(integration_client):
     """[Integração] GET /users/{id} com id inexistente deve retornar 404."""
     response = integration_client.get(f"/users/{uuid4()}")
@@ -451,17 +466,18 @@ def test_integration_get_user_not_found_returns_404(integration_client):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US02-TK04")
 def test_integration_update_user_success(integration_client, db_session):
     """[Integração] PUT /users/{id} deve atualizar e retornar 200 com novos dados."""
     repo = UserRepositoryImpl(db_session)
-    user = repo.save(UserModelEntity(
-        name="Carlos",
-        email=f"carlos_{uuid4()}@test.com",
-        phone="54999999999",
-        password_hash="hashed",
-        role="driver",
-    ))
+    user = repo.save(
+        UserModelEntity(
+            name="Carlos",
+            email=f"carlos_{uuid4()}@test.com",
+            phone="54999999999",
+            password_hash="hashed",
+            role="driver",
+        )
+    )
 
     response = integration_client.put(f"/users/{user.id}", json={"name": "Carlos Silva"})
 
@@ -469,7 +485,6 @@ def test_integration_update_user_success(integration_client, db_session):
     assert response.json()["name"] == "Carlos Silva"
 
 
-@pytest.mark.skip(reason="US02-TK04")
 def test_integration_update_user_not_found_returns_404(integration_client):
     """[Integração] PUT /users/{id} com id inexistente deve retornar 404."""
     response = integration_client.put(f"/users/{uuid4()}", json={"name": "Novo Nome"})
@@ -482,24 +497,24 @@ def test_integration_update_user_not_found_returns_404(integration_client):
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.skip(reason="US02-TK04")
 def test_integration_delete_user_success(integration_client, db_session):
     """[Integração] DELETE /users/{id} deve remover e retornar 204."""
     repo = UserRepositoryImpl(db_session)
-    user = repo.save(UserModelEntity(
-        name="Deletar",
-        email=f"delete_{uuid4()}@test.com",
-        phone="54999999999",
-        password_hash="hashed",
-        role="passenger",
-    ))
+    user = repo.save(
+        UserModelEntity(
+            name="Deletar",
+            email=f"delete_{uuid4()}@test.com",
+            phone="54999999999",
+            password_hash="hashed",
+            role="passenger",
+        )
+    )
 
     response = integration_client.delete(f"/users/{user.id}")
 
     assert response.status_code == 204
 
 
-@pytest.mark.skip(reason="US02-TK04")
 def test_integration_delete_user_not_found_returns_404(integration_client):
     """[Integração] DELETE /users/{id} com id inexistente deve retornar 404."""
     response = integration_client.delete(f"/users/{uuid4()}")
@@ -521,10 +536,13 @@ def test_login_success_returns_200():
     app.dependency_overrides[get_user_service] = lambda: mock_service
     client = TestClient(app)
 
-    response = client.post("/users/login", json={
-        "email": "john@email.com",
-        "password": "senha123",
-    })
+    response = client.post(
+        "/users/login",
+        json={
+            "email": "john@email.com",
+            "password": "senha123",
+        },
+    )
 
     assert response.status_code == 200
     body = response.json()
@@ -543,10 +561,13 @@ def test_login_user_not_found_returns_404():
     app.dependency_overrides[get_user_service] = lambda: mock_service
     client = TestClient(app)
 
-    response = client.post("/users/login", json={
-        "email": "ghost@email.com",
-        "password": "senha123",
-    })
+    response = client.post(
+        "/users/login",
+        json={
+            "email": "ghost@email.com",
+            "password": "senha123",
+        },
+    )
 
     assert response.status_code == 404
 
@@ -562,10 +583,13 @@ def test_login_invalid_password_returns_401():
     app.dependency_overrides[get_user_service] = lambda: mock_service
     client = TestClient(app)
 
-    response = client.post("/users/login", json={
-        "email": "john@email.com",
-        "password": "senha_errada",
-    })
+    response = client.post(
+        "/users/login",
+        json={
+            "email": "john@email.com",
+            "password": "senha_errada",
+        },
+    )
 
     assert response.status_code == 401
 
@@ -596,10 +620,13 @@ def test_integration_login_success(integration_client):
     payload = make_user_payload()
     integration_client.post("/users/", json=payload)
 
-    response = integration_client.post("/users/login", json={
-        "email": payload["email"],
-        "password": payload["password"],
-    })
+    response = integration_client.post(
+        "/users/login",
+        json={
+            "email": payload["email"],
+            "password": payload["password"],
+        },
+    )
 
     assert response.status_code == 200
     body = response.json()
@@ -611,10 +638,13 @@ def test_integration_login_success(integration_client):
 
 def test_integration_login_user_not_found_returns_404(integration_client):
     """[Integração] POST /users/login com email não cadastrado deve retornar 404."""
-    response = integration_client.post("/users/login", json={
-        "email": f"ghost_{uuid4()}@test.com",
-        "password": "qualquer",
-    })
+    response = integration_client.post(
+        "/users/login",
+        json={
+            "email": f"ghost_{uuid4()}@test.com",
+            "password": "qualquer",
+        },
+    )
 
     assert response.status_code == 404
 
@@ -624,9 +654,106 @@ def test_integration_login_invalid_password_returns_401(integration_client):
     payload = make_user_payload()
     integration_client.post("/users/", json=payload)
 
-    response = integration_client.post("/users/login", json={
-        "email": payload["email"],
-        "password": "senha_errada",
-    })
+    response = integration_client.post(
+        "/users/login",
+        json={
+            "email": payload["email"],
+            "password": "senha_errada",
+        },
+    )
 
     assert response.status_code == 401
+
+
+# ===========================================================================
+# US12-TK02 — POST /users/me/push-token
+# Arquivo: src/domains/users/controller.py
+# ===========================================================================
+
+# ---- Unitários (mock service) ----
+
+
+def test_register_push_token_unit_success():
+    """POST /users/me/push-token deve retornar 200 com UserResponse."""
+    from src.domains.users.dtos import RegisterPushTokenRequest
+
+    mock_service = Mock(spec=UserService)
+    mock_service.register_push_token.return_value = make_user_response()
+
+    app.dependency_overrides[get_user_service] = lambda: mock_service
+    client = TestClient(app)
+
+    response = client.post(
+        "/users/me/push-token",
+        json={"token": "fcm-abc-123"},
+        headers={"X-User-Id": str(uuid4())},
+    )
+
+    assert response.status_code == 200
+    mock_service.register_push_token.assert_called_once()
+
+    app.dependency_overrides.clear()
+
+
+def test_register_push_token_unit_missing_header_returns_422():
+    """POST /users/me/push-token sem X-User-Id deve retornar 422."""
+    mock_service = Mock(spec=UserService)
+
+    app.dependency_overrides[get_user_service] = lambda: mock_service
+    client = TestClient(app)
+
+    response = client.post("/users/me/push-token", json={"token": "fcm-abc-123"})
+
+    assert response.status_code == 422
+    mock_service.register_push_token.assert_not_called()
+
+    app.dependency_overrides.clear()
+
+
+def test_register_push_token_unit_user_not_found_returns_404():
+    """POST /users/me/push-token para usuário inexistente deve retornar 404."""
+    mock_service = Mock(spec=UserService)
+    mock_service.register_push_token.side_effect = UserNotFoundError()
+
+    app.dependency_overrides[get_user_service] = lambda: mock_service
+    client = TestClient(app)
+
+    response = client.post(
+        "/users/me/push-token",
+        json={"token": "fcm-abc-123"},
+        headers={"X-User-Id": str(uuid4())},
+    )
+
+    assert response.status_code == 404
+
+    app.dependency_overrides.clear()
+
+
+# ---- Integração (stack real) ----
+
+
+def test_integration_register_push_token_success(integration_client):
+    """[Integração] POST /users/me/push-token deve salvar token e retornar 200."""
+    payload = make_user_payload()
+    reg = integration_client.post("/users/", json=payload)
+    user_id = reg.json()["id"]
+
+    response = integration_client.post(
+        "/users/me/push-token",
+        json={"token": "fcm-integration-token"},
+        headers={"X-User-Id": user_id},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["id"] == user_id
+
+
+def test_integration_register_push_token_not_found_returns_404(integration_client):
+    """[Integração] POST /users/me/push-token com X-User-Id inválido deve retornar 404."""
+    response = integration_client.post(
+        "/users/me/push-token",
+        json={"token": "fcm-token"},
+        headers={"X-User-Id": str(uuid4())},
+    )
+
+    assert response.status_code == 404

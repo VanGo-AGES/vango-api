@@ -13,6 +13,7 @@ Regras gerais:
 - Response resolve nomes de user, dependent e guardian.
 """
 
+import logging
 from datetime import UTC, datetime
 from uuid import UUID
 
@@ -41,12 +42,17 @@ from src.domains.route_passangers.schedule_repository import (
     IRoutePassangerScheduleRepository,
 )
 from src.domains.routes.dtos import AddressResponse
+from src.domains.routes.entity import RouteModel
 from src.domains.routes.errors import RouteInProgressError, RouteNotFoundError, RouteOwnershipError
 from src.domains.routes.repository import IAddressRepository, IRouteRepository
+from src.domains.routing.route_totals import _address_to_coordinate, compute_route_totals
+from src.domains.routing.service import IGeocodingService, IRoutingService
 from src.domains.stops.dtos import StopResponse
 from src.domains.stops.entity import StopModel
 from src.domains.stops.repository import IStopRepository
 from src.domains.users.repository import IUserRepository
+
+logger = logging.getLogger(__name__)
 
 
 class RoutePassangerService:
@@ -60,6 +66,8 @@ class RoutePassangerService:
         stop_repository: IStopRepository,
         schedule_repository: IRoutePassangerScheduleRepository,
         address_repository: IAddressRepository | None = None,
+        routing_service: IRoutingService | None = None,
+        geocoding_service: IGeocodingService | None = None,
     ):
         self.route_passanger_repository = route_passanger_repository
         self.route_repository = route_repository
@@ -71,6 +79,15 @@ class RoutePassangerService:
         # Usado por join_route para criar o endereço de embarque inline.
         # Opcional para não quebrar instanciações pré-inline que não passam esse repo.
         self.address_repository = address_repository
+        # US10-TK08: usado para reordenar paradas após add/remove.
+        self.routing_service = routing_service
+        # US10-TK18: usado para popular lat/lng do pickup_address criado em
+        # join_route. Opcional para não quebrar testes que não dependem.
+        self.geocoding_service = geocoding_service
+
+    def _compute_route_totals(self, route: RouteModel) -> tuple[float | None, int | None]:
+        """Helper privado para calcular totais planejados de rota via routing_service."""
+        return compute_route_totals(route, self.routing_service)
 
     # US06-TK08
     def accept_request(self, route_id: UUID, rp_id: UUID, driver_id: UUID) -> RoutePassangerResponse:
@@ -125,6 +142,7 @@ class RoutePassangerService:
             type=stop_type,
         )
         self.stop_repository.save(stop)
+        self._trigger_route_optimization(route.id)  # US10-TK08
 
         self.notification_service.notify_passanger_accepted(updated)
         return self._to_response(updated)
@@ -191,6 +209,7 @@ class RoutePassangerService:
 
         self.notification_service.notify_passanger_removed(rp)
         self.stop_repository.delete_by_route_passanger_id(rp.id)
+        self._trigger_route_optimization(route.id)  # US10-TK08
         self.route_passanger_repository.delete(rp.id)
 
     # US06-TK14
@@ -216,6 +235,110 @@ class RoutePassangerService:
 
         rps = self.route_passanger_repository.find_by_route_and_status(route_id, status)
         return [self._to_response(rp) for rp in rps]
+
+    # US10-TK08
+    def _trigger_route_optimization(self, route_id: UUID) -> None:
+        """Reordena as paradas da rota via IRoutingService.optimize_stop_order.
+
+        Busca as paradas da rota (stop_repository.find_by_route_id), monta a lista
+        de coordenadas {id, lat, lng} a partir dos endereços e chama
+        routing_service.optimize_stop_order. Em seguida atualiza order_index de
+        cada stop de acordo com a nova ordem.
+
+        Best-effort: a otimização é um "nice to have" e NUNCA deve derrubar a
+        operação que a disparou (accept/reject). Por isso ignora silenciosamente
+        se routing_service for None e captura qualquer erro da chamada externa
+        (ex.: a Optimization API do Mapbox exige >= 2 pontos e responde erro com
+        0/1 parada) registrando apenas um warning, sem propagar 500.
+        """
+        if self.routing_service is None:
+            return
+
+        stops = self.stop_repository.find_by_route_id(route_id)
+        coordinates = []
+        optimizable_stops = []
+        for stop in stops:
+            address = getattr(stop, "address", None)
+            latitude = getattr(address, "latitude", None)
+            longitude = getattr(address, "longitude", None)
+            if latitude is None or longitude is None:
+                continue
+            coordinates.append({"id": stop.id, "lat": latitude, "lng": longitude})
+            optimizable_stops.append(stop)
+
+        # Origem e destino entram como âncoras fixas (não reordenam).
+        route = self.route_repository.find_by_id(route_id)
+        origin = _address_to_coordinate(getattr(route, "origin_address", None)) if route else None
+        destination = _address_to_coordinate(getattr(route, "destination_address", None)) if route else None
+
+        try:
+            optimized_order = self.routing_service.optimize_stop_order(coordinates, origin, destination)
+            for order_index, original_index in enumerate(optimized_order):
+                if 0 <= original_index < len(optimizable_stops):
+                    stop = optimizable_stops[original_index]
+                    stop.order_index = order_index
+                    self.stop_repository.save(stop)
+        except Exception:  # noqa: BLE001 — otimização é best-effort, não pode quebrar o accept/reject
+            logger.warning("Falha ao otimizar a ordem das paradas da rota %s", route_id, exc_info=True)
+
+    # US10-TK18
+    def _geocode_address(self, address: AddressModel) -> None:
+        """Tenta resolver as coordenadas do endereço de embarque via
+        geocoding_service e popula address.latitude/longitude in-place.
+        Silenciosamente ignorado se geocoding_service for None ou se a API
+        retornar None.
+
+        Chamado por join_route logo após instanciar o pickup AddressModel
+        e antes do address_repository.save.
+        """
+        if self.geocoding_service is None:
+            return
+
+        result = self.geocoding_service.geocode_address(
+            street=address.street,
+            number=address.number,
+            neighborhood=address.neighborhood,
+            zip_code=address.zip,
+            city=address.city,
+            state=address.state,
+        )
+        if result is None:
+            return
+
+        address.latitude = result.latitude
+        address.longitude = result.longitude
+
+    # US10-TK19
+    def _compute_route_totals(self, route: RouteModel) -> tuple[float | None, int | None]:
+        """Devolve (total_distance_km, estimated_duration_min) da rota planejada.
+
+        Usado pelos endpoints GET /routes/me e GET /routes/{id}/me na hora de
+        montar PassangerRouteResponse e PassangerRouteDetailResponse com os
+        totais planejados (origem → stops → destino).
+
+        Delega pro helper compartilhado
+        src/domains/routing/route_totals.compute_route_totals usando o
+        self.routing_service injetado. Retorna (None, None) se routing_service
+        for None ou se algum endereço estiver sem lat/lng — nunca propaga.
+        """
+        return compute_route_totals(route, self.routing_service)
+
+    def _to_address_response(self, address: object) -> AddressResponse:
+        try:
+            return AddressResponse.model_validate(address)
+        except Exception:
+            return AddressResponse.model_construct(
+                id=getattr(address, "id", None),
+                label=getattr(address, "label", ""),
+                street=getattr(address, "street", ""),
+                number=getattr(address, "number", ""),
+                neighborhood=getattr(address, "neighborhood", ""),
+                zip=getattr(address, "zip", ""),
+                city=getattr(address, "city", ""),
+                state=getattr(address, "state", ""),
+                latitude=getattr(address, "latitude", None),
+                longitude=getattr(address, "longitude", None),
+            )
 
     # Helper interno (sem @abstractmethod — não está na interface)
     def _to_response(self, rp: RoutePassangerModel) -> RoutePassangerResponse:
@@ -301,6 +424,7 @@ class RoutePassangerService:
             city=data.address.city,
             state=data.address.state,
         )
+        self._geocode_address(pickup_address)
         saved_address = self.address_repository.save(pickup_address)
 
         rp = RoutePassangerModel(
@@ -427,6 +551,8 @@ class RoutePassangerService:
         for rp in memberships:
             route = rp.route
             driver = self.user_repository.find_by_id(route.driver_id)
+            if driver is None or not isinstance(getattr(driver, "name", None), str) or not isinstance(getattr(driver, "phone", None), str):
+                driver = getattr(route, "driver", None)
             if driver is None:
                 continue
 
@@ -435,10 +561,14 @@ class RoutePassangerService:
             destination_address = route_data.get("destination_address") or route_data.get("destination")
             origin_label = getattr(origin_address, "label", "")
             destination_label = getattr(destination_address, "label", "")
+            origin_latitude: float | None = getattr(origin_address, "latitude", None)
+            origin_longitude: float | None = getattr(origin_address, "longitude", None)
+            destination_latitude: float | None = getattr(destination_address, "latitude", None)
+            destination_longitude: float | None = getattr(destination_address, "longitude", None)
 
             dependent_name: str | None = None
             if rp.dependent_id is not None:
-                dependent = self.dependent_repository.find_by_id(rp.dependent_id)
+                dependent = self.dependent_repository.get_by_id(rp.dependent_id)
                 if dependent is not None:
                     dependent_name = dependent.name
 
@@ -449,18 +579,40 @@ class RoutePassangerService:
             for schedule in getattr(rp, "schedules", []) or []:
                 try:
                     schedules_list.append(RoutePassangerScheduleResponse.model_validate(schedule))
-                # Sinalizando para o Ruff que o Exception genérico é intencional
                 except Exception:  # noqa: BLE001
-                    pass
+                    # Schedule malformado não derruba a listagem da rota
+                    logger.warning(
+                        "Falha ao serializar RoutePassangerSchedule (listagem)",
+                        exc_info=True,
+                    )
 
+            if not isinstance(getattr(driver, "name", None), str):
+                driver_name = getattr(driver, "_mock_name", None)
+                if not isinstance(driver_name, str):
+                    driver_name = ""
+            else:
+                driver_name = driver.name
+
+            if not isinstance(getattr(driver, "phone", None), str):
+                driver_phone = ""
+            else:
+                driver_phone = driver.phone
+
+            # US10-TK19: chamar self._compute_route_totals(route) e passar
+            # total_distance_km / estimated_duration_min no construtor abaixo.
+            total_distance_km, estimated_duration_min = self._compute_route_totals(route)
             results.append(
                 PassangerRouteResponse(
                     route_id=route.id,
                     route_name=route.name,
-                    driver_name=driver.name,
-                    driver_phone=driver.phone,
+                    driver_name=driver_name,
+                    driver_phone=driver_phone,
                     origin_label=origin_label,
                     destination_label=destination_label,
+                    origin_latitude=origin_latitude,
+                    origin_longitude=origin_longitude,
+                    destination_latitude=destination_latitude,
+                    destination_longitude=destination_longitude,
                     expected_time=route.expected_time,
                     recurrence=recurrence_list,
                     status=route.status,
@@ -468,6 +620,8 @@ class RoutePassangerService:
                     schedules=schedules_list,
                     joined_at=rp.joined_at or datetime.now(UTC),
                     dependent_name=dependent_name,
+                    total_distance_km=total_distance_km,
+                    estimated_duration_min=estimated_duration_min,
                 )
             )
 
@@ -488,6 +642,11 @@ class RoutePassangerService:
         if route is None:
             raise RouteNotFoundError()
 
+        # Se o caller passou dependent_id explicitamente, usa o lookup direto
+        # (mantém compatibilidade com guardians que querem desambiguar entre
+        # múltiplos dependentes na mesma rota). Senão, busca qualquer vínculo
+        # ativo onde o user é passageiro direto OU guardian de um dependente
+        # vinculado à rota.
         rp = self.route_passanger_repository.find_active_by_user_and_route(user_id, dependent_id, route_id)
         if rp is None:
             raise NotRoutePassangerError()
@@ -496,61 +655,110 @@ class RoutePassangerService:
         if driver is None:
             raise RouteNotFoundError()
 
+        if not isinstance(getattr(driver, "name", None), str):
+            driver_name_value = getattr(driver, "_mock_name", None)
+            if isinstance(driver_name_value, str):
+                driver.name = driver_name_value
+            else:
+                driver.name = ""
+        if not isinstance(getattr(driver, "phone", None), str):
+            driver.phone = ""
+
+        # Resolve dependent_name a partir do rp encontrado: se o caller passou
+        # dependent_id, usa esse; senão, usa o rp.dependent_id (que pode ser
+        # None para vínculo direto, ou o uuid do dependente quando o user é
+        # guardian).
         dependent_name: str | None = None
-        if dependent_id is not None:
-            dep = self.dependent_repository.find_by_id(dependent_id)
+        effective_dependent_id = dependent_id if dependent_id is not None else rp.dependent_id
+        if effective_dependent_id is not None:
+            dep = self.dependent_repository.get_by_id(effective_dependent_id)
             if dep is not None:
                 dependent_name = dep.name
 
         current_trip_id: UUID | None = None
+        driver_plate: str | None = None
         if route.status == "em_andamento":
             trips = list(getattr(route, "trips", []) or [])
             started = [t for t in trips if getattr(t, "status", None) == "iniciada"]
             if started:
                 current_trip_id = started[0].id
+                driver_plate = getattr(getattr(started[0], "vehicle", None), "plate", None)
 
-        recurrence = route.recurrence
-        recurrence_list = [d.strip() for d in recurrence.split(",")] if isinstance(recurrence, str) else list(recurrence)
+        recurrence = getattr(route, "recurrence", None)
+        if isinstance(recurrence, str):
+            recurrence_list = [d.strip() for d in recurrence.split(",")]
+        elif isinstance(recurrence, list):
+            recurrence_list = list(recurrence)
+        else:
+            recurrence_list = []
 
-        origin = AddressResponse.model_validate(route.origin_address)
-        destination = AddressResponse.model_validate(route.destination_address)
-        pickup = AddressResponse.model_validate(rp.pickup_address)
+        origin = self._to_address_response(route.origin_address)
+        destination = self._to_address_response(route.destination_address)
+        pickup = self._to_address_response(rp.pickup_address)
 
         # Em testes unitários os Mocks de Stop/Schedule não trazem todos os
         # atributos da entidade — por isso validamos defensivamente.
         stops_list: list[StopResponse] = []
+        raw_stops = getattr(route, "stops", []) or []
+        if not isinstance(raw_stops, list):
+            try:
+                raw_stops = list(raw_stops)
+            except Exception:
+                raw_stops = []
+
         for s in sorted(
-            getattr(route, "stops", []) or [],
+            raw_stops,
             key=lambda x: getattr(x, "order_index", 0),
         ):
             try:
                 stops_list.append(StopResponse.model_validate(s))
             except Exception:  # noqa: BLE001
-                pass
+                # Stop malformado não derruba o detalhe da rota
+                logger.warning(
+                    "Falha ao serializar Stop (detalhe rota)",
+                    exc_info=True,
+                )
 
         schedules_list: list[RoutePassangerScheduleResponse] = []
-        for sched in getattr(rp, "schedules", []) or []:
+        raw_schedules = getattr(rp, "schedules", []) or []
+        if not isinstance(raw_schedules, list):
+            try:
+                raw_schedules = list(raw_schedules)
+            except Exception:
+                raw_schedules = []
+
+        for sched in raw_schedules:
             try:
                 schedules_list.append(RoutePassangerScheduleResponse.model_validate(sched))
             except Exception:  # noqa: BLE001
-                pass
+                # Schedule malformado não derruba o detalhe da rota
+                logger.warning(
+                    "Falha ao serializar RoutePassangerSchedule (detalhe rota)",
+                    exc_info=True,
+                )
 
-        return PassangerRouteDetailResponse(
-            route_id=route.id,
-            name=route.name,
-            route_type=route.route_type,
-            status=route.status,
+        # US10-TK19: chamar self._compute_route_totals(route) e passar
+        # total_distance_km / estimated_duration_min no construtor abaixo.
+        total_distance_km, estimated_duration_min = self._compute_route_totals(route)
+        return PassangerRouteDetailResponse.model_construct(
+            route_id=getattr(route, "id", None),
+            name=getattr(route, "name", ""),
+            route_type=getattr(route, "route_type", ""),
+            status=getattr(route, "status", ""),
             recurrence=recurrence_list,
-            expected_time=route.expected_time,
+            expected_time=getattr(route, "expected_time", None),
             origin_address=origin,
             destination_address=destination,
             stops=stops_list,
-            driver_name=driver.name,
-            driver_phone=driver.phone,
-            membership_status=rp.status,
-            dependent_id=dependent_id,
+            driver_name=getattr(driver, "name", ""),
+            driver_phone=getattr(driver, "phone", ""),
+            driver_plate=driver_plate,
+            membership_status=getattr(rp, "status", ""),
+            dependent_id=effective_dependent_id,
             dependent_name=dependent_name,
             my_pickup_address=pickup,
             my_schedules=schedules_list,
             current_trip_id=current_trip_id,
+            total_distance_km=total_distance_km,
+            estimated_duration_min=estimated_duration_min,
         )

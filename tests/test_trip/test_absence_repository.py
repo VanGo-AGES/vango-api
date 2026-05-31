@@ -164,9 +164,4 @@ def test_find_for_route_passanger_on_date_matches_by_day_interval(db_session) ->
 
 def test_find_for_route_passanger_on_date_missing_returns_none(db_session) -> None:
     repo = AbsenceRepositoryImpl(db_session)
-    assert (
-        repo.find_for_route_passanger_on_date(
-            uuid.uuid4(), datetime.now(timezone.utc)
-        )
-        is None
-    )
+    assert repo.find_for_route_passanger_on_date(uuid.uuid4(), datetime.now(timezone.utc)) is None
