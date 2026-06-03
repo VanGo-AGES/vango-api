@@ -30,10 +30,14 @@ def test_delete_account_confirmed_soft_deletes():
     user_repo = Mock()
     user_repo.soft_delete_and_anonymize.return_value = True
     service = _make_service(user_repo)
+    user_id = uuid4()
 
-    service.delete_account(uuid4(), confirm=True)
+    service.delete_account(user_id, confirm=True)
 
-    assert user_repo.soft_delete_and_anonymize.called
+    # soft delete chamado para o usuário certo
+    call = user_repo.soft_delete_and_anonymize.call_args
+    passed = list(call.args) + list(call.kwargs.values())
+    assert user_id in passed
 
 
 @pytest.mark.skip(reason="US20-TK04")

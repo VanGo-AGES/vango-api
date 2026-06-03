@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     jwt_secret: str = Field(default="dev-insecure-change-me", alias="JWT_SECRET")
     jwt_algorithm: str = Field(default="HS256", alias="JWT_ALGORITHM")
     jwt_access_token_expire_minutes: int = Field(default=60, alias="JWT_ACCESS_TOKEN_EXPIRE_MINUTES")
+    jwt_refresh_token_expire_days: int = Field(default=30, alias="JWT_REFRESH_TOKEN_EXPIRE_DAYS")
 
     # US18 — SMTP/SES (recuperação de senha)
     smtp_host: str = Field(default="", alias="SMTP_HOST")

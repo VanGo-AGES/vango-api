@@ -28,3 +28,15 @@ class AccountInactiveError(Exception):
 class DeletionNotConfirmedError(Exception):
     def __init__(self, message: str = "A exclusão da conta precisa ser confirmada."):
         super().__init__(message)
+
+
+# US17-TK07 — autorização por papel
+class ForbiddenRoleError(Exception):
+    def __init__(self, message: str = "Acesso negado para o papel do usuário."):
+        super().__init__(message)
+
+
+# US17-TK09 — refresh token
+class InvalidRefreshTokenError(Exception):
+    def __init__(self, message: str = "Refresh token inválido, expirado ou revogado."):
+        super().__init__(message)
