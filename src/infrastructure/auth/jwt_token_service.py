@@ -1,8 +1,13 @@
 """US17-TK01 — Implementação do token service com PyJWT."""
 
-from uuid import UUID
+from datetime import UTC, datetime, timedelta
+from uuid import UUID, uuid4
+
+import jwt
+from jwt import InvalidTokenError as PyJWTInvalidTokenError
 
 from src.domains.users.auth import ITokenService, TokenPayload
+from src.domains.users.auth_errors import InvalidTokenError
 
 
 class JwtTokenService(ITokenService):
@@ -13,8 +18,48 @@ class JwtTokenService(ITokenService):
 
     # US17-TK01
     def create_access_token(self, user_id: UUID, role: str, jti: str | None = None) -> str:
-        raise NotImplementedError("US17-TK01")
+        if jti is None:
+            jti = uuid4().hex
+
+        now = datetime.now(UTC)
+        expiration = now + timedelta(minutes=self.expire_minutes)
+
+        payload = {
+            "sub": str(user_id),
+            "role": role,
+            "jti": jti,
+            "exp": expiration,
+        }
+
+        return jwt.encode(payload, self.secret, algorithm=self.algorithm)
 
     # US17-TK01
     def decode_token(self, token: str) -> TokenPayload:
-        raise NotImplementedError("US17-TK01")
+        try:
+            decoded = jwt.decode(
+                token,
+                self.secret,
+                algorithms=[self.algorithm],
+                options={"require": ["exp", "sub", "jti"]},
+            )
+        except PyJWTInvalidTokenError as exc:
+            raise InvalidTokenError() from exc
+
+        try:
+            subject = UUID(decoded["sub"])
+        except Exception as exc:
+            raise InvalidTokenError() from exc
+
+        role = decoded.get("role")
+        jti = decoded.get("jti")
+        exp = decoded.get("exp")
+
+        if role is None or jti is None or exp is None:
+            raise InvalidTokenError()
+
+        try:
+            expiration = datetime.fromtimestamp(exp, UTC) if isinstance(exp, (int, float)) else datetime.fromtimestamp(int(exp), UTC)
+        except Exception as exc:
+            raise InvalidTokenError() from exc
+
+        return TokenPayload(sub=subject, role=role, jti=jti, exp=expiration)
