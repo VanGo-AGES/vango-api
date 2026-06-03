@@ -103,3 +103,30 @@ class SendTestNotificationResponse(BaseModel):
     success: bool
     message_id: str | None = None
     detail: str
+
+
+# US17-TK03 — resposta do login com JWT
+class LoginResponse(BaseModel):
+    """Retornado por POST /auth/login: token + dados do usuário."""
+
+    access_token: str
+    token_type: str = "bearer"
+    user: UserResponse
+
+
+# US18-TK03 — solicitar recuperação de senha
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr = Field(..., example="john.doe@example.com")
+
+
+# US18-TK03 — confirmar nova senha via token
+class ResetPasswordConfirm(BaseModel):
+    """A nova senha será validada contra as regras (US16-TK01) na US18-TK04."""
+
+    token: str = Field(..., min_length=1)
+    new_password: str = Field(..., min_length=1)
+
+
+# US20-TK05 — confirmação de exclusão de conta
+class DeleteAccountRequest(BaseModel):
+    confirm: bool = Field(default=False, description="Precisa ser true para excluir a conta.")

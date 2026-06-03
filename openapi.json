@@ -298,6 +298,18 @@
         "title": "CurrentTripResponse",
         "type": "object"
       },
+      "DeleteAccountRequest": {
+        "properties": {
+          "confirm": {
+            "default": false,
+            "description": "Precisa ser true para excluir a conta.",
+            "title": "Confirm",
+            "type": "boolean"
+          }
+        },
+        "title": "DeleteAccountRequest",
+        "type": "object"
+      },
       "DependentCreate": {
         "properties": {
           "name": {
@@ -377,6 +389,21 @@
           }
         },
         "title": "FinishTripRequest",
+        "type": "object"
+      },
+      "ForgotPasswordRequest": {
+        "properties": {
+          "email": {
+            "example": "john.doe@example.com",
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "title": "ForgotPasswordRequest",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -473,6 +500,35 @@
           "password"
         ],
         "title": "LoginRequest",
+        "type": "object"
+      },
+      "LoginResponse": {
+        "description": "Retornado por POST /auth/login: token + dados do usuário.",
+        "properties": {
+          "access_token": {
+            "title": "Access Token",
+            "type": "string"
+          },
+          "token_type": {
+            "default": "bearer",
+            "title": "Token Type",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserResponse"
+          }
+        },
+        "required": [
+          "access_token",
+          "user"
+        ],
+        "title": "LoginResponse",
+        "type": "object"
+      },
+      "MetricsReportResponse": {
+        "description": "Resposta agregada do relatório de viagens do motorista.\n\nCampos esperados (implementar na US15-TK01):\n- distance: float        — km rodados no período\n- duration: int          — tempo total das viagens, em minutos\n- passengers: int        — passageiros transportados\n- trips: int             — viagens realizadas\n- period: ReportPeriod   — granularidade aplicada\n- start_date: date       — início do intervalo considerado\n- end_date: date         — fim do intervalo considerado",
+        "properties": {},
+        "title": "MetricsReportResponse",
         "type": "object"
       },
       "PassangerRouteDetailResponse": {
@@ -803,6 +859,37 @@
           "token"
         ],
         "title": "RegisterPushTokenRequest",
+        "type": "object"
+      },
+      "ReportPeriod": {
+        "description": "Granularidade do relatório selecionada nas abas Dia / Semana / Mês.",
+        "enum": [
+          "day",
+          "week",
+          "month"
+        ],
+        "title": "ReportPeriod",
+        "type": "string"
+      },
+      "ResetPasswordConfirm": {
+        "description": "A nova senha será validada contra as regras (US16-TK01) na US18-TK04.",
+        "properties": {
+          "new_password": {
+            "minLength": 1,
+            "title": "New Password",
+            "type": "string"
+          },
+          "token": {
+            "minLength": 1,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "new_password"
+        ],
+        "title": "ResetPasswordConfirm",
         "type": "object"
       },
       "RouteAbsenceResponse": {
@@ -2178,6 +2265,175 @@
         ]
       }
     },
+    "/auth/login": {
+      "post": {
+        "operationId": "login_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Login",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "operationId": "logout_auth_logout_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Logout",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/password/forgot": {
+      "post": {
+        "operationId": "forgot_password_auth_password_forgot_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Forgot Password Auth Password Forgot Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Forgot Password",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/password/reset": {
+      "post": {
+        "operationId": "reset_password_auth_password_reset_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordConfirm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Reset Password Auth Password Reset Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reset Password",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
     "/dependents/": {
       "get": {
         "description": "Retorna todos os dependentes cadastrados pelo usuário logado.",
@@ -2501,6 +2757,84 @@
         "summary": "Health Check",
         "tags": [
           "Infrastructure"
+        ]
+      }
+    },
+    "/metrics/reports": {
+      "get": {
+        "description": "Retorna distância (km), duração (min), passageiros transportados e viagens realizadas do motorista logado no período selecionado (day/week/month) e intervalo de datas.",
+        "operationId": "get_reports_metrics_reports_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "period",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ReportPeriod"
+            }
+          },
+          {
+            "in": "query",
+            "name": "start_date",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "title": "Start Date",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "end_date",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "End Date"
+            }
+          },
+          {
+            "in": "header",
+            "name": "X-User-Id",
+            "required": true,
+            "schema": {
+              "title": "X-User-Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetricsReportResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Relatório agregado de viagens do motorista",
+        "tags": [
+          "Metrics"
         ]
       }
     },
@@ -4225,6 +4559,58 @@
         "summary": "Login intermediário (email + senha)",
         "tags": [
           "Users"
+        ]
+      }
+    },
+    "/users/me": {
+      "delete": {
+        "operationId": "delete_my_account_users_me_delete",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteAccountRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete My Account",
+        "tags": [
+          "Auth"
         ]
       }
     },

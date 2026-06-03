@@ -15,6 +15,7 @@ from src.domains.absences.controller import router as absence_controller
 from src.domains.addresses.entity import AddressModel
 from src.domains.dependents.controller import router as dependent_controller
 from src.domains.dependents.entity import DependentModel
+from src.domains.metrics.controller import router as metrics_controller
 from src.domains.route_passangers.controller import router as route_passanger_controller
 from src.domains.route_passangers.entity import RoutePassangerModel
 from src.domains.route_passangers.schedule_entity import RoutePassangerScheduleModel
@@ -23,8 +24,11 @@ from src.domains.routes.entity import RouteModel
 from src.domains.trips.controller import router as trip_controller
 from src.domains.trips.entity import AbsenceModel, TripModel, TripPassangerModel
 from src.domains.uploads.controller import router as upload_controller
+from src.domains.users.auth_controller import router as auth_controller
 from src.domains.users.controller import router as user_controller
 from src.domains.users.entity import UserModel
+from src.domains.users.reset_token_entity import PasswordResetTokenModel
+from src.domains.users.revoked_token_entity import RevokedTokenModel
 from src.domains.vehicles.controller import router as vehicle_controller
 from src.domains.vehicles.entity import VehicleModel
 from src.infrastructure.database import Base, engine
@@ -42,6 +46,8 @@ _ = (
     TripModel,
     TripPassangerModel,
     AbsenceModel,
+    PasswordResetTokenModel,
+    RevokedTokenModel,
 )
 
 
@@ -118,6 +124,10 @@ fastapi_app.include_router(trip_controller)
 fastapi_app.include_router(upload_controller)
 # US06-TK20 — aviso de ausência (passageiro/guardian)
 fastapi_app.include_router(absence_controller)
+# US15 — métricas e relatórios (/metrics/reports)
+fastapi_app.include_router(metrics_controller)
+# Épico 5 — autenticação (login/logout/recuperação/exclusão)
+fastapi_app.include_router(auth_controller)
 
 
 @fastapi_app.get("/health", tags=["Infrastructure"])

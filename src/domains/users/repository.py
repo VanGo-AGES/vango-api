@@ -38,6 +38,15 @@ class IUserRepository(ABC):
         """
         pass
 
+    # US20-TK02
+    @abstractmethod
+    def soft_delete_and_anonymize(self, user_id: UUID) -> bool:
+        """Marca o usuário como inativo (deleted_at + is_active=False) e
+        anonimiza os dados pessoais (name/email/phone/cpf/photo_url/push_token),
+        preservando o id para integridade do histórico. Retorna False se não existir.
+        """
+        pass
+
 
 class IPasswordHasher(ABC):
     @abstractmethod

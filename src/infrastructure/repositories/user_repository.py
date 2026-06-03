@@ -57,6 +57,10 @@ class UserRepositoryImpl(IUserRepository):
         self.session.refresh(user)
         return user
 
+    # US20-TK02
+    def soft_delete_and_anonymize(self, user_id: UUID) -> bool:
+        raise NotImplementedError("US20-TK02")
+
 
 class PasswordHasherImpl(IPasswordHasher):
     def hash(self, password: str) -> str:
