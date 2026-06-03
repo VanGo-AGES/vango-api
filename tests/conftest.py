@@ -7,6 +7,7 @@ from src.infrastructure.database import Base
 from src.domains.users.entity import UserModel
 from src.domains.users.reset_token_entity import PasswordResetTokenModel  # noqa: F401 — US18-TK02
 from src.domains.users.revoked_token_entity import RevokedTokenModel  # noqa: F401 — US19-TK01
+from src.domains.users.refresh_token_entity import RefreshTokenModel  # noqa: F401 — US17-TK08
 from src.domains.vehicles.entity import VehicleModel
 from src.domains.dependents.entity import DependentModel
 from src.domains.addresses.entity import AddressModel

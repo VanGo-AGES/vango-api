@@ -503,11 +503,22 @@
         "type": "object"
       },
       "LoginResponse": {
-        "description": "Retornado por POST /auth/login: token + dados do usuário.",
+        "description": "Retornado por POST /auth/login e /auth/refresh: tokens + dados do usuário.\n\n`refresh_token` é populado quando o fluxo de refresh está ativo (US17-TK09).",
         "properties": {
           "access_token": {
             "title": "Access Token",
             "type": "string"
+          },
+          "refresh_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refresh Token"
           },
           "token_type": {
             "default": "bearer",
@@ -843,6 +854,20 @@
           "joined_at"
         ],
         "title": "PassangerRouteResponse",
+        "type": "object"
+      },
+      "RefreshRequest": {
+        "properties": {
+          "refresh_token": {
+            "minLength": 1,
+            "title": "Refresh Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "refresh_token"
+        ],
+        "title": "RefreshRequest",
         "type": "object"
       },
       "RegisterPushTokenRequest": {
@@ -2429,6 +2454,47 @@
           }
         },
         "summary": "Reset Password",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "operationId": "refresh_auth_refresh_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Refresh",
         "tags": [
           "Auth"
         ]
@@ -4609,6 +4675,53 @@
           }
         },
         "summary": "Delete My Account",
+        "tags": [
+          "Auth"
+        ]
+      },
+      "get": {
+        "operationId": "get_me_users_me_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Me",
         "tags": [
           "Auth"
         ]

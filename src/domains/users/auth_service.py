@@ -14,6 +14,7 @@ from uuid import UUID
 from src.domains.users.auth import ITokenService, TokenPayload
 from src.domains.users.dtos import LoginResponse
 from src.domains.users.email import IEmailService
+from src.domains.users.refresh_token_repository import IRefreshTokenRepository
 from src.domains.users.repository import IPasswordHasher, IUserRepository
 from src.domains.users.reset_token_repository import IPasswordResetTokenRepository
 from src.domains.users.revoked_token_repository import IRevokedTokenRepository
@@ -28,6 +29,7 @@ class AuthService:
         reset_token_repository: IPasswordResetTokenRepository,
         email_service: IEmailService,
         revoked_token_repository: IRevokedTokenRepository,
+        refresh_token_repository: IRefreshTokenRepository | None = None,
     ) -> None:
         self.user_repository = user_repository
         self.password_hasher = password_hasher
@@ -35,11 +37,20 @@ class AuthService:
         self.reset_token_repository = reset_token_repository
         self.email_service = email_service
         self.revoked_token_repository = revoked_token_repository
+        self.refresh_token_repository = refresh_token_repository
 
-    # US17-TK03
+    # US17-TK03 (refresh emitido na US17-TK09 quando o refresh_token_repository está presente)
     def login(self, email: str, password: str) -> LoginResponse:
-        """Valida credenciais (bloqueia conta inativa) e emite o access token."""
+        """Valida credenciais (bloqueia conta inativa) e emite o access token
+        (e o refresh token, quando o fluxo de refresh está ativo)."""
         raise NotImplementedError("US17-TK03")
+
+    # US17-TK09
+    def refresh(self, refresh_token: str) -> LoginResponse:
+        """Valida o refresh token, rotaciona (emite novo par e revoga o usado)
+        e retorna o novo LoginResponse. Erro de domínio se inválido/expirado/revogado.
+        """
+        raise NotImplementedError("US17-TK09")
 
     # US18-TK04
     def request_password_reset(self, email: str) -> None:
