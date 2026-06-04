@@ -1,7 +1,6 @@
 """US20-TK03 — Finders excluem usuários inativos.
 
 Remova o skip rodando:
-  sed -i '/@pytest.mark.skip(reason="US20-TK03")/d' tests/test_user/test_user_finders_active.py
 """
 
 import pytest
@@ -15,7 +14,6 @@ def _deactivate(db_session, user):
     db_session.flush()
 
 
-@pytest.mark.skip(reason="US20-TK03")
 def test_find_by_email_excludes_inactive(db_session):
     user = make_passenger(db_session)
     email = user.email
@@ -25,7 +23,6 @@ def test_find_by_email_excludes_inactive(db_session):
     assert repo.find_by_email(email) is None
 
 
-@pytest.mark.skip(reason="US20-TK03")
 def test_find_by_id_excludes_inactive(db_session):
     user = make_passenger(db_session)
     _deactivate(db_session, user)
@@ -34,7 +31,6 @@ def test_find_by_id_excludes_inactive(db_session):
     assert repo.find_by_id(user.id) is None
 
 
-@pytest.mark.skip(reason="US20-TK03")
 def test_find_all_excludes_inactive(db_session):
     active = make_passenger(db_session)
     inactive = make_passenger(db_session)
