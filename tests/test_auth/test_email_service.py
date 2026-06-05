@@ -17,7 +17,6 @@ def _service():
     return SmtpEmailService(host="smtp.test", port=587, username="u", password="p", sender="no-reply@vango.app")
 
 
-@pytest.mark.skip(reason="US18-TK01")
 def test_send_uses_smtp_transport():
     with patch("smtplib.SMTP") as smtp_cls:
         instance = MagicMock()
@@ -29,14 +28,12 @@ def test_send_uses_smtp_transport():
         assert instance.send_message.called or instance.sendmail.called
 
 
-@pytest.mark.skip(reason="US18-TK01")
 def test_send_propagates_transport_failure():
     with patch("smtplib.SMTP", side_effect=OSError("connection refused")):
         with pytest.raises(OSError):
             _service().send(to="user@b.com", subject="x", body_html="x")
 
 
-@pytest.mark.skip(reason="US18-TK01")
 def test_send_addresses_message_correctly():
     """A mensagem precisa ir para o destinatário certo, com subject e remetente."""
     with patch("smtplib.SMTP") as smtp_cls:
@@ -52,7 +49,6 @@ def test_send_addresses_message_correctly():
         assert msg["From"] == "no-reply@vango.app"
 
 
-@pytest.mark.skip(reason="US18-TK01")
 def test_send_authenticates_with_credentials():
     with patch("smtplib.SMTP") as smtp_cls:
         instance = MagicMock()
