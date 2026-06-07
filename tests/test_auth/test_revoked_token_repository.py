@@ -1,7 +1,6 @@
 """US19-TK01 — RevokedTokenRepository (denylist por jti).
 
 Remova o skip rodando:
-  sed -i '/@pytest.mark.skip(reason="US19-TK01")/d' tests/test_auth/test_revoked_token_repository.py
 """
 
 from datetime import datetime, timedelta, timezone
@@ -14,7 +13,6 @@ from tests.test_trip._helpers import make_passenger
 FUTURE = datetime.now(timezone.utc) + timedelta(hours=1)
 
 
-@pytest.mark.skip(reason="US19-TK01")
 def test_revoke_then_is_revoked_true(db_session):
     user = make_passenger(db_session)
     repo = RevokedTokenRepositoryImpl(db_session)
@@ -24,13 +22,11 @@ def test_revoke_then_is_revoked_true(db_session):
     assert repo.is_revoked("jti-1") is True
 
 
-@pytest.mark.skip(reason="US19-TK01")
 def test_unknown_jti_is_not_revoked(db_session):
     repo = RevokedTokenRepositoryImpl(db_session)
     assert repo.is_revoked("never-seen") is False
 
 
-@pytest.mark.skip(reason="US19-TK01")
 def test_revoke_is_idempotent(db_session):
     """jti é PK: revogar o mesmo jti duas vezes (logout duplo) não pode estourar."""
     user = make_passenger(db_session)
