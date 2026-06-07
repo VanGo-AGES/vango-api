@@ -1,7 +1,6 @@
 """US15-TK01 — DTOs de Métricas & Relatórios.
 
 Remova o skip rodando:
-  sed -i '/@pytest.mark.skip(reason="US15-TK01")/d' tests/test_metrics/test_metrics_dto.py
 """
 
 from datetime import date
@@ -12,14 +11,12 @@ from pydantic import ValidationError
 from src.domains.metrics.dtos import MetricsReportResponse, ReportPeriod
 
 
-@pytest.mark.skip(reason="US15-TK01")
 def test_report_period_values():
     assert ReportPeriod.DAY.value == "day"
     assert ReportPeriod.WEEK.value == "week"
     assert ReportPeriod.MONTH.value == "month"
 
 
-@pytest.mark.skip(reason="US15-TK01")
 def test_metrics_report_response_holds_all_fields():
     dto = MetricsReportResponse(
         distance=10.5,
@@ -40,7 +37,6 @@ def test_metrics_report_response_holds_all_fields():
     assert dto.end_date == date(2025, 8, 23)
 
 
-@pytest.mark.skip(reason="US15-TK01")
 def test_metrics_report_response_defaults_are_zeroed():
     """Período sem viagens deve conseguir retornar zeros."""
     dto = MetricsReportResponse(
@@ -55,7 +51,6 @@ def test_metrics_report_response_defaults_are_zeroed():
     assert dto.trips == 0
 
 
-@pytest.mark.skip(reason="US15-TK01")
 def test_metrics_report_response_json_contract_for_frontend():
     """O JSON serializado precisa bater com o que o FE consome:
     números crus, period como string e datas em ISO (YYYY-MM-DD)."""
@@ -79,7 +74,6 @@ def test_metrics_report_response_json_contract_for_frontend():
     assert data["end_date"] == "2025-08-31"
 
 
-@pytest.mark.skip(reason="US15-TK01")
 def test_metrics_report_response_rejects_invalid_period():
     """period fora de day/week/month deve falhar a validação."""
     with pytest.raises(ValidationError):

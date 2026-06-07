@@ -537,8 +537,46 @@
         "type": "object"
       },
       "MetricsReportResponse": {
-        "description": "Resposta agregada do relatório de viagens do motorista.\n\nCampos esperados (implementar na US15-TK01):\n- distance: float        — km rodados no período\n- duration: int          — tempo total das viagens, em minutos\n- passengers: int        — passageiros transportados\n- trips: int             — viagens realizadas\n- period: ReportPeriod   — granularidade aplicada\n- start_date: date       — início do intervalo considerado\n- end_date: date         — fim do intervalo considerado",
-        "properties": {},
+        "properties": {
+          "distance": {
+            "default": 0.0,
+            "title": "Distance",
+            "type": "number"
+          },
+          "duration": {
+            "default": 0,
+            "title": "Duration",
+            "type": "integer"
+          },
+          "end_date": {
+            "format": "date",
+            "title": "End Date",
+            "type": "string"
+          },
+          "passengers": {
+            "default": 0,
+            "title": "Passengers",
+            "type": "integer"
+          },
+          "period": {
+            "$ref": "#/components/schemas/ReportPeriod"
+          },
+          "start_date": {
+            "format": "date",
+            "title": "Start Date",
+            "type": "string"
+          },
+          "trips": {
+            "default": 0,
+            "title": "Trips",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "period",
+          "start_date",
+          "end_date"
+        ],
         "title": "MetricsReportResponse",
         "type": "object"
       },
