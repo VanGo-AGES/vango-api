@@ -12,8 +12,10 @@ Recebe as dependências por injeção (mockadas nos testes de service).
 from uuid import UUID
 
 from src.domains.users.auth import ITokenService, TokenPayload
+from src.domains.users.auth_errors import DeletionNotConfirmedError
 from src.domains.users.dtos import LoginResponse
 from src.domains.users.email import IEmailService
+from src.domains.users.errors import UserNotFoundError
 from src.domains.users.refresh_token_repository import IRefreshTokenRepository
 from src.domains.users.repository import IPasswordHasher, IUserRepository
 from src.domains.users.reset_token_repository import IPasswordResetTokenRepository
@@ -73,5 +75,10 @@ class AuthService:
 
     # US20-TK04
     def delete_account(self, user_id: UUID, confirm: bool) -> None:
-        """Exige confirmação, faz soft delete + anonimização e revoga tokens."""
-        raise NotImplementedError("US20-TK04")
+        """Exige confirmação, faz soft delete + anonimização e encerra a sessão via inativação."""
+        if not confirm:
+            raise DeletionNotConfirmedError()
+
+        deleted = self.user_repository.soft_delete_and_anonymize(user_id)
+        if not deleted:
+            raise UserNotFoundError()
