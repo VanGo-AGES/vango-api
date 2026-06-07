@@ -107,11 +107,20 @@ class SendTestNotificationResponse(BaseModel):
 
 # US17-TK03 — resposta do login com JWT
 class LoginResponse(BaseModel):
-    """Retornado por POST /auth/login: token + dados do usuário."""
+    """Retornado por POST /auth/login e /auth/refresh: tokens + dados do usuário.
+
+    `refresh_token` é populado quando o fluxo de refresh está ativo (US17-TK09).
+    """
 
     access_token: str
     token_type: str = "bearer"
     user: UserResponse
+    refresh_token: str | None = None
+
+
+# US17-TK10 — troca de refresh token por novo par de tokens
+class RefreshRequest(BaseModel):
+    refresh_token: str = Field(..., min_length=1)
 
 
 # US18-TK03 — solicitar recuperação de senha

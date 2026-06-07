@@ -1,7 +1,6 @@
 """US15-TK02 — TripMetricsRepository (agregação SQL).
 
 Remova o skip rodando:
-  sed -i '/@pytest.mark.skip(reason="US15-TK02")/d' tests/test_metrics/test_trip_metrics_repository.py
 
 Os testes usam a sessão SQLite em memória (fixture `db_session` do conftest)
 e as factories de `tests/test_trip/_helpers.py`.
@@ -32,7 +31,6 @@ def _finish(trip, started, minutes, km):
     trip.total_km = km
 
 
-@pytest.mark.skip(reason="US15-TK02")
 def test_aggregate_sums_km_duration_and_counts(db_session):
     driver = make_driver(db_session)
     vehicle = make_vehicle(db_session, driver.id)
@@ -61,7 +59,6 @@ def test_aggregate_sums_km_duration_and_counts(db_session):
     assert agg.trips == 2
 
 
-@pytest.mark.skip(reason="US15-TK02")
 def test_aggregate_excludes_other_drivers(db_session):
     driver = make_driver(db_session)
     other = make_driver(db_session)
@@ -83,7 +80,6 @@ def test_aggregate_excludes_other_drivers(db_session):
     assert agg.trips == 1
 
 
-@pytest.mark.skip(reason="US15-TK02")
 def test_aggregate_ignores_unfinished_and_out_of_range(db_session):
     driver = make_driver(db_session)
     vehicle = make_vehicle(db_session, driver.id)
@@ -106,7 +102,6 @@ def test_aggregate_ignores_unfinished_and_out_of_range(db_session):
     assert agg.total_km == pytest.approx(10.0)
 
 
-@pytest.mark.skip(reason="US15-TK02")
 def test_aggregate_returns_zeros_when_empty(db_session):
     driver = make_driver(db_session)
     repo = TripMetricsRepositoryImpl(db_session)
@@ -119,7 +114,6 @@ def test_aggregate_returns_zeros_when_empty(db_session):
     assert agg.trips == 0
 
 
-@pytest.mark.skip(reason="US15-TK02")
 def test_aggregate_treats_null_total_km_as_zero(db_session):
     """total_km é nullable (finish_trip aceita None). SUM de NULLs não pode
     virar None — deve ser tratado como 0, sem deixar de contar a trip."""
@@ -143,7 +137,6 @@ def test_aggregate_treats_null_total_km_as_zero(db_session):
     assert agg.total_duration_seconds == (30 + 20) * 60
 
 
-@pytest.mark.skip(reason="US15-TK02")
 def test_aggregate_window_is_inclusive_by_trip_date(db_session):
     """O intervalo [start, end] é inclusivo nas bordas e usa trip_date."""
     driver = make_driver(db_session)
@@ -165,7 +158,6 @@ def test_aggregate_window_is_inclusive_by_trip_date(db_session):
     assert agg.total_km == pytest.approx(3.0)
 
 
-@pytest.mark.skip(reason="US15-TK02")
 def test_aggregate_excludes_cancelled_trips(db_session):
     """Só trips 'finalizada' contam — 'cancelada' fica de fora."""
     driver = make_driver(db_session)
@@ -185,7 +177,6 @@ def test_aggregate_excludes_cancelled_trips(db_session):
     assert agg.total_km == pytest.approx(10.0)
 
 
-@pytest.mark.skip(reason="US15-TK02")
 def test_aggregate_sums_across_driver_routes(db_session):
     """As métricas são por motorista: trips de rotas diferentes dele somam juntas."""
     driver = make_driver(db_session)

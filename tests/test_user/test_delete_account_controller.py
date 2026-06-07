@@ -53,3 +53,57 @@ def test_delete_my_account_without_confirmation_4xx():
         app.dependency_overrides.pop(get_auth_service, None)
 
     assert resp.status_code in (400, 422)
+
+
+@pytest.mark.skip(reason="US20-TK05")
+def test_delete_my_account_without_auth_returns_401():
+    """Rota protegida: sem Bearer token, deve responder 401."""
+    resp = client.request("DELETE", "/users/me", json={"confirm": True})
+    assert resp.status_code == 401
+
+
+@pytest.mark.skip(reason="US20-TK05")
+def test_delete_my_account_integration(db_session):
+    """Stack real: token válido + confirm -> 204 -> usuário inativo e anonimizado."""
+    from datetime import datetime, timezone
+
+    from src.config import settings
+    from src.domains.users.entity import UserModel
+    from src.infrastructure.auth.jwt_token_service import JwtTokenService
+    from src.infrastructure.database import get_db
+
+    now = datetime.now(timezone.utc)
+    user = UserModel(
+        name="Del User",
+        email="del@b.com",
+        phone="51999990000",
+        role="driver",
+        password_hash="h",
+        is_active=True,
+        created_at=now,
+        updated_at=now,
+    )
+    db_session.add(user)
+    db_session.flush()
+
+    token = JwtTokenService(
+        settings.jwt_secret,
+        settings.jwt_algorithm,
+        settings.jwt_access_token_expire_minutes,
+    ).create_access_token(user.id, role="driver", jti="jti-del")
+
+    app.dependency_overrides[get_db] = lambda: db_session
+    try:
+        resp = client.request(
+            "DELETE",
+            "/users/me",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"confirm": True},
+        )
+    finally:
+        app.dependency_overrides.pop(get_db, None)
+
+    assert resp.status_code == 204
+    refreshed = db_session.get(UserModel, user.id)
+    assert refreshed.is_active is False
+    assert refreshed.email != "del@b.com"

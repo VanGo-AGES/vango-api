@@ -14,6 +14,7 @@ from src.domains.users.auth import ITokenService, TokenPayload
 from src.domains.users.auth_service import AuthService
 from src.domains.users.email import IEmailService
 from src.domains.users.entity import UserModel
+from src.domains.users.refresh_token_repository import IRefreshTokenRepository
 from src.domains.users.repository import IPasswordHasher, IUserRepository
 from src.domains.users.reset_token_repository import IPasswordResetTokenRepository
 from src.domains.users.revoked_token_repository import IRevokedTokenRepository
@@ -22,6 +23,7 @@ from src.infrastructure.database import get_db
 from src.infrastructure.dependencies.user_dependencies import get_password_hasher, get_user_repository
 from src.infrastructure.email.smtp_email_service import SmtpEmailService
 from src.infrastructure.repositories.password_reset_token_repository import PasswordResetTokenRepositoryImpl
+from src.infrastructure.repositories.refresh_token_repository import RefreshTokenRepositoryImpl
 from src.infrastructure.repositories.revoked_token_repository import RevokedTokenRepositoryImpl
 
 DatabaseSession = Annotated[Session, Depends(get_db)]
@@ -43,6 +45,10 @@ def get_revoked_token_repository(db: DatabaseSession) -> IRevokedTokenRepository
     return RevokedTokenRepositoryImpl(db)
 
 
+def get_refresh_token_repository(db: DatabaseSession) -> IRefreshTokenRepository:
+    return RefreshTokenRepositoryImpl(db)
+
+
 def get_email_service() -> IEmailService:
     return SmtpEmailService(
         host=settings.smtp_host,
@@ -60,6 +66,7 @@ def get_auth_service(
     reset_repo: Annotated[IPasswordResetTokenRepository, Depends(get_reset_token_repository)],
     email_service: Annotated[IEmailService, Depends(get_email_service)],
     revoked_repo: Annotated[IRevokedTokenRepository, Depends(get_revoked_token_repository)],
+    refresh_repo: Annotated[IRefreshTokenRepository, Depends(get_refresh_token_repository)],
 ) -> AuthService:
     return AuthService(
         user_repository=user_repo,
@@ -68,6 +75,7 @@ def get_auth_service(
         reset_token_repository=reset_repo,
         email_service=email_service,
         revoked_token_repository=revoked_repo,
+        refresh_token_repository=refresh_repo,
     )
 
 
@@ -88,3 +96,11 @@ def get_current_user(
 ) -> UserModel:
     """Carrega o usuário do token. 401 se não existir/estiver inativo."""
     raise NotImplementedError("US17-TK02")
+
+
+# US17-TK07 — autorização por papel (motorista)
+def get_current_driver(
+    current_user: Annotated[UserModel, Depends(get_current_user)],
+) -> UserModel:
+    """Garante que o usuário autenticado é motorista. 403 caso contrário."""
+    raise NotImplementedError("US17-TK07")
