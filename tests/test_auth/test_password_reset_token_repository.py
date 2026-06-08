@@ -15,7 +15,6 @@ FUTURE = datetime.now(timezone.utc) + timedelta(hours=1)
 PAST = datetime.now(timezone.utc) - timedelta(hours=1)
 
 
-@pytest.mark.skip(reason="US18-TK02")
 def test_create_and_find_valid(db_session):
     user = make_passenger(db_session)
     repo = PasswordResetTokenRepositoryImpl(db_session)
@@ -28,7 +27,6 @@ def test_create_and_find_valid(db_session):
     assert found.user_id == user.id
 
 
-@pytest.mark.skip(reason="US18-TK02")
 def test_find_valid_ignores_expired(db_session):
     user = make_passenger(db_session)
     repo = PasswordResetTokenRepositoryImpl(db_session)
@@ -37,7 +35,6 @@ def test_find_valid_ignores_expired(db_session):
     assert repo.find_valid("expired") is None
 
 
-@pytest.mark.skip(reason="US18-TK02")
 def test_mark_used_invalidates_token(db_session):
     user = make_passenger(db_session)
     repo = PasswordResetTokenRepositoryImpl(db_session)
@@ -48,13 +45,11 @@ def test_mark_used_invalidates_token(db_session):
     assert repo.find_valid("hash-2") is None
 
 
-@pytest.mark.skip(reason="US18-TK02")
 def test_find_valid_unknown_returns_none(db_session):
     repo = PasswordResetTokenRepositoryImpl(db_session)
     assert repo.find_valid("nope") is None
 
 
-@pytest.mark.skip(reason="US18-TK02")
 def test_mark_used_unknown_id_is_noop(db_session):
     """mark_used em id inexistente (ex.: duplo-reset concorrente) não pode estourar."""
     import uuid
