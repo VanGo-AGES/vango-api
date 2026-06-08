@@ -31,7 +31,6 @@ def _called_window(repo):
     return start, end
 
 
-@pytest.mark.skip(reason="US15-TK03")
 def test_get_report_maps_aggregate_to_dto():
     agg = MetricsAggregate(total_km=15.5, total_duration_seconds=3000, passengers=15, trips=4)
     service, _ = _service_with_aggregate(agg)
@@ -46,7 +45,6 @@ def test_get_report_maps_aggregate_to_dto():
     assert result.period == ReportPeriod.WEEK
 
 
-@pytest.mark.skip(reason="US15-TK03")
 def test_get_report_day_uses_single_day_window():
     agg = MetricsAggregate(total_km=10.0, total_duration_seconds=1920, passengers=3, trips=1)
     service, repo = _service_with_aggregate(agg)
@@ -62,7 +60,6 @@ def test_get_report_day_uses_single_day_window():
     assert end.date() == date(2025, 8, 17)
 
 
-@pytest.mark.skip(reason="US15-TK03")
 def test_get_report_month_spans_full_month():
     agg = MetricsAggregate(total_km=0.0, total_duration_seconds=0, passengers=0, trips=0)
     service, repo = _service_with_aggregate(agg)
@@ -77,7 +74,6 @@ def test_get_report_month_spans_full_month():
     assert end.date() == date(2025, 8, 31)
 
 
-@pytest.mark.skip(reason="US15-TK03")
 def test_get_report_returns_zeros_when_no_trips():
     agg = MetricsAggregate(total_km=0.0, total_duration_seconds=0, passengers=0, trips=0)
     service, _ = _service_with_aggregate(agg)
@@ -90,7 +86,6 @@ def test_get_report_returns_zeros_when_no_trips():
     assert result.trips == 0
 
 
-@pytest.mark.skip(reason="US15-TK03")
 def test_get_report_week_uses_explicit_end_date():
     agg = MetricsAggregate(total_km=0.0, total_duration_seconds=0, passengers=0, trips=0)
     service, repo = _service_with_aggregate(agg)
@@ -102,7 +97,6 @@ def test_get_report_week_uses_explicit_end_date():
     assert end.date() == date(2025, 8, 23)
 
 
-@pytest.mark.skip(reason="US15-TK03")
 def test_get_report_week_without_end_defaults_to_seven_days():
     agg = MetricsAggregate(total_km=0.0, total_duration_seconds=0, passengers=0, trips=0)
     service, repo = _service_with_aggregate(agg)
@@ -114,7 +108,6 @@ def test_get_report_week_without_end_defaults_to_seven_days():
     assert end.date() == date(2025, 8, 23)  # start + 6 dias
 
 
-@pytest.mark.skip(reason="US15-TK03")
 def test_get_report_window_covers_full_day_bounds():
     """start no começo do dia (00:00:00) e end no fim do dia (23:59),
     para casar com o filtro inclusivo do repositório (US15-TK02)."""
@@ -128,7 +121,6 @@ def test_get_report_window_covers_full_day_bounds():
     assert (end.hour, end.minute) == (23, 59)
 
 
-@pytest.mark.skip(reason="US15-TK03")
 def test_get_report_rounds_duration_to_nearest_minute():
     """duration é minutos arredondados, não truncados: 110s -> 2 min."""
     agg = MetricsAggregate(total_km=0.0, total_duration_seconds=110, passengers=0, trips=1)
