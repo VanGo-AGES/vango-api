@@ -27,6 +27,7 @@ from src.domains.uploads.controller import router as upload_controller
 from src.domains.users.auth_controller import router as auth_controller
 from src.domains.users.controller import router as user_controller
 from src.domains.users.entity import UserModel
+from src.domains.users.refresh_token_entity import RefreshTokenModel
 from src.domains.users.reset_token_entity import PasswordResetTokenModel
 from src.domains.users.revoked_token_entity import RevokedTokenModel
 from src.domains.vehicles.controller import router as vehicle_controller
@@ -48,6 +49,7 @@ _ = (
     AbsenceModel,
     PasswordResetTokenModel,
     RevokedTokenModel,
+    RefreshTokenModel,
 )
 
 

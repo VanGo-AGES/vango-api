@@ -503,11 +503,22 @@
         "type": "object"
       },
       "LoginResponse": {
-        "description": "Retornado por POST /auth/login: token + dados do usuário.",
+        "description": "Retornado por POST /auth/login e /auth/refresh: tokens + dados do usuário.\n\n`refresh_token` é populado quando o fluxo de refresh está ativo (US17-TK09).",
         "properties": {
           "access_token": {
             "title": "Access Token",
             "type": "string"
+          },
+          "refresh_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refresh Token"
           },
           "token_type": {
             "default": "bearer",
@@ -526,8 +537,46 @@
         "type": "object"
       },
       "MetricsReportResponse": {
-        "description": "Resposta agregada do relatório de viagens do motorista.\n\nCampos esperados (implementar na US15-TK01):\n- distance: float        — km rodados no período\n- duration: int          — tempo total das viagens, em minutos\n- passengers: int        — passageiros transportados\n- trips: int             — viagens realizadas\n- period: ReportPeriod   — granularidade aplicada\n- start_date: date       — início do intervalo considerado\n- end_date: date         — fim do intervalo considerado",
-        "properties": {},
+        "properties": {
+          "distance": {
+            "default": 0.0,
+            "title": "Distance",
+            "type": "number"
+          },
+          "duration": {
+            "default": 0,
+            "title": "Duration",
+            "type": "integer"
+          },
+          "end_date": {
+            "format": "date",
+            "title": "End Date",
+            "type": "string"
+          },
+          "passengers": {
+            "default": 0,
+            "title": "Passengers",
+            "type": "integer"
+          },
+          "period": {
+            "$ref": "#/components/schemas/ReportPeriod"
+          },
+          "start_date": {
+            "format": "date",
+            "title": "Start Date",
+            "type": "string"
+          },
+          "trips": {
+            "default": 0,
+            "title": "Trips",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "period",
+          "start_date",
+          "end_date"
+        ],
         "title": "MetricsReportResponse",
         "type": "object"
       },
@@ -843,6 +892,20 @@
           "joined_at"
         ],
         "title": "PassangerRouteResponse",
+        "type": "object"
+      },
+      "RefreshRequest": {
+        "properties": {
+          "refresh_token": {
+            "minLength": 1,
+            "title": "Refresh Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "refresh_token"
+        ],
+        "title": "RefreshRequest",
         "type": "object"
       },
       "RegisterPushTokenRequest": {
@@ -2429,6 +2492,47 @@
           }
         },
         "summary": "Reset Password",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "operationId": "refresh_auth_refresh_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Refresh",
         "tags": [
           "Auth"
         ]
@@ -4609,6 +4713,53 @@
           }
         },
         "summary": "Delete My Account",
+        "tags": [
+          "Auth"
+        ]
+      },
+      "get": {
+        "operationId": "get_me_users_me_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Me",
         "tags": [
           "Auth"
         ]

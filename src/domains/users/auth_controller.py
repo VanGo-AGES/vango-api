@@ -15,7 +15,9 @@ from src.domains.users.dtos import (
     ForgotPasswordRequest,
     LoginRequest,
     LoginResponse,
+    RefreshRequest,
     ResetPasswordConfirm,
+    UserResponse,
 )
 from src.domains.users.entity import UserModel
 from src.infrastructure.auth.dependencies import (
@@ -34,6 +36,23 @@ def login(
     service: Annotated[AuthService, Depends(get_auth_service)],
 ) -> LoginResponse:
     return service.login(body.email, body.password)
+
+
+# US17-TK10
+@router.post("/auth/refresh", response_model=LoginResponse, status_code=status.HTTP_200_OK)
+def refresh(
+    body: RefreshRequest,
+    service: Annotated[AuthService, Depends(get_auth_service)],
+) -> LoginResponse:
+    return service.refresh(body.refresh_token)
+
+
+# US17-TK06
+@router.get("/users/me", response_model=UserResponse, status_code=status.HTTP_200_OK)
+def get_me(
+    current_user: Annotated[UserModel, Depends(get_current_user)],
+) -> UserModel:
+    return current_user
 
 
 # US18-TK05

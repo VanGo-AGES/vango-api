@@ -1,8 +1,12 @@
 """US17-TK01 — Implementação do token service com PyJWT."""
 
-from uuid import UUID
+from datetime import datetime, timedelta
+from uuid import UUID, uuid4
+
+import jwt
 
 from src.domains.users.auth import ITokenService, TokenPayload
+from src.domains.users.auth_errors import InvalidTokenError
 
 
 class JwtTokenService(ITokenService):
@@ -13,8 +17,31 @@ class JwtTokenService(ITokenService):
 
     # US17-TK01
     def create_access_token(self, user_id: UUID, role: str, jti: str | None = None) -> str:
-        raise NotImplementedError("US17-TK01")
+        if jti is None:
+            jti = uuid4().hex
+
+        payload = {
+            "sub": str(user_id),
+            "role": role,
+            "jti": jti,
+            "exp": datetime.utcnow() + timedelta(minutes=self.expire_minutes),
+        }
+
+        return jwt.encode(payload, self.secret, algorithm=self.algorithm)
 
     # US17-TK01
     def decode_token(self, token: str) -> TokenPayload:
-        raise NotImplementedError("US17-TK01")
+        try:
+            decoded = jwt.decode(token, self.secret, algorithms=[self.algorithm])
+        except jwt.InvalidTokenError as exc:
+            raise InvalidTokenError() from exc
+
+        try:
+            sub = UUID(decoded["sub"])
+            role = str(decoded["role"])
+            jti = str(decoded["jti"])
+            exp = datetime.fromtimestamp(decoded["exp"])
+        except (KeyError, ValueError, TypeError) as exc:
+            raise InvalidTokenError() from exc
+
+        return TokenPayload(sub=sub, role=role, jti=jti, exp=exp)
