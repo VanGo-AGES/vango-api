@@ -4,6 +4,9 @@ Usa `smtplib` da stdlib (sem dependência nova). As credenciais vêm do
 `config.py`/secrets. Os testes mockam o transporte — não enviam e-mail real.
 """
 
+import smtplib
+from email.message import EmailMessage
+
 from src.domains.users.email import IEmailService
 
 
@@ -17,4 +20,18 @@ class SmtpEmailService(IEmailService):
 
     # US18-TK01
     def send(self, to: str, subject: str, body_html: str, body_text: str | None = None) -> None:
-        raise NotImplementedError("US18-TK01")
+        msg = EmailMessage()
+        msg["From"] = self.sender
+        msg["To"] = to
+        msg["Subject"] = subject
+
+        if body_text:
+            msg.set_content(body_text)
+            msg.add_alternative(body_html, subtype="html")
+        else:
+            msg.set_content(body_html, subtype="html")
+
+        with smtplib.SMTP(self.host, self.port) as smtp:
+            smtp.starttls()
+            smtp.login(self.username, self.password)
+            smtp.send_message(msg)
