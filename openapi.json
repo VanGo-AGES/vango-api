@@ -4882,7 +4882,8 @@
     },
     "/users/{user_id}": {
       "delete": {
-        "description": "Remove a conta do usuário e todos os dados associados em cascata.",
+        "deprecated": true,
+        "description": "Remove a conta do usuário e todos os dados associados em cascata. Este endpoint está depreciado em favor de DELETE /users/me.",
         "operationId": "delete_user_users__user_id__delete",
         "parameters": [
           {
@@ -4911,7 +4912,7 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Excluir usuário",
+        "summary": "Excluir usuário (deprecated)",
         "tags": [
           "Users"
         ]

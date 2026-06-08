@@ -116,6 +116,8 @@ fastapi_app.add_middleware(
     allow_headers=["*"],
 )
 
+# Épico 5 — autenticação (login/logout/recuperação/exclusão)
+fastapi_app.include_router(auth_controller)
 fastapi_app.include_router(user_controller)
 fastapi_app.include_router(vehicle_controller)
 fastapi_app.include_router(dependent_controller)
@@ -128,8 +130,6 @@ fastapi_app.include_router(upload_controller)
 fastapi_app.include_router(absence_controller)
 # US15 — métricas e relatórios (/metrics/reports)
 fastapi_app.include_router(metrics_controller)
-# Épico 5 — autenticação (login/logout/recuperação/exclusão)
-fastapi_app.include_router(auth_controller)
 
 
 @fastapi_app.get("/health", tags=["Infrastructure"])

@@ -6,9 +6,10 @@ conta (US20). Login/forgot/reset são públicos; logout e delete exigem auth.
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from src.domains.users.auth import TokenPayload
+from src.domains.users.auth_errors import DeletionNotConfirmedError
 from src.domains.users.auth_service import AuthService
 from src.domains.users.dtos import (
     DeleteAccountRequest,
@@ -91,4 +92,7 @@ def delete_my_account(
     service: Annotated[AuthService, Depends(get_auth_service)],
     current_user: Annotated[UserModel, Depends(get_current_user)],
 ) -> None:
-    service.delete_account(current_user.id, body.confirm)
+    try:
+        service.delete_account(current_user.id, body.confirm)
+    except DeletionNotConfirmedError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
