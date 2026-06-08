@@ -1,7 +1,6 @@
 """US17-TK08 — RefreshTokenRepository.
 
 Remova o skip rodando:
-  sed -i '/@pytest.mark.skip(reason="US17-TK08")/d' tests/test_auth/test_refresh_token_repository.py
 """
 
 from datetime import datetime, timedelta, timezone
@@ -15,7 +14,6 @@ FUTURE = datetime.now(timezone.utc) + timedelta(days=7)
 PAST = datetime.now(timezone.utc) - timedelta(days=1)
 
 
-@pytest.mark.skip(reason="US17-TK08")
 def test_create_and_find_valid(db_session):
     user = make_passenger(db_session)
     repo = RefreshTokenRepositoryImpl(db_session)
@@ -28,7 +26,6 @@ def test_create_and_find_valid(db_session):
     assert found.user_id == user.id
 
 
-@pytest.mark.skip(reason="US17-TK08")
 def test_find_valid_ignores_expired(db_session):
     user = make_passenger(db_session)
     repo = RefreshTokenRepositoryImpl(db_session)
@@ -37,7 +34,6 @@ def test_find_valid_ignores_expired(db_session):
     assert repo.find_valid("rt-exp") is None
 
 
-@pytest.mark.skip(reason="US17-TK08")
 def test_revoke_invalidates(db_session):
     user = make_passenger(db_session)
     repo = RefreshTokenRepositoryImpl(db_session)
@@ -48,7 +44,6 @@ def test_revoke_invalidates(db_session):
     assert repo.find_valid("rt-2") is None
 
 
-@pytest.mark.skip(reason="US17-TK08")
 def test_revoke_all_for_user(db_session):
     user = make_passenger(db_session)
     repo = RefreshTokenRepositoryImpl(db_session)
@@ -62,7 +57,6 @@ def test_revoke_all_for_user(db_session):
     assert repo.find_valid("rt-b") is None
 
 
-@pytest.mark.skip(reason="US17-TK08")
 def test_find_valid_unknown_returns_none(db_session):
     repo = RefreshTokenRepositoryImpl(db_session)
     assert repo.find_valid("nope") is None
