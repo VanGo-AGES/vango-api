@@ -6,11 +6,12 @@ e-mail, o AuthService e a dependência real `get_current_user` (JWT).
 
 from typing import Annotated
 
-from fastapi import Depends, Header
+from fastapi import Depends, Header, HTTPException, status
 from sqlalchemy.orm import Session
 
 from src.config import settings
 from src.domains.users.auth import ITokenService, TokenPayload
+from src.domains.users.auth_errors import InvalidTokenError
 from src.domains.users.auth_service import AuthService
 from src.domains.users.email import IEmailService
 from src.domains.users.entity import UserModel
@@ -86,7 +87,22 @@ def get_current_token_payload(
     authorization: Annotated[str | None, Header()] = None,
 ) -> TokenPayload:
     """Extrai e valida o Bearer token; checa a denylist (US19). 401 se inválido."""
-    raise NotImplementedError("US17-TK02")
+    if authorization is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header is required.")
+
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header must be Bearer token.")
+
+    token = authorization.split(" ", 1)[1].strip()
+    try:
+        payload = token_service.decode_token(token)
+    except InvalidTokenError as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
+
+    if revoked_repo.is_revoked(payload.jti):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token revogado.")
+
+    return payload
 
 
 # US17-TK02 — usuário autenticado
@@ -95,7 +111,11 @@ def get_current_user(
     user_repo: Annotated[IUserRepository, Depends(get_user_repository)],
 ) -> UserModel:
     """Carrega o usuário do token. 401 se não existir/estiver inativo."""
-    raise NotImplementedError("US17-TK02")
+    user = user_repo.find_by_id(payload.sub)
+    if not user or not user.is_active:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Usuário inválido ou inativo.")
+
+    return user
 
 
 # US17-TK07 — autorização por papel (motorista)

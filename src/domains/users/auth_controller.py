@@ -6,9 +6,10 @@ conta (US20). Login/forgot/reset são públicos; logout e delete exigem auth.
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from src.domains.users.auth import TokenPayload
+from src.domains.users.auth_errors import DeletionNotConfirmedError
 from src.domains.users.auth_service import AuthService
 from src.domains.users.dtos import (
     DeleteAccountRequest,
@@ -20,6 +21,7 @@ from src.domains.users.dtos import (
     UserResponse,
 )
 from src.domains.users.entity import UserModel
+from src.domains.users.errors import UserNotFoundError
 from src.infrastructure.auth.dependencies import (
     get_auth_service,
     get_current_token_payload,
@@ -85,10 +87,20 @@ def logout(
 
 
 # US20-TK05
-@router.delete("/users/me", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/users/me",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Excluir conta do usuário autenticado",
+    description="Exclui a conta do usuário logado após confirmação explícita no body.",
+)
 def delete_my_account(
     body: DeleteAccountRequest,
     service: Annotated[AuthService, Depends(get_auth_service)],
     current_user: Annotated[UserModel, Depends(get_current_user)],
 ) -> None:
-    service.delete_account(current_user.id, body.confirm)
+    try:
+        service.delete_account(current_user.id, body.confirm)
+    except DeletionNotConfirmedError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    except UserNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc

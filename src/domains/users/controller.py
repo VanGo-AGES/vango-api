@@ -109,7 +109,10 @@ def update_user(
     "/{user_id}",
     status_code=status.HTTP_204_NO_CONTENT,
     summary="Excluir usuário",
-    description="Remove a conta do usuário e todos os dados associados em cascata.",
+    description=(
+        "Rota hard delete obsoleta. Use DELETE /users/me para exclusão de conta própria. Esta rota será removida em versões futuras."
+    ),
+    deprecated=True,
 )
 def delete_user(user_id: UUID, service: Annotated[UserService, Depends(get_user_service)]) -> None:
     try:

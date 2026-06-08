@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -59,7 +60,21 @@ class UserRepositoryImpl(IUserRepository):
 
     # US20-TK02
     def soft_delete_and_anonymize(self, user_id: UUID) -> bool:
-        raise NotImplementedError("US20-TK02")
+        user = self.find_by_id(user_id)
+        if not user:
+            return False
+
+        user.is_active = False
+        user.deleted_at = datetime.now(UTC)
+        user.name = f"deleted_user_{user.id}"
+        user.email = f"deleted+{user.id}@van-go.local"
+        user.phone = ""
+        user.cpf = None
+        user.photo_url = None
+        user.push_token = None
+        self.session.commit()
+        self.session.refresh(user)
+        return True
 
 
 class PasswordHasherImpl(IPasswordHasher):

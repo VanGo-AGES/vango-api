@@ -4668,6 +4668,7 @@
     },
     "/users/me": {
       "delete": {
+        "description": "Exclui a conta do usuário logado após confirmação explícita no body.",
         "operationId": "delete_my_account_users_me_delete",
         "parameters": [
           {
@@ -4712,7 +4713,7 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Delete My Account",
+        "summary": "Excluir conta do usuário autenticado",
         "tags": [
           "Auth"
         ]
@@ -4882,7 +4883,8 @@
     },
     "/users/{user_id}": {
       "delete": {
-        "description": "Remove a conta do usuário e todos os dados associados em cascata.",
+        "deprecated": true,
+        "description": "Rota hard delete obsoleta. Use DELETE /users/me para exclusão de conta própria. Esta rota será removida em versões futuras.",
         "operationId": "delete_user_users__user_id__delete",
         "parameters": [
           {
