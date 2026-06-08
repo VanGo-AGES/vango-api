@@ -7,7 +7,7 @@ strings persistidas. Remova o skip rodando:
 
 import pytest
 
-from src.shared.enums import RoutePassangerStatus, TripPassangerStatus, TripStatus
+from src.shared.enums import RoutePassangerStatus, RouteStatus, TripPassangerStatus, TripStatus
 
 
 @pytest.mark.skip(reason="US00-TK14")
@@ -29,6 +29,13 @@ def test_route_passanger_status_values():
     assert RoutePassangerStatus.PENDING.value == "pending"
     assert RoutePassangerStatus.ACCEPTED.value == "accepted"
     assert RoutePassangerStatus.REJECTED.value == "rejected"
+
+
+@pytest.mark.skip(reason="US00-TK14")
+def test_route_status_values():
+    assert RouteStatus.ATIVA.value == "ativa"
+    assert RouteStatus.INATIVA.value == "inativa"
+    assert RouteStatus.EM_ANDAMENTO.value == "em_andamento"
 
 
 @pytest.mark.skip(reason="US00-TK14")

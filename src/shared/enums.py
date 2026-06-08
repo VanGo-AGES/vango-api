@@ -25,3 +25,10 @@ class RoutePassangerStatus(StrEnum):
     PENDING = "pending"
     ACCEPTED = "accepted"
     REJECTED = "rejected"
+
+
+class RouteStatus(StrEnum):
+    # ciclo de vida: criada INATIVA -> viagem inicia EM_ANDAMENTO -> viagem finaliza ATIVA
+    ATIVA = "ativa"
+    INATIVA = "inativa"
+    EM_ANDAMENTO = "em_andamento"
