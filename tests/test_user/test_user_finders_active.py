@@ -15,7 +15,6 @@ def _deactivate(db_session, user):
     db_session.flush()
 
 
-@pytest.mark.skip(reason="US20-TK03")
 def test_active_user_is_still_found(db_session):
     """Controle positivo: o filtro não pode esconder usuários ativos."""
     user = make_passenger(db_session)
@@ -26,7 +25,6 @@ def test_active_user_is_still_found(db_session):
     assert repo.find_by_id(user.id) is not None
 
 
-@pytest.mark.skip(reason="US20-TK03")
 def test_find_by_email_excludes_inactive(db_session):
     user = make_passenger(db_session)
     email = user.email
@@ -36,7 +34,6 @@ def test_find_by_email_excludes_inactive(db_session):
     assert repo.find_by_email(email) is None
 
 
-@pytest.mark.skip(reason="US20-TK03")
 def test_find_by_id_excludes_inactive(db_session):
     user = make_passenger(db_session)
     _deactivate(db_session, user)
@@ -45,7 +42,6 @@ def test_find_by_id_excludes_inactive(db_session):
     assert repo.find_by_id(user.id) is None
 
 
-@pytest.mark.skip(reason="US20-TK03")
 def test_find_all_excludes_inactive(db_session):
     active = make_passenger(db_session)
     inactive = make_passenger(db_session)
