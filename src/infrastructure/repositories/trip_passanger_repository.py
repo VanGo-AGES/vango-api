@@ -6,6 +6,7 @@ TK03 cobre: save_all, find_by_id, find_by_trip, update_status, bulk_alight_prese
 from datetime import datetime
 from uuid import UUID
 
+from src.shared.enums import TripPassangerStatus
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
@@ -66,7 +67,7 @@ class TripPassangerRepositoryImpl(ITripPassangerRepository):
             update(TripPassangerModel)
             .where(
                 TripPassangerModel.trip_id == trip_id,
-                TripPassangerModel.status == "presente",
+                TripPassangerModel.status == TripPassangerStatus.PRESENTE,
                 TripPassangerModel.alighted_at.is_(None),
             )
             .values(alighted_at=alighted_at)

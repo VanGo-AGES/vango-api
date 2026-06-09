@@ -19,6 +19,7 @@ from contextlib import contextmanager
 from urllib.parse import parse_qs
 
 import socketio
+from src.shared.enums import RoutePassangerStatus
 from src.domains.notifications.service import INotificationService
 from src.domains.routing.service import IRoutingService
 from src.domains.trips.service import TripService
@@ -654,7 +655,7 @@ def _validate_follower(user_id: str, trip_id: str) -> bool:
             return False
 
         route_passangers = rp_repo.find_by_user_and_route_id(user_uuid, trip.route_id)
-        return any(rp.status in ("pending", "accepted") for rp in route_passangers)
+        return any(rp.status in (RoutePassangerStatus.PENDING, RoutePassangerStatus.ACCEPTED) for rp in route_passangers)
     except Exception:
         return False
     finally:

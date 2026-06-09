@@ -1,5 +1,6 @@
 import secrets
 import string
+from src.shared.enums import RoutePassangerStatus, RouteStatus
 from datetime import datetime
 from uuid import UUID
 
@@ -101,7 +102,7 @@ class RouteService:
             route_type=data.route_type,
             recurrence=data.recurrence,
             expected_time=data.expected_time,
-            status="inativa",
+            status=RouteStatus.INATIVA,
             invite_code=self._generate_invite_code(),
             max_passengers=vehicle.capacity,
         )
@@ -136,7 +137,7 @@ class RouteService:
         if route.driver_id != driver_id:
             raise RouteOwnershipError()
 
-        if route.status == "em_andamento":
+        if route.status == RouteStatus.EM_ANDAMENTO:
             raise RouteInProgressError()
 
         update_data = data.model_dump(exclude_none=True)
@@ -278,7 +279,7 @@ class RouteService:
         is_passanger = False
         if not is_driver and self.route_passanger_repository is not None:
             rps = self.route_passanger_repository.find_by_user_and_route_id(caller_id, route_id)
-            is_passanger = any(rp.status in ("pending", "accepted") for rp in rps)
+            is_passanger = any(rp.status in (RoutePassangerStatus.PENDING, RoutePassangerStatus.ACCEPTED) for rp in rps)
 
         if not is_driver and not is_passanger:
             raise RouteOwnershipError()
@@ -320,12 +321,12 @@ class RouteService:
             raise RouteNotFoundError()
         if route.driver_id != driver_id:
             raise RouteOwnershipError()
-        if route.status == "em_andamento":
+        if route.status == RouteStatus.EM_ANDAMENTO:
             raise RouteInProgressError()
 
         active_passengers: dict = {}
         if self.route_passanger_repository is not None:
-            for status in ("pending", "accepted"):
+            for status in (RoutePassangerStatus.PENDING, RoutePassangerStatus.ACCEPTED):
                 for rp in self.route_passanger_repository.find_by_route_and_status(route_id, status):
                     active_passengers[rp.id] = rp
 

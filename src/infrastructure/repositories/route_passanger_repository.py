@@ -2,6 +2,7 @@
 
 from uuid import UUID
 
+from src.shared.enums import RoutePassangerStatus
 from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
 
@@ -41,7 +42,7 @@ class RoutePassangerRepositoryImpl(IRoutePassangerRepository):
     def count_accepted_by_route(self, route_id: UUID) -> int:
         return (
             self.session.query(RoutePassangerModel)
-            .filter(RoutePassangerModel.route_id == route_id, RoutePassangerModel.status == "accepted")
+            .filter(RoutePassangerModel.route_id == route_id, RoutePassangerModel.status == RoutePassangerStatus.ACCEPTED)
             .count()
         )
 
@@ -72,7 +73,7 @@ class RoutePassangerRepositoryImpl(IRoutePassangerRepository):
                 RoutePassangerModel.user_id == user_id,
                 dependent_filter,
                 RoutePassangerModel.route_id == route_id,
-                RoutePassangerModel.status.in_(["pending", "accepted"]),
+                RoutePassangerModel.status.in_([RoutePassangerStatus.PENDING, RoutePassangerStatus.ACCEPTED]),
             )
             .first()
         )
@@ -109,7 +110,7 @@ class RoutePassangerRepositoryImpl(IRoutePassangerRepository):
             )
             .outerjoin(RoutePassangerModel.dependent)
             .filter(
-                RoutePassangerModel.status.in_(["pending", "accepted"]),
+                RoutePassangerModel.status.in_([RoutePassangerStatus.PENDING, RoutePassangerStatus.ACCEPTED]),
                 or_(RoutePassangerModel.user_id == user_id, DependentModel.guardian_id == user_id),
             )
             .order_by(RoutePassangerModel.joined_at.desc())
@@ -126,7 +127,7 @@ class RoutePassangerRepositoryImpl(IRoutePassangerRepository):
             .outerjoin(RoutePassangerModel.dependent)
             .filter(
                 RoutePassangerModel.route_id == route_id,
-                RoutePassangerModel.status.in_(["pending", "accepted"]),
+                RoutePassangerModel.status.in_([RoutePassangerStatus.PENDING, RoutePassangerStatus.ACCEPTED]),
                 or_(
                     RoutePassangerModel.user_id == user_id,
                     DependentModel.guardian_id == user_id,

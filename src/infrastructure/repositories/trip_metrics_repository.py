@@ -3,6 +3,7 @@
 from datetime import datetime
 from uuid import UUID
 
+from src.shared.enums import TripPassangerStatus, TripStatus
 from sqlalchemy import Integer, cast, func, select
 from sqlalchemy.orm import Session
 
@@ -35,7 +36,7 @@ class TripMetricsRepositoryImpl(ITripMetricsRepository):
             select(func.count(TripPassangerModel.id))
             .where(
                 TripPassangerModel.trip_id == TripModel.id,
-                TripPassangerModel.status == "presente",
+                TripPassangerModel.status == TripPassangerStatus.PRESENTE,
             )
             .correlate(TripModel)
             .scalar_subquery()
@@ -51,7 +52,7 @@ class TripMetricsRepositoryImpl(ITripMetricsRepository):
             .join(RouteModel, RouteModel.id == TripModel.route_id)
             .filter(
                 RouteModel.driver_id == driver_id,
-                TripModel.status == "finalizada",
+                TripModel.status == TripStatus.FINALIZADA,
                 TripModel.trip_date >= start,
                 TripModel.trip_date <= end,
             )

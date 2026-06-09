@@ -17,6 +17,8 @@ import logging
 from datetime import UTC, datetime
 from uuid import UUID
 
+from src.shared.enums import RoutePassangerStatus, RouteStatus, TripStatus
+
 from src.domains.addresses.entity import AddressModel
 from src.domains.dependents.repository import IDependentRepository
 from src.domains.notifications.service import INotificationService
@@ -113,21 +115,21 @@ class RoutePassangerService:
         if route.driver_id != driver_id:
             raise RouteOwnershipError()
 
-        if route.status == "em_andamento":
+        if route.status == RouteStatus.EM_ANDAMENTO:
             raise RouteInProgressError()
 
         rp = self.route_passanger_repository.find_by_id(rp_id)
         if rp is None:
             raise RoutePassangerNotFoundError()
 
-        if rp.status != "pending":
+        if rp.status != RoutePassangerStatus.PENDING:
             raise RoutePassangerAlreadyProcessedError()
 
         accepted_count = self.route_passanger_repository.count_accepted_by_route(route_id)
         if accepted_count >= route.max_passengers:
             raise RouteCapacityExceededError()
 
-        updated = self.route_passanger_repository.update_status(rp.id, "accepted")
+        updated = self.route_passanger_repository.update_status(rp.id, RoutePassangerStatus.ACCEPTED)
 
         raw_stops = self.stop_repository.find_by_route_id(route.id)
         existing_stops: list = raw_stops if isinstance(raw_stops, list) else []
@@ -167,17 +169,17 @@ class RoutePassangerService:
         if route.driver_id != driver_id:
             raise RouteOwnershipError()
 
-        if route.status == "em_andamento":
+        if route.status == RouteStatus.EM_ANDAMENTO:
             raise RouteInProgressError()
 
         rp = self.route_passanger_repository.find_by_id(rp_id)
         if rp is None:
             raise RoutePassangerNotFoundError()
 
-        if rp.status != "pending":
+        if rp.status != RoutePassangerStatus.PENDING:
             raise RoutePassangerAlreadyProcessedError()
 
-        updated = self.route_passanger_repository.update_status(rp.id, "rejected")
+        updated = self.route_passanger_repository.update_status(rp.id, RoutePassangerStatus.REJECTED)
         self.notification_service.notify_passanger_rejected(updated)
         return self._to_response(updated)
 
@@ -200,7 +202,7 @@ class RoutePassangerService:
         if route.driver_id != driver_id:
             raise RouteOwnershipError()
 
-        if route.status == "em_andamento":
+        if route.status == RouteStatus.EM_ANDAMENTO:
             raise RouteInProgressError()
 
         rp = self.route_passanger_repository.find_by_id(rp_id)
@@ -229,7 +231,7 @@ class RoutePassangerService:
         if route.driver_id != driver_id:
             raise RouteOwnershipError()
 
-        valid_statuses = {"pending", "accepted", "rejected", None}
+        valid_statuses = {RoutePassangerStatus.PENDING, RoutePassangerStatus.ACCEPTED, RoutePassangerStatus.REJECTED, None}
         if status not in valid_statuses:
             raise ValueError(f"Status inválido: '{status}'. Valores permitidos: pending, accepted, rejected")
 
@@ -401,7 +403,7 @@ class RoutePassangerService:
         if route is None:
             raise RouteNotFoundError()
 
-        if route.status == "em_andamento":
+        if route.status == RouteStatus.EM_ANDAMENTO:
             raise RouteInProgressError()
 
         existing = self.route_passanger_repository.find_active_by_user_and_route(user_id, data.dependent_id, route_id)
@@ -431,7 +433,7 @@ class RoutePassangerService:
             route_id=route_id,
             user_id=user_id,
             dependent_id=data.dependent_id,
-            status="pending",
+            status=RoutePassangerStatus.PENDING,
             joined_at=None,
             pickup_address_id=saved_address.id,
         )
@@ -474,7 +476,7 @@ class RoutePassangerService:
         if route is None:
             raise RouteNotFoundError()
 
-        if route.status == "em_andamento":
+        if route.status == RouteStatus.EM_ANDAMENTO:
             raise RouteInProgressError()
 
         rp = self.route_passanger_repository.find_active_by_user_and_route(user_id, dependent_id, route_id)
@@ -507,7 +509,7 @@ class RoutePassangerService:
         if route is None:
             raise RouteNotFoundError()
 
-        if route.status == "em_andamento":
+        if route.status == RouteStatus.EM_ANDAMENTO:
             raise RouteInProgressError()
 
         rp = self.route_passanger_repository.find_active_by_user_and_route(user_id, dependent_id, route_id)
@@ -677,9 +679,9 @@ class RoutePassangerService:
 
         current_trip_id: UUID | None = None
         driver_plate: str | None = None
-        if route.status == "em_andamento":
+        if route.status == RouteStatus.EM_ANDAMENTO:
             trips = list(getattr(route, "trips", []) or [])
-            started = [t for t in trips if getattr(t, "status", None) == "iniciada"]
+            started = [t for t in trips if getattr(t, "status", None) == TripStatus.INICIADA]
             if started:
                 current_trip_id = started[0].id
                 driver_plate = getattr(getattr(started[0], "vehicle", None), "plate", None)

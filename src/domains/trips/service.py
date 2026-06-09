@@ -18,6 +18,8 @@ import asyncio
 from datetime import UTC, datetime
 from uuid import UUID
 
+from src.shared.enums import RoutePassangerStatus, RouteStatus, TripPassangerStatus, TripStatus
+
 from src.domains.notifications.service import INotificationService
 from src.domains.route_passangers.errors import NotRoutePassangerError
 from src.domains.route_passangers.repository import IRoutePassangerRepository
@@ -93,7 +95,7 @@ class TripService:
         if existing is not None:
             raise TripAlreadyInProgressError("Já existe uma viagem iniciada para esta rota.")
 
-        accepted = self.route_passanger_repository.find_by_route_and_status(route_id, "accepted")
+        accepted = self.route_passanger_repository.find_by_route_and_status(route_id, RoutePassangerStatus.ACCEPTED)
         if not accepted:
             raise NoPassangersToStartError("Nenhum passageiro aceito na rota.")
 
@@ -104,7 +106,7 @@ class TripService:
             route_id=route_id,
             vehicle_id=data.vehicle_id,
             trip_date=trip_date,
-            status="iniciada",
+            status=TripStatus.INICIADA,
             started_at=now,
         )
         saved_trip = self.trip_repository.save(trip)
@@ -116,13 +118,13 @@ class TripService:
             TripPassangerModel(
                 trip_id=saved_trip.id,
                 route_passanger_id=rp.id,
-                status="ausente" if rp.id in absent_ids else "pendente",
+                status=TripPassangerStatus.AUSENTE if rp.id in absent_ids else TripPassangerStatus.PENDENTE,
             )
             for rp in accepted
         ]
         self.trip_passanger_repository.save_all(trip_passangers)
 
-        self.route_repository.update(route_id, {"status": "em_andamento"})
+        self.route_repository.update(route_id, {"status": RouteStatus.EM_ANDAMENTO})
 
         self.notification_service.notify_trip_started(saved_trip)
 
@@ -132,7 +134,7 @@ class TripService:
             route_name=route.name,
             vehicle_id=data.vehicle_id,
             trip_date=trip_date,
-            status="iniciada",
+            status=TripStatus.INICIADA,
             started_at=now,
             finished_at=None,
             total_km=None,
@@ -204,7 +206,7 @@ class TripService:
         trip_passangers = self.trip_passanger_repository.find_by_trip(trip_id)
 
         for tp in trip_passangers:
-            if tp.status == "pendente":
+            if tp.status == TripPassangerStatus.PENDENTE:
                 stop = self.stop_repository.find_by_route_passanger_id(tp.route_passanger_id)
                 if stop is None:
                     continue
@@ -247,18 +249,18 @@ class TripService:
             raise TripNotFoundError(f"Viagem {trip_id} não encontrada.")
         if trip.route.driver_id != driver_id:
             raise TripOwnershipError("Motorista não é dono desta viagem.")
-        if trip.status != "iniciada":
+        if trip.status != TripStatus.INICIADA:
             raise TripNotInProgressError("A viagem não está em andamento.")
 
         tp = self.trip_passanger_repository.find_by_id(trip_passanger_id)
         if tp is None or tp.trip_id != trip_id:
             raise TripPassangerNotFoundError(f"Passageiro {trip_passanger_id} não encontrado na viagem.")
 
-        if tp.status != "pendente":
+        if tp.status != TripPassangerStatus.PENDENTE:
             raise InvalidTripPassangerStatusError(f"Não é possível marcar presente um passageiro com status '{tp.status}'.")
 
         now = datetime.now(UTC)
-        updated = self.trip_passanger_repository.update_status(trip_passanger_id, "presente", boarded_at=now)
+        updated = self.trip_passanger_repository.update_status(trip_passanger_id, TripPassangerStatus.PRESENTE, boarded_at=now)
         # US12-TK05
         self.notification_service.notify_passanger_boarded(updated)
         # US11-TK05 — chamar emit_passenger_boarded(str(trip.id), str(updated.id), user_name)
@@ -288,17 +290,17 @@ class TripService:
             raise TripNotFoundError(f"Viagem {trip_id} não encontrada.")
         if trip.route.driver_id != driver_id:
             raise TripOwnershipError("Motorista não é dono desta viagem.")
-        if trip.status != "iniciada":
+        if trip.status != TripStatus.INICIADA:
             raise TripNotInProgressError("A viagem não está em andamento.")
 
         tp = self.trip_passanger_repository.find_by_id(trip_passanger_id)
         if tp is None or tp.trip_id != trip_id:
             raise TripPassangerNotFoundError(f"Passageiro {trip_passanger_id} não encontrado na viagem.")
 
-        if tp.status != "pendente":
+        if tp.status != TripPassangerStatus.PENDENTE:
             raise InvalidTripPassangerStatusError(f"Não é possível marcar ausente um passageiro com status '{tp.status}'.")
 
-        updated = self.trip_passanger_repository.update_status(trip_passanger_id, "ausente")
+        updated = self.trip_passanger_repository.update_status(trip_passanger_id, TripPassangerStatus.AUSENTE)
 
         # US12-TK05
         self.notification_service.notify_passanger_absent(updated)
@@ -334,7 +336,7 @@ class TripService:
         if trip.route.driver_id != driver_id:
             raise TripOwnershipError()
 
-        if trip.status != "iniciada":
+        if trip.status != TripStatus.INICIADA:
             raise TripNotInProgressError()
 
         stop = self.stop_repository.find_by_id(stop_id)
@@ -345,12 +347,12 @@ class TripService:
         pending_tps = [
             tp
             for tp in self.trip_passanger_repository.find_by_trip(trip_id)
-            if tp.route_passanger_id == stop.route_passanger_id and tp.status == "pendente"
+            if tp.route_passanger_id == stop.route_passanger_id and tp.status == TripPassangerStatus.PENDENTE
         ]
 
         updated_responses = []
         for tp in pending_tps:
-            updated = self.trip_passanger_repository.update_status(tp.id, "ausente")
+            updated = self.trip_passanger_repository.update_status(tp.id, TripPassangerStatus.AUSENTE)
 
             # US11-TK06 — Extrair o nome do usuário/dependente e emitir o evento
             rp = updated.route_passanger
@@ -381,17 +383,17 @@ class TripService:
             raise TripNotFoundError(f"Viagem {trip_id} não encontrada.")
         if trip.route.driver_id != driver_id:
             raise TripOwnershipError("Motorista não é dono desta viagem.")
-        if trip.status != "iniciada":
+        if trip.status != TripStatus.INICIADA:
             raise TripNotInProgressError("A viagem não está em andamento.")
 
         tp = self.trip_passanger_repository.find_by_id(trip_passanger_id)
         if tp is None or tp.trip_id != trip_id:
             raise TripPassangerNotFoundError(f"Passageiro {trip_passanger_id} não encontrado na viagem.")
 
-        if tp.status != "presente":
+        if tp.status != TripPassangerStatus.PRESENTE:
             raise InvalidTripPassangerStatusError(f"Não é possível desembarcar um passageiro com status '{tp.status}'.")
 
-        updated = self.trip_passanger_repository.update_status(trip_passanger_id, "presente", alighted_at=datetime.now(UTC))
+        updated = self.trip_passanger_repository.update_status(trip_passanger_id, TripPassangerStatus.PRESENTE, alighted_at=datetime.now(UTC))
         return self._build_trip_passanger_response(updated)
 
     # US09-TK13
@@ -416,7 +418,7 @@ class TripService:
         if trip.route.driver_id != driver_id:
             raise TripOwnershipError("Motorista não é dono desta viagem.")
 
-        if trip.status != "iniciada":
+        if trip.status != TripStatus.INICIADA:
             raise TripAlreadyFinishedError("A viagem já foi finalizada.")
 
         now = datetime.now(UTC)
@@ -424,10 +426,10 @@ class TripService:
         self.trip_passanger_repository.bulk_alight_presents(trip_id, now)
 
         # Finaliza a trip
-        finished = self.trip_repository.update_status(trip_id, "finalizada", now, data.total_km)
+        finished = self.trip_repository.update_status(trip_id, TripStatus.FINALIZADA, now, data.total_km)
 
         # Libera a rota
-        self.route_repository.update(trip.route_id, {"status": "ativa"})
+        self.route_repository.update(trip.route_id, {"status": RouteStatus.ATIVA})
 
         # Notifica push
         self.notification_service.notify_trip_finished(finished)
@@ -470,7 +472,7 @@ class TripService:
         trip_passangers = self.trip_passanger_repository.find_by_trip(trip_id)
 
         for tp in trip_passangers:
-            if tp.status != "pendente":
+            if tp.status != TripPassangerStatus.PENDENTE:
                 continue
 
             stop = self.stop_repository.find_by_route_passanger_id(tp.route_passanger_id)
