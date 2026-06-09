@@ -1,6 +1,5 @@
 import secrets
 import string
-from src.shared.enums import RoutePassangerStatus, RouteStatus
 from datetime import datetime
 from uuid import UUID
 
@@ -24,6 +23,7 @@ from src.domains.routing.route_totals import compute_route_totals
 from src.domains.routing.service import IGeocodingService, IRoutingService
 from src.domains.trips.repository import IAbsenceRepository, ITripRepository
 from src.domains.vehicles.repository import IVehicleRepository
+from src.shared.enums import RoutePassangerStatus, RouteStatus
 
 
 class RouteService:

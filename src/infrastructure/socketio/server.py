@@ -19,7 +19,6 @@ from contextlib import contextmanager
 from urllib.parse import parse_qs
 
 import socketio
-from src.shared.enums import RoutePassangerStatus
 from src.domains.notifications.service import INotificationService
 from src.domains.routing.service import IRoutingService
 from src.domains.trips.service import TripService
@@ -33,6 +32,7 @@ from src.infrastructure.repositories.stop_repository import StopRepositoryImpl
 from src.infrastructure.repositories.trip_passanger_repository import TripPassangerRepositoryImpl
 from src.infrastructure.repositories.trip_repository import TripRepositoryImpl
 from src.infrastructure.repositories.vehicle_repository import VehicleRepositoryImpl
+from src.shared.enums import RoutePassangerStatus
 
 logger = logging.getLogger(__name__)
 

@@ -3,13 +3,13 @@
 from datetime import datetime
 from uuid import UUID
 
-from src.shared.enums import TripPassangerStatus, TripStatus
 from sqlalchemy import Integer, cast, func, select
 from sqlalchemy.orm import Session
 
 from src.domains.metrics.repository import ITripMetricsRepository, MetricsAggregate
 from src.domains.routes.entity import RouteModel
 from src.domains.trips.entity import TripModel, TripPassangerModel
+from src.shared.enums import TripPassangerStatus, TripStatus
 
 
 class TripMetricsRepositoryImpl(ITripMetricsRepository):

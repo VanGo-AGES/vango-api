@@ -2,7 +2,6 @@
 
 from uuid import UUID
 
-from src.shared.enums import RoutePassangerStatus
 from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
 
@@ -10,6 +9,7 @@ from src.domains.dependents.entity import DependentModel
 from src.domains.route_passangers.entity import RoutePassangerModel
 from src.domains.route_passangers.repository import IRoutePassangerRepository
 from src.domains.routes.entity import RouteModel
+from src.shared.enums import RoutePassangerStatus
 
 
 class RoutePassangerRepositoryImpl(IRoutePassangerRepository):

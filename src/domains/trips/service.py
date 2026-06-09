@@ -18,8 +18,6 @@ import asyncio
 from datetime import UTC, datetime
 from uuid import UUID
 
-from src.shared.enums import RoutePassangerStatus, RouteStatus, TripPassangerStatus, TripStatus
-
 from src.domains.notifications.service import INotificationService
 from src.domains.route_passangers.errors import NotRoutePassangerError
 from src.domains.route_passangers.repository import IRoutePassangerRepository
@@ -53,6 +51,7 @@ from src.domains.trips.repository import (
     ITripRepository,
 )
 from src.domains.vehicles.repository import IVehicleRepository
+from src.shared.enums import RoutePassangerStatus, RouteStatus, TripPassangerStatus, TripStatus
 
 
 class TripService:
@@ -393,7 +392,9 @@ class TripService:
         if tp.status != TripPassangerStatus.PRESENTE:
             raise InvalidTripPassangerStatusError(f"Não é possível desembarcar um passageiro com status '{tp.status}'.")
 
-        updated = self.trip_passanger_repository.update_status(trip_passanger_id, TripPassangerStatus.PRESENTE, alighted_at=datetime.now(UTC))
+        updated = self.trip_passanger_repository.update_status(
+            trip_passanger_id, TripPassangerStatus.PRESENTE, alighted_at=datetime.now(UTC)
+        )
         return self._build_trip_passanger_response(updated)
 
     # US09-TK13

@@ -17,8 +17,6 @@ import logging
 from datetime import UTC, datetime
 from uuid import UUID
 
-from src.shared.enums import RoutePassangerStatus, RouteStatus, TripStatus
-
 from src.domains.addresses.entity import AddressModel
 from src.domains.dependents.repository import IDependentRepository
 from src.domains.notifications.service import INotificationService
@@ -53,6 +51,7 @@ from src.domains.stops.dtos import StopResponse
 from src.domains.stops.entity import StopModel
 from src.domains.stops.repository import IStopRepository
 from src.domains.users.repository import IUserRepository
+from src.shared.enums import RoutePassangerStatus, RouteStatus, TripStatus
 
 logger = logging.getLogger(__name__)
 

@@ -7,12 +7,12 @@ Todos os métodos começam com pass (stub). As TKs correspondentes cobrem:
 from datetime import datetime
 from uuid import UUID
 
-from src.shared.enums import TripStatus
 from sqlalchemy import select
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from src.domains.trips.entity import TripModel
 from src.domains.trips.repository import ITripRepository
+from src.shared.enums import TripStatus
 
 
 class TripRepositoryImpl(ITripRepository):
