@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from src.domains.metrics.repository import ITripMetricsRepository, MetricsAggregate
 from src.domains.routes.entity import RouteModel
 from src.domains.trips.entity import TripModel, TripPassangerModel
+from src.shared.enums import TripPassangerStatus, TripStatus
 
 
 class TripMetricsRepositoryImpl(ITripMetricsRepository):
@@ -35,7 +36,7 @@ class TripMetricsRepositoryImpl(ITripMetricsRepository):
             select(func.count(TripPassangerModel.id))
             .where(
                 TripPassangerModel.trip_id == TripModel.id,
-                TripPassangerModel.status == "presente",
+                TripPassangerModel.status == TripPassangerStatus.PRESENTE,
             )
             .correlate(TripModel)
             .scalar_subquery()
@@ -51,7 +52,7 @@ class TripMetricsRepositoryImpl(ITripMetricsRepository):
             .join(RouteModel, RouteModel.id == TripModel.route_id)
             .filter(
                 RouteModel.driver_id == driver_id,
-                TripModel.status == "finalizada",
+                TripModel.status == TripStatus.FINALIZADA,
                 TripModel.trip_date >= start,
                 TripModel.trip_date <= end,
             )

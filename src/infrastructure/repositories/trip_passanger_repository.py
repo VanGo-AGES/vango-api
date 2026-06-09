@@ -13,6 +13,7 @@ from src.domains.route_passangers.entity import RoutePassangerModel
 from src.domains.stops.entity import StopModel
 from src.domains.trips.entity import TripPassangerModel
 from src.domains.trips.repository import ITripPassangerRepository
+from src.shared.enums import TripPassangerStatus
 
 
 class TripPassangerRepositoryImpl(ITripPassangerRepository):
@@ -66,7 +67,7 @@ class TripPassangerRepositoryImpl(ITripPassangerRepository):
             update(TripPassangerModel)
             .where(
                 TripPassangerModel.trip_id == trip_id,
-                TripPassangerModel.status == "presente",
+                TripPassangerModel.status == TripPassangerStatus.PRESENTE,
                 TripPassangerModel.alighted_at.is_(None),
             )
             .values(alighted_at=alighted_at)

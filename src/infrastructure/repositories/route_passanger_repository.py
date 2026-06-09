@@ -9,6 +9,7 @@ from src.domains.dependents.entity import DependentModel
 from src.domains.route_passangers.entity import RoutePassangerModel
 from src.domains.route_passangers.repository import IRoutePassangerRepository
 from src.domains.routes.entity import RouteModel
+from src.shared.enums import RoutePassangerStatus
 
 
 class RoutePassangerRepositoryImpl(IRoutePassangerRepository):
@@ -41,7 +42,7 @@ class RoutePassangerRepositoryImpl(IRoutePassangerRepository):
     def count_accepted_by_route(self, route_id: UUID) -> int:
         return (
             self.session.query(RoutePassangerModel)
-            .filter(RoutePassangerModel.route_id == route_id, RoutePassangerModel.status == "accepted")
+            .filter(RoutePassangerModel.route_id == route_id, RoutePassangerModel.status == RoutePassangerStatus.ACCEPTED)
             .count()
         )
 
@@ -72,7 +73,7 @@ class RoutePassangerRepositoryImpl(IRoutePassangerRepository):
                 RoutePassangerModel.user_id == user_id,
                 dependent_filter,
                 RoutePassangerModel.route_id == route_id,
-                RoutePassangerModel.status.in_(["pending", "accepted"]),
+                RoutePassangerModel.status.in_([RoutePassangerStatus.PENDING, RoutePassangerStatus.ACCEPTED]),
             )
             .first()
         )
@@ -109,7 +110,7 @@ class RoutePassangerRepositoryImpl(IRoutePassangerRepository):
             )
             .outerjoin(RoutePassangerModel.dependent)
             .filter(
-                RoutePassangerModel.status.in_(["pending", "accepted"]),
+                RoutePassangerModel.status.in_([RoutePassangerStatus.PENDING, RoutePassangerStatus.ACCEPTED]),
                 or_(RoutePassangerModel.user_id == user_id, DependentModel.guardian_id == user_id),
             )
             .order_by(RoutePassangerModel.joined_at.desc())
@@ -126,7 +127,7 @@ class RoutePassangerRepositoryImpl(IRoutePassangerRepository):
             .outerjoin(RoutePassangerModel.dependent)
             .filter(
                 RoutePassangerModel.route_id == route_id,
-                RoutePassangerModel.status.in_(["pending", "accepted"]),
+                RoutePassangerModel.status.in_([RoutePassangerStatus.PENDING, RoutePassangerStatus.ACCEPTED]),
                 or_(
                     RoutePassangerModel.user_id == user_id,
                     DependentModel.guardian_id == user_id,
