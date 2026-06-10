@@ -16,7 +16,7 @@ from .dtos import (
     UserResponse,
     UserUpdate,
 )
-from .errors import DuplicateEmailError, InvalidCredentialsError, UserNotFoundError
+from .errors import UserNotFoundError
 from .service import UserService
 
 router = APIRouter(prefix="/users", tags=["Users"])
@@ -33,10 +33,7 @@ def register_user(body: UserCreate, service: Annotated[UserService, Depends(get_
     """
     Endpoint para cadastrar motoristas, passageiros ou responsáveis.
     """
-    try:
-        return service.create_user(body)
-    except DuplicateEmailError as exc:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+    return service.create_user(body)
 
 
 @router.post(
@@ -54,12 +51,7 @@ def login_user(
     body: LoginRequest,
     service: Annotated[UserService, Depends(get_user_service)],
 ) -> UserResponse:
-    try:
-        return service.login(body.email, body.password)
-    except UserNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    except InvalidCredentialsError as exc:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
+    return service.login(body.email, body.password)
 
 
 @router.get(
@@ -81,10 +73,7 @@ def list_users(service: Annotated[UserService, Depends(get_user_service)]) -> li
     description="Retorna os dados de um usuário específico pelo seu ID.",
 )
 def get_user(user_id: UUID, service: Annotated[UserService, Depends(get_user_service)]) -> UserResponse:
-    try:
-        return service.get_user(user_id)
-    except UserNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    return service.get_user(user_id)
 
 
 @router.put(
@@ -99,10 +88,7 @@ def update_user(
     body: UserUpdate,
     service: Annotated[UserService, Depends(get_user_service)],
 ) -> UserResponse:
-    try:
-        return service.update_user(user_id, body)
-    except UserNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    return service.update_user(user_id, body)
 
 
 @router.delete(
@@ -115,10 +101,7 @@ def update_user(
     ),
 )
 def delete_user(user_id: UUID, service: Annotated[UserService, Depends(get_user_service)]) -> None:
-    try:
-        service.delete_user(user_id)
-    except UserNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    service.delete_user(user_id)
 
 
 # US12-TK02
@@ -165,10 +148,7 @@ def send_test_notification(
 ) -> SendTestNotificationResponse:
     payload = body or SendTestNotificationRequest()
 
-    try:
-        user = service.get_user(x_user_id)
-    except UserNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    user = service.get_user(x_user_id)
 
     if not user.push_token:
         raise HTTPException(
