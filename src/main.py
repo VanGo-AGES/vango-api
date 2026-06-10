@@ -33,6 +33,7 @@ from src.domains.users.revoked_token_entity import RevokedTokenModel
 from src.domains.vehicles.controller import router as vehicle_controller
 from src.domains.vehicles.entity import VehicleModel
 from src.infrastructure.database import Base, engine
+from src.infrastructure.observability.prometheus import setup_prometheus
 from src.infrastructure.socketio.server import sio
 
 # Force SQLAlchemy to register all mappers so relationship() string refs resolve
@@ -90,6 +91,8 @@ fastapi_app = FastAPI(
     version="0.1.0",
     lifespan=lifespan,
 )
+
+setup_prometheus(fastapi_app)
 
 app = socketio.ASGIApp(sio, fastapi_app)
 

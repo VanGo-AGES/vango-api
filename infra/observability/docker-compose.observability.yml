@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   loki:
@@ -23,6 +23,18 @@ services:
     depends_on:
       - loki
 
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+    network_mode: host
+    volumes:
+      - ./infra/observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    restart: unless-stopped
+
   grafana:
     image: grafana/grafana:10.4.2
     container_name: grafana
@@ -31,14 +43,18 @@ services:
     environment:
       - GF_SECURITY_ADMIN_USER=${GF_ADMIN_USER:-admin}
       - GF_SECURITY_ADMIN_PASSWORD=${GF_ADMIN_PASSWORD:-admin}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - grafana_data:/var/lib/grafana
       - ./infra/observability/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
     restart: unless-stopped
     depends_on:
       - loki
+      - prometheus
 
 volumes:
   loki_data:
   grafana_data:
+  prometheus_data:
   promtail_positions:
