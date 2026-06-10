@@ -108,8 +108,11 @@ def update_user(
 @router.delete(
     "/{user_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Excluir usuário",
-    description="Remove a conta do usuário e todos os dados associados em cascata.",
+    deprecated=True,
+    summary="Excluir usuário (deprecated)",
+    description=(
+        "Remove a conta do usuário e todos os dados associados em cascata. Este endpoint está depreciado em favor de DELETE /users/me."
+    ),
 )
 def delete_user(user_id: UUID, service: Annotated[UserService, Depends(get_user_service)]) -> None:
     try:

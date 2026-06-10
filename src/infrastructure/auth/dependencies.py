@@ -6,7 +6,7 @@ e-mail, o AuthService e a dependência real `get_current_user` (JWT).
 
 from typing import Annotated
 
-from fastapi import Depends, Header
+from fastapi import Depends, Header, HTTPException
 from sqlalchemy.orm import Session
 
 from src.config import settings
@@ -86,7 +86,25 @@ def get_current_token_payload(
     authorization: Annotated[str | None, Header()] = None,
 ) -> TokenPayload:
     """Extrai e valida o Bearer token; checa a denylist (US19). 401 se inválido."""
-    raise NotImplementedError("US17-TK02")
+    if authorization is None:
+        raise HTTPException(status_code=401, detail="Missing authorization header")
+
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Invalid authorization scheme")
+
+    token = authorization.removeprefix("Bearer ").strip()
+    if not token:
+        raise HTTPException(status_code=401, detail="Invalid access token")
+
+    try:
+        payload = token_service.decode_token(token)
+    except Exception as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+
+    if revoked_repo.is_revoked(payload.jti):
+        raise HTTPException(status_code=401, detail="Token revoked")
+
+    return payload
 
 
 # US17-TK02 — usuário autenticado
@@ -95,7 +113,10 @@ def get_current_user(
     user_repo: Annotated[IUserRepository, Depends(get_user_repository)],
 ) -> UserModel:
     """Carrega o usuário do token. 401 se não existir/estiver inativo."""
-    raise NotImplementedError("US17-TK02")
+    user = user_repo.find_by_id(payload.sub)
+    if user is None or not getattr(user, "is_active", False):
+        raise HTTPException(status_code=401, detail="User not found or inactive")
+    return user
 
 
 # US17-TK07 — autorização por papel (motorista)
