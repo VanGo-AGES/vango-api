@@ -14,6 +14,7 @@ from src.domains.users.errors import (
 from src.domains.users.service import UserService
 from src.infrastructure.dependencies.user_dependencies import get_user_service
 from src.main import fastapi_app as app
+from tests.test_user.conftest import VALID_PASSWORD
 
 
 def make_user_response(**kwargs) -> UserResponse:
@@ -51,7 +52,7 @@ def test_register_user_success():
             "name": "John Doe",
             "email": "john@email.com",
             "phone": "54999999999",
-            "password": "senha123",
+            "password": VALID_PASSWORD,
             "role": "driver",
         },
     )
@@ -77,7 +78,7 @@ def test_register_user_duplicate_email_returns_400():
             "name": "John Doe",
             "email": "john@email.com",
             "phone": "54999999999",
-            "password": "senha123",
+            "password": VALID_PASSWORD,
             "role": "driver",
         },
     )
@@ -117,7 +118,7 @@ def test_register_user_invalid_role_returns_422():
             "name": "John Doe",
             "email": "john@email.com",
             "phone": "54999999999",
-            "password": "senha123",
+            "password": VALID_PASSWORD,
             "role": "admin",
         },
     )
@@ -143,7 +144,7 @@ def test_register_user_with_cpf_returns_cpf_in_response():
             "name": "João Motorista",
             "email": "joao@email.com",
             "phone": "54999999999",
-            "password": "senha123",
+            "password": VALID_PASSWORD,
             "role": "driver",
             "cpf": "999.999.999-99",
         },
@@ -353,7 +354,7 @@ def make_user_payload(**kwargs) -> dict:
         "name": "João Silva",
         "email": f"joao_{uuid4()}@test.com",
         "phone": "54999999999",
-        "password": "senha123",
+        "password": VALID_PASSWORD,
         "role": "driver",
     }
     defaults.update(kwargs)
@@ -540,7 +541,7 @@ def test_login_success_returns_200():
         "/users/login",
         json={
             "email": "john@email.com",
-            "password": "senha123",
+            "password": VALID_PASSWORD,
         },
     )
 
@@ -565,7 +566,7 @@ def test_login_user_not_found_returns_404():
         "/users/login",
         json={
             "email": "ghost@email.com",
-            "password": "senha123",
+            "password": VALID_PASSWORD,
         },
     )
 
