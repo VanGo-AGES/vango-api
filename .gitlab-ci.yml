@@ -17,22 +17,29 @@ before_script:
   - echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET_ACCESS_KEY" >> .env
   - echo "AWS_S3_BUCKET_NAME=$AWS_S3_BUCKET_NAME" >> .env
   - echo "AWS_REGION=$AWS_REGION" >> .env
-
+  - echo "GF_ADMIN_USER=$GF_ADMIN_USER" >> .env
+  - echo "GF_ADMIN_PASSWORD=$GF_ADMIN_PASSWORD" >> .env
+  - echo "MAPBOX_API_KEY=$MAPBOX_API_KEY" >> .env
+  - touch firebase_service_account.json
+  - echo "$FIREBASE_JSON_CONTENT" > ./firebase_service_account.json
+  
 run_tests:
   stage: test
   tags:
     - vango-ec2
   script:
+    - docker compose down --volumes --remove-orphans || true
     - docker compose up -d db
-    - docker compose run --rm api pytest -p no:cacheprovider
-    - docker compose down
+    - docker compose run --rm api pytest -p no:cacheprovider -q
+  after_script:
+    - docker compose down --volumes --remove-orphans
 
 build_prod_image:
   stage: build
   tags:
     - vango-ec2
   script:
-    - docker build -t vango-api:$CI_COMMIT_SHA -t vango-api:latest .
+    - docker build -f Dockerfile.prod -t vango-api:$CI_COMMIT_SHA -t vango-api:latest .
   only:
     - main
 
@@ -42,6 +49,7 @@ deploy_to_ec2:
     - vango-ec2
   script:
     - export IMAGE_TAG=$CI_COMMIT_SHA
-    - docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+    - docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --wait db api
+    - docker exec vango_api alembic upgrade head
   only:
     - main
