@@ -11,6 +11,7 @@ from src.domains.users.errors import (
     InvalidCredentialsError,
     UserNotFoundError,
 )
+from tests.test_user.conftest import VALID_PASSWORD
 
 
 # ===========================================================================
@@ -41,13 +42,13 @@ def test_create_user_success():
             name="John Doe",
             email="john@email.com",
             phone="54999999999",
-            password="senha123",
+            password=VALID_PASSWORD,
             role="driver",
         )
     )
 
     repo.find_by_email.assert_called_once_with("john@email.com")
-    hasher.hash.assert_called_once_with("senha123")
+    hasher.hash.assert_called_once_with(VALID_PASSWORD)
     repo.save.assert_called_once()
     assert result.email == "john@email.com"
 
@@ -74,7 +75,7 @@ def test_create_user_duplicate_email_raises_error():
                 name="John Doe",
                 email="john@email.com",
                 phone="54999999999",
-                password="senha123",
+                password=VALID_PASSWORD,
                 role="driver",
             )
         )
@@ -98,7 +99,7 @@ def test_create_user_stores_password_hash():
             name="John Doe",
             email="john@email.com",
             phone="54999999999",
-            password="plain_password",
+            password=VALID_PASSWORD,
             role="driver",
         )
     )
@@ -125,7 +126,7 @@ def test_create_user_maps_cpf_and_photo_url():
             name="João Motorista",
             email="joao@email.com",
             phone="54999999999",
-            password="senha123",
+            password=VALID_PASSWORD,
             role="driver",
             cpf="999.999.999-99",
             photo_url="https://storage.example.com/avatars/joao.jpg",
@@ -154,7 +155,7 @@ def test_create_user_without_cpf_saves_none():
             name="Maria Passageira",
             email="maria@email.com",
             phone="54999999999",
-            password="senha123",
+            password=VALID_PASSWORD,
             role="passenger",
         )
     )
@@ -232,9 +233,9 @@ def test_update_user_with_password_hashing():
     hasher.hash.return_value = "new_hashed_password"
 
     service = UserService(repo, hasher)
-    service.update_user(user_id, UserUpdate(password="new_password"))
+    service.update_user(user_id, UserUpdate(password=VALID_PASSWORD))
 
-    hasher.hash.assert_called_once_with("new_password")
+    hasher.hash.assert_called_once_with(VALID_PASSWORD)
 
     args, _ = repo.update.call_args
     assert args[0] == user_id
@@ -368,10 +369,10 @@ def test_login_success():
     hasher.verify.return_value = True
 
     service = UserService(repo, hasher)
-    result = service.login("john@email.com", "senha123")
+    result = service.login("john@email.com", VALID_PASSWORD)
 
     repo.find_by_email.assert_called_once_with("john@email.com")
-    hasher.verify.assert_called_once_with("senha123", existing_user.password_hash)
+    hasher.verify.assert_called_once_with(VALID_PASSWORD, existing_user.password_hash)
     assert result == existing_user
 
 
@@ -386,7 +387,7 @@ def test_login_user_not_found():
     service = UserService(repo, hasher)
 
     with pytest.raises(UserNotFoundError):
-        service.login("ghost@email.com", "senha123")
+        service.login("ghost@email.com", VALID_PASSWORD)
 
     hasher.verify.assert_not_called()
 

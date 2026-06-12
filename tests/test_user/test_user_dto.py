@@ -5,6 +5,7 @@ from uuid import uuid4
 from pydantic import ValidationError
 
 from src.domains.users.dtos import UserCreate, UserResponse, UserUpdate
+from tests.test_user.conftest import VALID_PASSWORD
 
 
 # ----- USER CREATE — implementado, sem skip -----
@@ -13,21 +14,21 @@ from src.domains.users.dtos import UserCreate, UserResponse, UserUpdate
 def test_user_create_empty_fields():
     # name vazio (min_length=3)
     with pytest.raises(ValidationError):
-        UserCreate(name="", email="test@email.com", phone="54999999999", password="123456", role="driver")
+        UserCreate(name="", email="test@email.com", phone="54999999999", password=VALID_PASSWORD, role="driver")
 
     # email omitido
     with pytest.raises(ValidationError):
-        UserCreate(name="John Doe", phone="54999999999", password="123456", role="driver")
+        UserCreate(name="John Doe", phone="54999999999", password=VALID_PASSWORD, role="driver")
 
 
 def test_user_create_invalid_email():
     with pytest.raises(ValidationError):
-        UserCreate(name="John Doe", email="email_sem_arroba", phone="54999999999", password="123456", role="driver")
+        UserCreate(name="John Doe", email="email_sem_arroba", phone="54999999999", password=VALID_PASSWORD, role="driver")
 
 
 def test_user_create_invalid_role():
     with pytest.raises(ValidationError):
-        UserCreate(name="John Doe", email="john@email.com", phone="54999999999", password="123456", role="admin")
+        UserCreate(name="John Doe", email="john@email.com", phone="54999999999", password=VALID_PASSWORD, role="admin")
 
 
 def test_user_response_no_password_exposure():
@@ -48,7 +49,7 @@ def test_user_response_no_password_exposure():
 
 
 def test_user_create_valid():
-    user = UserCreate(name="John Doe", email="john@email.com", phone="54999999999", password="123456", role="driver")
+    user = UserCreate(name="John Doe", email="john@email.com", phone="54999999999", password=VALID_PASSWORD, role="driver")
 
     assert user.name == "John Doe"
 
@@ -63,7 +64,7 @@ def test_user_create_valid():
 def test_user_create_driver_with_cpf():
     """Motorista pode incluir CPF no momento do cadastro."""
     user = UserCreate(
-        name="João Motorista", email="joao@email.com", phone="54999999999", password="123456", role="driver", cpf="999.999.999-99"
+        name="João Motorista", email="joao@email.com", phone="54999999999", password=VALID_PASSWORD, role="driver", cpf="999.999.999-99"
     )
 
     assert user.cpf == "999.999.999-99"
@@ -72,7 +73,7 @@ def test_user_create_driver_with_cpf():
 # Teste 7: CPF é opcional — passageiro não precisa informar
 def test_user_create_without_cpf():
     """CPF é opcional — omitir não deve causar ValidationError."""
-    user = UserCreate(name="Maria Passageira", email="maria@email.com", phone="54999999999", password="123456", role="passenger")
+    user = UserCreate(name="Maria Passageira", email="maria@email.com", phone="54999999999", password=VALID_PASSWORD, role="passenger")
 
     assert user.cpf is None
 
@@ -122,7 +123,7 @@ def test_user_update_cpf_and_photo_url():
         name="name",
         email="email@gmail.com",
         phone="54999999999",
-        password="senha123",
+        password=VALID_PASSWORD,
         cpf="999.999.999-99",
         photo_url="https://storage.example.com/avatars/novo.jpg",
     )
@@ -145,19 +146,19 @@ def test_user_update_empty_password():
 
 # Teste 3: happy path — todos os campos válidos
 def test_user_update_happy_path():
-    user = UserUpdate(name="John Updated", email="john.updated@email.com", phone="54988888888", password="nova_senha_123")
+    user = UserUpdate(name="John Updated", email="john.updated@email.com", phone="54988888888", password=VALID_PASSWORD)
 
     data = user.model_dump(exclude_unset=True)
 
     assert data["name"] == "John Updated"
     assert data["email"] == "john.updated@email.com"
     assert data["phone"] == "54988888888"
-    assert data["password"] == "nova_senha_123"
+    assert data["password"] == VALID_PASSWORD
 
 
 # Teste 4: email normalizado (lowercase + strip)
 def test_user_update_email_normalization():
-    user = UserUpdate(name="John Updated", email="  JOHN.DOE@EMAIL.COM  ", phone="54988888888", password="nova_senha_123")
+    user = UserUpdate(name="John Updated", email="  JOHN.DOE@EMAIL.COM  ", phone="54988888888", password=VALID_PASSWORD)
 
     data = user.model_dump(exclude_unset=True)
 
@@ -167,19 +168,19 @@ def test_user_update_email_normalization():
 # Teste 5: formato de email inválido rejeitado
 def test_user_update_invalid_email():
     with pytest.raises(ValidationError):
-        UserUpdate(name="John Updated", mail="email_invalido", phone="54988888888", password="nova_senha_123")
+        UserUpdate(name="John Updated", mail="email_invalido", phone="54988888888", password=VALID_PASSWORD)
 
 
 # Teste 6: name vazio rejeitado
 def test_user_update_empty_name():
     with pytest.raises(ValidationError):
-        UserUpdate(name="", mail="email_invalido", phone="54988888888", password="nova_senha_123")
+        UserUpdate(name="", mail="email_invalido", phone="54988888888", password=VALID_PASSWORD)
 
 
 # Teste 7: phone vazio rejeitado
 def test_user_update_empty_phone():
     with pytest.raises(ValidationError):
-        UserUpdate(name="John Updated", mail="email_invalido", phone=" ", password="nova_senha_123")
+        UserUpdate(name="John Updated", mail="email_invalido", phone=" ", password=VALID_PASSWORD)
 
 
 # ===========================================================================
