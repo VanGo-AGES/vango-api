@@ -20,3 +20,7 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+db:
+    scale: 0
+    

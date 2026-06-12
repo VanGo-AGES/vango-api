@@ -49,7 +49,12 @@ deploy_to_ec2:
     - vango-ec2
   script:
     - export IMAGE_TAG=$CI_COMMIT_SHA
-    - docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --wait db api
-    - docker exec vango_api alembic upgrade head
+    - export SNAPSHOT_ID="vango-db-prod-snapshot-$(date +%Y-%m-%d-%H-%M-%S)"
+    - echo "Criando snapshot de segurança do RDS ($SNAPSHOT_ID)..."
+    - aws rds create-db-snapshot --db-instance-identifier vango-db-production --db-snapshot-identifier $SNAPSHOT_ID --region $AWS_REGION
+    - echo "Aguardando a conclusão do snapshot na AWS..."
+    - aws rds wait db-snapshot-completed --db-snapshot-identifier $SNAPSHOT_ID --region $AWS_REGION
+    - docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --wait api
+    - docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T api alembic upgrade head
   only:
     - main
