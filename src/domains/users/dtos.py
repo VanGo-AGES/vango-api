@@ -146,10 +146,15 @@ class ForgotPasswordRequest(BaseModel):
 
 # US18-TK03 — confirmar nova senha via token
 class ResetPasswordConfirm(BaseModel):
-    """A nova senha será validada contra as regras (US16-TK01) na US18-TK04."""
+    """A nova senha respeita as mesmas regras do cadastro (US16-TK01)."""
 
     token: str = Field(..., min_length=1)
     new_password: str = Field(..., min_length=1)
+
+    @field_validator("new_password")
+    @classmethod
+    def _validate_new_password(cls, value: str) -> str:
+        return validate_password(value)
 
 
 # US20-TK05 — confirmação de exclusão de conta
