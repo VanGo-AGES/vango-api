@@ -9,13 +9,13 @@ Orquestra os fluxos de autenticação:
 Recebe as dependências por injeção (mockadas nos testes de service).
 """
 
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from src.domains.users.auth import ITokenService, TokenPayload
-from src.domains.users.auth_errors import DeletionNotConfirmedError
-from src.domains.users.dtos import LoginResponse
+from src.domains.users.auth_errors import AccountInactiveError, DeletionNotConfirmedError
+from src.domains.users.dtos import LoginResponse, UserResponse
 from src.domains.users.email import IEmailService
-from src.domains.users.errors import UserNotFoundError
+from src.domains.users.errors import InvalidCredentialsError, UserNotFoundError
 from src.domains.users.refresh_token_repository import IRefreshTokenRepository
 from src.domains.users.repository import IPasswordHasher, IUserRepository
 from src.domains.users.reset_token_repository import IPasswordResetTokenRepository
@@ -45,7 +45,24 @@ class AuthService:
     def login(self, email: str, password: str) -> LoginResponse:
         """Valida credenciais (bloqueia conta inativa) e emite o access token
         (e o refresh token, quando o fluxo de refresh está ativo)."""
-        raise NotImplementedError("US17-TK03")
+        user = self.user_repository.find_by_email(email)
+        if user is None:
+            raise UserNotFoundError()
+
+        if not self.password_hasher.verify(password, user.password_hash):
+            raise InvalidCredentialsError()
+
+        if not user.is_active:
+            raise AccountInactiveError()
+
+        jti = str(uuid4())
+        access_token = self.token_service.create_access_token(user.id, user.role, jti)
+
+        return LoginResponse(
+            access_token=access_token,
+            token_type="bearer",  # nosec B106 - tipo de token OAuth, não é senha
+            user=UserResponse.model_validate(user),
+        )
 
     # US17-TK09
     def refresh(self, refresh_token: str) -> LoginResponse:
