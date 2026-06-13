@@ -1,7 +1,9 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
+
+from src.domains.users.password_rules import validate_password
 
 
 # 1. O que a API RECEBE (Entrada)
@@ -17,6 +19,12 @@ class UserCreate(BaseModel):
     # Opcional — obrigatório apenas para motoristas no fluxo de cadastro
     cpf: str | None = Field(default=None, json_schema_extra={"example": "999.999.999-99"})
     photo_url: str | None = None
+
+    # US16-TK01 — política de senha forte centralizada
+    @field_validator("password")
+    @classmethod
+    def _validate_password(cls, value: str) -> str:
+        return validate_password(value)
 
 
 # 2. O que a API DEVOLVE (Saída)
@@ -63,6 +71,14 @@ class UserUpdate(BaseModel):
                 if isinstance(value, str) and not value.strip():
                     raise ValueError(f"Campo '{field}' inválido (vazio).")
         return data
+
+    # US16-TK01 — reaproveita a mesma política na troca de senha
+    @field_validator("password")
+    @classmethod
+    def _validate_password(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        return validate_password(value)
 
 
 # 4. Login (intermediário, sem JWT)
