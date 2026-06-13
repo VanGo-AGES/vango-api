@@ -1,7 +1,6 @@
 """US15-TK04 — Controller GET /metrics/reports (unidade + integração).
 
 Remova o skip rodando:
-  sed -i '/@pytest.mark.skip(reason="US15-TK04")/d' tests/test_metrics/test_metrics_controller.py
 
 - Testes unitários mockam o MetricsService via dependency_override.
 - Teste de integração sobrescreve get_db pela sessão SQLite e exercita
@@ -33,7 +32,6 @@ DRIVER_ID = str(uuid.uuid4())
 HEADERS = {"X-User-Id": DRIVER_ID, "X-User-Role": "driver"}
 
 
-@pytest.mark.skip(reason="US15-TK04")
 def test_get_reports_returns_200_and_body():
     fake = MetricsReportResponse(
         distance=15.5,
@@ -63,7 +61,6 @@ def test_get_reports_returns_200_and_body():
     assert body["trips"] == 4
 
 
-@pytest.mark.skip(reason="US15-TK04")
 def test_get_reports_invalid_period_returns_422():
     resp = client.get(
         "/metrics/reports",
@@ -73,13 +70,11 @@ def test_get_reports_invalid_period_returns_422():
     assert resp.status_code == 422
 
 
-@pytest.mark.skip(reason="US15-TK04")
 def test_get_reports_missing_start_date_returns_422():
     resp = client.get("/metrics/reports", params={"period": "week"}, headers=HEADERS)
     assert resp.status_code == 422
 
 
-@pytest.mark.skip(reason="US15-TK04")
 def test_get_reports_malformed_date_returns_422():
     resp = client.get(
         "/metrics/reports",
@@ -89,7 +84,6 @@ def test_get_reports_malformed_date_returns_422():
     assert resp.status_code == 422
 
 
-@pytest.mark.skip(reason="US15-TK04")
 def test_get_reports_passes_parsed_args_to_service():
     """O controller deve repassar driver_id (do header), period (enum) e datas
     parseadas para o service."""
@@ -125,7 +119,6 @@ def test_get_reports_passes_parsed_args_to_service():
     assert captured["end_date"] == date(2025, 8, 23)
 
 
-@pytest.mark.skip(reason="US15-TK04")
 def test_get_reports_integration_aggregates_real_data(db_session):
     from datetime import datetime, timedelta, timezone
 
