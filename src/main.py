@@ -134,8 +134,8 @@ fastapi_app.include_router(absence_controller)
 fastapi_app.include_router(metrics_controller)
 
 
-@fastapi_app.get("/health", tags=["Infrastructure"])
-def health_check() -> dict[str, str]:
+@fastapi_app.get("/health", tags=["Infrastructure"], response_model=None)
+def health_check() -> dict[str, str] | JSONResponse:
     db_status = "ok"
     try:
         with engine.connect() as conn:
@@ -143,7 +143,26 @@ def health_check() -> dict[str, str]:
     except Exception:
         db_status = "down"
 
-    return {"status": "ok", "database": db_status, "environment": "development"}
+    mapbox_status = "ok" if settings.mapbox_api_key else "not_configured"
+    firebase_status = "ok" if firebase_admin._apps else "down"
+
+    dependencies = {
+        "database": db_status,
+        "mapbox": mapbox_status,
+        "firebase": firebase_status,
+    }
+    aggregate_status = "ok" if all(status == "ok" for status in dependencies.values()) else "degraded"
+    content = {
+        "status": aggregate_status,
+        **dependencies,
+        "version": settings.app_version,
+        "commit": settings.git_commit,
+    }
+
+    if aggregate_status != "ok":
+        return JSONResponse(status_code=503, content=content)
+
+    return content
 
 
 @fastapi_app.get("/")
