@@ -33,6 +33,7 @@ from src.domains.users.revoked_token_entity import RevokedTokenModel
 from src.domains.vehicles.controller import router as vehicle_controller
 from src.domains.vehicles.entity import VehicleModel
 from src.infrastructure.database import Base, engine
+from src.infrastructure.observability.prometheus import setup_prometheus
 from src.infrastructure.socketio.server import sio
 from src.shared.error_handler import register_exception_handlers
 
@@ -93,6 +94,8 @@ fastapi_app = FastAPI(
 )
 
 register_exception_handlers(fastapi_app)
+setup_prometheus(fastapi_app)
+
 app = socketio.ASGIApp(sio, fastapi_app)
 
 
