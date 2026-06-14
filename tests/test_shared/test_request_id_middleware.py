@@ -1,7 +1,6 @@
 """US00-TK17 — Middleware de correlation/request id.
 
 Remova o skip rodando:
-  sed -i '/@pytest.mark.skip(reason="US00-TK17")/d' tests/test_shared/test_request_id_middleware.py
 """
 
 import pytest
@@ -22,7 +21,6 @@ def _build_app() -> FastAPI:
     return app
 
 
-@pytest.mark.skip(reason="US00-TK17")
 def test_generates_request_id_when_absent():
     client = TestClient(_build_app())
     resp = client.get("/ping")
@@ -33,7 +31,6 @@ def test_generates_request_id_when_absent():
     assert resp.json()["request_id"] == resp.headers["X-Request-Id"]
 
 
-@pytest.mark.skip(reason="US00-TK17")
 def test_propagates_incoming_request_id():
     client = TestClient(_build_app())
     resp = client.get("/ping", headers={"X-Request-Id": "abc-123"})
