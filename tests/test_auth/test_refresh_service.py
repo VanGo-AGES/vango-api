@@ -45,7 +45,6 @@ def _user():
     )
 
 
-@pytest.mark.skip(reason="US17-TK09")
 def test_login_issues_refresh_token():
     user = _user()
     repo = Mock()
@@ -69,7 +68,6 @@ def test_login_issues_refresh_token():
     assert refresh_repo.create.called  # hash do refresh persistido
 
 
-@pytest.mark.skip(reason="US17-TK09")
 def test_refresh_rotates_and_revokes_old():
     user = _user()
     refresh_repo = Mock()
@@ -88,7 +86,6 @@ def test_refresh_rotates_and_revokes_old():
     assert refresh_repo.create.called  # novo refresh persistido
 
 
-@pytest.mark.skip(reason="US17-TK09")
 def test_refresh_invalid_raises():
     refresh_repo = Mock()
     refresh_repo.find_valid.return_value = None
