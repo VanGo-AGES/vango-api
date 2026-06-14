@@ -1,7 +1,6 @@
 """US17-TK06 — GET /users/me (perfil do usuário logado).
 
 Remova o skip rodando:
-  sed -i '/@pytest.mark.skip(reason="US17-TK06")/d' tests/test_user/test_me_endpoint.py
 """
 
 from datetime import datetime, timezone
@@ -32,7 +31,6 @@ def _user():
     )
 
 
-@pytest.mark.skip(reason="US17-TK06")
 def test_me_returns_current_user():
     user = _user()
     app.dependency_overrides[get_current_user] = lambda: user
@@ -45,13 +43,11 @@ def test_me_returns_current_user():
     assert resp.json()["email"] == "me@b.com"
 
 
-@pytest.mark.skip(reason="US17-TK06")
 def test_me_without_auth_returns_401():
     resp = client.get("/users/me")
     assert resp.status_code == 401
 
 
-@pytest.mark.skip(reason="US17-TK06")
 def test_me_integration(db_session):
     from src.config import settings
     from src.infrastructure.auth.jwt_token_service import JwtTokenService
