@@ -1,10 +1,6 @@
-data "aws_vpc" "default" {
-  default = true
-}
-
 resource "aws_security_group" "ec2" {
-  name        = "vango-sg-ec2-staging"
-  description = "Firewall para a instancia EC2 de staging"
+  name        = "vango-sg-ec2-${var.environment}"
+  description = "Firewall para a instancia EC2 de ${var.environment}"
   vpc_id      = data.aws_vpc.default.id
 
   # Regra de Entrada 1: Acesso SSH Restrito
@@ -13,7 +9,7 @@ resource "aws_security_group" "ec2" {
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = var.allowed_ssh_cidrs # CORRIGIDO: Vinculado a lista restrita
+    cidr_blocks = var.allowed_ssh_cidrs
   }
 
   ingress {
@@ -32,7 +28,7 @@ resource "aws_security_group" "ec2" {
   }
 
   tags = {
-    Name        = "vango-sg-ec2-staging"
+    Name        = "vango-sg-ec2-${var.environment}"
     Environment = var.environment
   }
 }
