@@ -1,7 +1,6 @@
 """US17-TK04 — Controller POST /auth/login.
 
 Remova o skip rodando:
-  sed -i '/@pytest.mark.skip(reason="US17-TK04")/d' tests/test_auth/test_auth_login_controller.py
 """
 
 from uuid import uuid4
@@ -32,7 +31,6 @@ def _user_response():
     )
 
 
-@pytest.mark.skip(reason="US17-TK04")
 def test_login_returns_token_200():
     fake = LoginResponse(access_token="jwt.token", token_type="bearer", user=_user_response())
     service = type("S", (), {"login": lambda self, *a, **k: fake})()
@@ -46,7 +44,6 @@ def test_login_returns_token_200():
     assert resp.json()["access_token"] == "jwt.token"
 
 
-@pytest.mark.skip(reason="US17-TK04")
 def test_login_invalid_credentials_401():
     def _raise(*a, **k):
         raise InvalidCredentialsError()
@@ -61,7 +58,6 @@ def test_login_invalid_credentials_401():
     assert resp.status_code == 401
 
 
-@pytest.mark.skip(reason="US17-TK04")
 def test_login_unknown_email_404():
     from src.domains.users.errors import UserNotFoundError
 
@@ -78,13 +74,11 @@ def test_login_unknown_email_404():
     assert resp.status_code == 404
 
 
-@pytest.mark.skip(reason="US17-TK04")
 def test_login_missing_fields_422():
     resp = client.post("/auth/login", json={"email": "john@b.com"})
     assert resp.status_code == 422
 
 
-@pytest.mark.skip(reason="US17-TK04")
 def test_login_integration_issues_real_token(db_session):
     """Stack real: usuário semeado no banco -> login emite token de verdade."""
     from datetime import datetime, timezone
