@@ -1,7 +1,6 @@
 """US17-TK03 — AuthService.login.
 
 Remova o skip rodando:
-  sed -i '/@pytest.mark.skip(reason="US17-TK03")/d' tests/test_auth/test_auth_service_login.py
 """
 
 from datetime import datetime, timezone
@@ -48,7 +47,6 @@ def _make_user(**kw):
     return UserModel(**defaults)
 
 
-@pytest.mark.skip(reason="US17-TK03")
 def test_login_success_returns_token():
     user = _make_user()
     repo = Mock()
@@ -72,7 +70,6 @@ def test_login_success_returns_token():
     assert user.role in call.args or call.kwargs.get("role") == user.role
 
 
-@pytest.mark.skip(reason="US17-TK03")
 def test_login_unknown_email_raises():
     repo = Mock()
     repo.find_by_email.return_value = None
@@ -81,7 +78,6 @@ def test_login_unknown_email_raises():
         service.login("missing@b.com", "x")
 
 
-@pytest.mark.skip(reason="US17-TK03")
 def test_login_wrong_password_raises():
     repo = Mock()
     repo.find_by_email.return_value = Mock(is_active=True, password_hash="h")
@@ -92,7 +88,6 @@ def test_login_wrong_password_raises():
         service.login("a@b.com", "wrong")
 
 
-@pytest.mark.skip(reason="US17-TK03")
 def test_login_inactive_account_blocked():
     repo = Mock()
     repo.find_by_email.return_value = Mock(is_active=False, password_hash="h")

@@ -12,7 +12,7 @@ Recebe as dependências por injeção (mockadas nos testes de service).
 import hashlib
 import secrets
 from datetime import UTC, datetime, timedelta
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from src.domains.users.auth import ITokenService, TokenPayload
 from src.domains.users.auth_errors import (
@@ -55,12 +55,17 @@ class AuthService:
         """Valida credenciais (bloqueia conta inativa) e emite o access token
         (e o refresh token, quando o fluxo de refresh está ativo)."""
         user = self.user_repository.find_by_email(email)
-        if not user or not self.password_hasher.verify(password, user.password_hash):
+        if user is None:
+            raise UserNotFoundError()
+
+        if not self.password_hasher.verify(password, user.password_hash):
             raise InvalidCredentialsError()
+
         if not user.is_active:
             raise AccountInactiveError()
 
-        access_token = self.token_service.create_access_token(user.id, user.role)
+        jti = str(uuid4())
+        access_token = self.token_service.create_access_token(user.id, user.role, jti)
         raw_refresh: str | None = None
 
         if self.refresh_token_repository is not None:
@@ -68,6 +73,7 @@ class AuthService:
 
         return LoginResponse(
             access_token=access_token,
+            token_type="bearer",  # nosec B106 - tipo de token OAuth, não é senha
             user=UserResponse.model_validate(user),
             refresh_token=raw_refresh,
         )
@@ -77,13 +83,17 @@ class AuthService:
         """Valida o refresh token, rotaciona (emite novo par e revoga o usado)
         e retorna o novo LoginResponse. Erro de domínio se inválido/expirado/revogado.
         """
+        if self.refresh_token_repository is None:
+            raise InvalidRefreshTokenError()
+
         token_hash = self._hash(refresh_token)
         record = self.refresh_token_repository.find_valid(token_hash)
         if record is None:
             raise InvalidRefreshTokenError()
 
         user = self.user_repository.find_by_id(record.user_id)
-        access_token = self.token_service.create_access_token(user.id, user.role)
+        jti = str(uuid4())
+        access_token = self.token_service.create_access_token(user.id, user.role, jti)
 
         self.refresh_token_repository.revoke(record.id)
         new_raw = self._issue_refresh(user.id)
