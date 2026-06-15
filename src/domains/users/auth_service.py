@@ -9,10 +9,17 @@ Orquestra os fluxos de autenticação:
 Recebe as dependências por injeção (mockadas nos testes de service).
 """
 
+import hashlib
+import secrets
+from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
 from src.domains.users.auth import ITokenService, TokenPayload
-from src.domains.users.auth_errors import AccountInactiveError, DeletionNotConfirmedError
+from src.domains.users.auth_errors import (
+    AccountInactiveError,
+    DeletionNotConfirmedError,
+    InvalidRefreshTokenError,
+)
 from src.domains.users.dtos import LoginResponse, UserResponse
 from src.domains.users.email import IEmailService
 from src.domains.users.errors import InvalidCredentialsError, UserNotFoundError
@@ -20,6 +27,8 @@ from src.domains.users.refresh_token_repository import IRefreshTokenRepository
 from src.domains.users.repository import IPasswordHasher, IUserRepository
 from src.domains.users.reset_token_repository import IPasswordResetTokenRepository
 from src.domains.users.revoked_token_repository import IRevokedTokenRepository
+
+_REFRESH_TOKEN_TTL_DAYS = 30
 
 
 class AuthService:
@@ -57,11 +66,16 @@ class AuthService:
 
         jti = str(uuid4())
         access_token = self.token_service.create_access_token(user.id, user.role, jti)
+        raw_refresh: str | None = None
+
+        if self.refresh_token_repository is not None:
+            raw_refresh = self._issue_refresh(user.id)
 
         return LoginResponse(
             access_token=access_token,
             token_type="bearer",  # nosec B106 - tipo de token OAuth, não é senha
             user=UserResponse.model_validate(user),
+            refresh_token=raw_refresh,
         )
 
     # US17-TK09
@@ -69,7 +83,35 @@ class AuthService:
         """Valida o refresh token, rotaciona (emite novo par e revoga o usado)
         e retorna o novo LoginResponse. Erro de domínio se inválido/expirado/revogado.
         """
-        raise NotImplementedError("US17-TK09")
+        if self.refresh_token_repository is None:
+            raise InvalidRefreshTokenError()
+
+        token_hash = self._hash(refresh_token)
+        record = self.refresh_token_repository.find_valid(token_hash)
+        if record is None:
+            raise InvalidRefreshTokenError()
+
+        user = self.user_repository.find_by_id(record.user_id)
+        jti = str(uuid4())
+        access_token = self.token_service.create_access_token(user.id, user.role, jti)
+
+        self.refresh_token_repository.revoke(record.id)
+        new_raw = self._issue_refresh(user.id)
+
+        return LoginResponse(
+            access_token=access_token,
+            user=UserResponse.model_validate(user),
+            refresh_token=new_raw,
+        )
+
+    def _hash(self, raw: str) -> str:
+        return hashlib.sha256(raw.encode()).hexdigest()
+
+    def _issue_refresh(self, user_id: UUID) -> str:
+        raw = secrets.token_urlsafe(32)
+        expires_at = datetime.now(UTC) + timedelta(days=_REFRESH_TOKEN_TTL_DAYS)
+        self.refresh_token_repository.create(user_id, self._hash(raw), expires_at)
+        return raw
 
     # US18-TK04
     def request_password_reset(self, email: str) -> None:
