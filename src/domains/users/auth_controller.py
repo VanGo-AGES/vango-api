@@ -21,6 +21,7 @@ from src.domains.users.dtos import (
     UserResponse,
 )
 from src.domains.users.entity import UserModel
+from src.domains.users.errors import InvalidCredentialsError, UserNotFoundError
 from src.infrastructure.auth.dependencies import (
     get_auth_service,
     get_current_token_payload,
@@ -36,7 +37,12 @@ def login(
     body: LoginRequest,
     service: Annotated[AuthService, Depends(get_auth_service)],
 ) -> LoginResponse:
-    return service.login(body.email, body.password)
+    try:
+        return service.login(body.email, body.password)
+    except UserNotFoundError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    except InvalidCredentialsError as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
 
 
 # US17-TK10
