@@ -935,7 +935,7 @@
         "type": "string"
       },
       "ResetPasswordConfirm": {
-        "description": "A nova senha será validada contra as regras (US16-TK01) na US18-TK04.",
+        "description": "A nova senha respeita as mesmas regras do cadastro (US16-TK01).",
         "properties": {
           "new_password": {
             "minLength": 1,
