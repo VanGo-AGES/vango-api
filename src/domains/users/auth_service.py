@@ -92,6 +92,8 @@ class AuthService:
             raise InvalidRefreshTokenError()
 
         user = self.user_repository.find_by_id(record.user_id)
+        if user is None:
+            raise InvalidRefreshTokenError()
         jti = str(uuid4())
         access_token = self.token_service.create_access_token(user.id, user.role, jti)
 
@@ -110,6 +112,8 @@ class AuthService:
     def _issue_refresh(self, user_id: UUID) -> str:
         raw = secrets.token_urlsafe(32)
         expires_at = datetime.now(UTC) + timedelta(days=_REFRESH_TOKEN_TTL_DAYS)
+        if self.refresh_token_repository is None:
+            raise InvalidRefreshTokenError()
         self.refresh_token_repository.create(user_id, self._hash(raw), expires_at)
         return raw
 

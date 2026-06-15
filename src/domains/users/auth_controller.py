@@ -9,7 +9,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from src.domains.users.auth import TokenPayload
-from src.domains.users.auth_errors import DeletionNotConfirmedError
+from src.domains.users.auth_errors import DeletionNotConfirmedError, InvalidRefreshTokenError
 from src.domains.users.auth_service import AuthService
 from src.domains.users.dtos import (
     DeleteAccountRequest,
@@ -45,7 +45,10 @@ def refresh(
     body: RefreshRequest,
     service: Annotated[AuthService, Depends(get_auth_service)],
 ) -> LoginResponse:
-    return service.refresh(body.refresh_token)
+    try:
+        return service.refresh(body.refresh_token)
+    except InvalidRefreshTokenError as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc)) from exc
 
 
 # US17-TK06
