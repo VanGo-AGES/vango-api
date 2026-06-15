@@ -1,7 +1,6 @@
 """US17-TK10 — Controller POST /auth/refresh.
 
 Remova o skip rodando:
-  sed -i '/@pytest.mark.skip(reason="US17-TK10")/d' tests/test_auth/test_refresh_controller.py
 """
 
 from datetime import datetime, timezone
@@ -31,7 +30,6 @@ def _user_response():
     )
 
 
-@pytest.mark.skip(reason="US17-TK10")
 def test_refresh_returns_new_tokens():
     fake = LoginResponse(access_token="a2", token_type="bearer", user=_user_response(), refresh_token="r2")
     service = type("S", (), {"refresh": lambda self, t: fake})()
@@ -47,7 +45,6 @@ def test_refresh_returns_new_tokens():
     assert body["refresh_token"] == "r2"
 
 
-@pytest.mark.skip(reason="US17-TK10")
 def test_refresh_invalid_returns_401():
     def _raise(self, t):
         raise InvalidRefreshTokenError()
@@ -62,7 +59,6 @@ def test_refresh_invalid_returns_401():
     assert resp.status_code == 401
 
 
-@pytest.mark.skip(reason="US17-TK10")
 def test_refresh_integration_login_then_rotate(db_session):
     """Stack real: login -> refresh rotaciona -> reusar o refresh antigo falha."""
     from src.domains.users.entity import UserModel

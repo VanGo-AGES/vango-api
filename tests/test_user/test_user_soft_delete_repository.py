@@ -1,7 +1,6 @@
 """US20-TK02 — UserRepository.soft_delete_and_anonymize.
 
 Remova o skip rodando:
-  sed -i '/@pytest.mark.skip(reason="US20-TK02")/d' tests/test_user/test_user_soft_delete_repository.py
 """
 
 import pytest
@@ -10,7 +9,6 @@ from src.infrastructure.repositories.user_repository import UserRepositoryImpl
 from tests.test_trip._helpers import make_driver, make_passenger, make_route
 
 
-@pytest.mark.skip(reason="US20-TK02")
 def test_soft_delete_marks_inactive_and_anonymizes(db_session):
     user = make_passenger(db_session, name="João Silva")
     user.cpf = "123.456.789-00"
@@ -39,7 +37,6 @@ def test_soft_delete_marks_inactive_and_anonymizes(db_session):
     assert refreshed.push_token is None
 
 
-@pytest.mark.skip(reason="US20-TK02")
 def test_soft_delete_unknown_user_returns_false(db_session):
     import uuid
 
@@ -47,7 +44,6 @@ def test_soft_delete_unknown_user_returns_false(db_session):
     assert repo.soft_delete_and_anonymize(uuid.uuid4()) is False
 
 
-@pytest.mark.skip(reason="US20-TK02")
 def test_soft_delete_keeps_email_unique_across_users(db_session):
     """O e-mail anonimizado precisa continuar único (coluna unique): dois
     usuários deletados não podem colidir."""
@@ -65,7 +61,6 @@ def test_soft_delete_keeps_email_unique_across_users(db_session):
     assert r1.email != r2.email
 
 
-@pytest.mark.skip(reason="US20-TK02")
 def test_soft_delete_preserves_history(db_session):
     """Soft delete NÃO cascateia: o histórico (rotas/viagens) do usuário
     continua no banco — diferente do hard delete."""
