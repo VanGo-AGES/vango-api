@@ -124,4 +124,6 @@ def get_current_driver(
     current_user: Annotated[UserModel, Depends(get_current_user)],
 ) -> UserModel:
     """Garante que o usuário autenticado é motorista. 403 caso contrário."""
-    raise NotImplementedError("US17-TK07")
+    if current_user.role != "driver":
+        raise HTTPException(status_code=403, detail="User must be a driver")
+    return current_user

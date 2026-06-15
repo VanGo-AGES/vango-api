@@ -3,7 +3,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from src.domains.route_passangers.errors import NotRoutePassangerError
 from src.domains.routes.errors import (
@@ -31,6 +31,8 @@ from src.domains.trips.errors import (
     VehicleNotOwnedError,
 )
 from src.domains.trips.service import TripService
+from src.domains.users.entity import UserModel
+from src.infrastructure.auth.dependencies import get_current_driver, get_current_user
 from src.infrastructure.dependencies.trip_dependencies import get_trip_service
 
 router = APIRouter(tags=["Trips"])
@@ -47,10 +49,10 @@ def start_trip(
     route_id: UUID,
     data: StartTripRequest,
     service: Annotated[TripService, Depends(get_trip_service)],
-    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    current_user: Annotated[UserModel, Depends(get_current_driver)],
 ) -> TripResponse:
     try:
-        return service.start_trip(route_id, UUID(x_user_id), data)
+        return service.start_trip(route_id, current_user.id, data)
     except RouteNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
     except (RouteOwnershipError, TripOwnershipError) as error:
@@ -72,11 +74,10 @@ def start_trip(
 def get_trip(
     trip_id: UUID,
     service: Annotated[TripService, Depends(get_trip_service)],
-    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    current_user: Annotated[UserModel, Depends(get_current_driver)],
 ) -> TripResponse:
     try:
-        driver_id = UUID(x_user_id)
-        return service.get_current_trip(trip_id, driver_id)
+        return service.get_current_trip(trip_id, current_user.id)
     except TripNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except TripOwnershipError as exc:
@@ -92,10 +93,10 @@ def get_trip(
 def get_next_stop(
     trip_id: UUID,
     service: Annotated[TripService, Depends(get_trip_service)],
-    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    current_user: Annotated[UserModel, Depends(get_current_driver)],
 ) -> TripNextStopResponse | None:
     try:
-        return service.get_next_stop(trip_id, UUID(x_user_id))
+        return service.get_next_stop(trip_id, current_user.id)
     except TripNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except TripOwnershipError as exc:
@@ -112,10 +113,10 @@ def board_passanger(
     trip_id: UUID,
     trip_passanger_id: UUID,
     service: Annotated[TripService, Depends(get_trip_service)],
-    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    current_user: Annotated[UserModel, Depends(get_current_driver)],
 ) -> TripPassangerResponse:
     try:
-        return service.board_passanger(trip_id, trip_passanger_id, UUID(x_user_id))
+        return service.board_passanger(trip_id, trip_passanger_id, current_user.id)
     except (TripNotFoundError, TripPassangerNotFoundError) as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except TripOwnershipError as exc:
@@ -134,10 +135,10 @@ def mark_passanger_absent(
     trip_id: UUID,
     trip_passanger_id: UUID,
     service: Annotated[TripService, Depends(get_trip_service)],
-    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    current_user: Annotated[UserModel, Depends(get_current_driver)],
 ) -> TripPassangerResponse:
     try:
-        return service.mark_passanger_absent(trip_id, trip_passanger_id, UUID(x_user_id))
+        return service.mark_passanger_absent(trip_id, trip_passanger_id, current_user.id)
     except (TripNotFoundError, TripPassangerNotFoundError) as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except TripOwnershipError as exc:
@@ -156,10 +157,10 @@ def skip_stop(
     trip_id: UUID,
     stop_id: UUID,
     service: Annotated[TripService, Depends(get_trip_service)],
-    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    current_user: Annotated[UserModel, Depends(get_current_driver)],
 ) -> list[TripPassangerResponse]:
     try:
-        return service.skip_stop(trip_id, stop_id, UUID(x_user_id))
+        return service.skip_stop(trip_id, stop_id, current_user.id)
     except TripNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except TripStopNotFoundError as exc:
@@ -180,10 +181,10 @@ def alight_passanger(
     trip_id: UUID,
     trip_passanger_id: UUID,
     service: Annotated[TripService, Depends(get_trip_service)],
-    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    current_user: Annotated[UserModel, Depends(get_current_driver)],
 ) -> TripPassangerResponse:
     try:
-        return service.alight_passanger(trip_id, trip_passanger_id, UUID(x_user_id))
+        return service.alight_passanger(trip_id, trip_passanger_id, current_user.id)
     except (TripNotFoundError, TripPassangerNotFoundError) as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except TripOwnershipError as exc:
@@ -202,10 +203,10 @@ def finish_trip(
     trip_id: UUID,
     data: FinishTripRequest,
     service: Annotated[TripService, Depends(get_trip_service)],
-    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    current_user: Annotated[UserModel, Depends(get_current_driver)],
 ) -> TripResponse:
     try:
-        return service.finish_trip(trip_id, UUID(x_user_id), data)
+        return service.finish_trip(trip_id, current_user.id, data)
     except TripNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
     except TripOwnershipError as exc:
@@ -231,13 +232,13 @@ def finish_trip(
 def get_current_trip_for_passanger(
     route_id: UUID,
     service: Annotated[TripService, Depends(get_trip_service)],
-    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    current_user: Annotated[UserModel, Depends(get_current_user)],
     dependent_id: Annotated[UUID | None, Query()] = None,
 ) -> CurrentTripResponse | None:
     try:
         return service.get_current_trip_for_passanger(
             route_id,
-            UUID(x_user_id),
+            current_user.id,
             dependent_id=dependent_id,
         )
     except RouteNotFoundError as exc:
