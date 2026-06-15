@@ -10,6 +10,10 @@ services:
     restart: always
     volumes: []
 
+    # Em produção o banco é o RDS (via DATABASE_URL), não o postgres local.
+    # Remover a dependência do serviço `db` do compose base.
+    depends_on: []
+
     # 2. Exponha a porta para o servidor EC2 poder receber tráfego de fora
     ports:
       - "8000:8000"
@@ -21,6 +25,6 @@ services:
         max-size: "10m"
         max-file: "3"
 
-db:
+  # Não sobe o postgres local em produção
+  db:
     scale: 0
-    
