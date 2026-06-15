@@ -1,7 +1,6 @@
 """US19-TK02 — get_current_token_payload checa a denylist.
 
 Remova o skip rodando:
-  sed -i '/@pytest.mark.skip(reason="US19-TK02")/d' tests/test_auth/test_get_current_user_revocation.py
 """
 
 from datetime import datetime, timedelta, timezone
@@ -15,7 +14,6 @@ from src.domains.users.auth import TokenPayload
 from src.infrastructure.auth.dependencies import get_current_token_payload
 
 
-@pytest.mark.skip(reason="US19-TK02")
 def test_revoked_token_rejected_401():
     token_service = Mock()
     token_service.decode_token.return_value = TokenPayload(
