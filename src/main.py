@@ -33,6 +33,7 @@ from src.domains.users.revoked_token_entity import RevokedTokenModel
 from src.domains.vehicles.controller import router as vehicle_controller
 from src.domains.vehicles.entity import VehicleModel
 from src.infrastructure.database import Base, engine
+from src.infrastructure.middleware.request_id import RequestIdMiddleware
 from src.infrastructure.observability.prometheus import setup_prometheus
 from src.infrastructure.socketio.server import sio
 from src.shared.error_handler import register_exception_handlers
@@ -120,6 +121,9 @@ fastapi_app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# US00-TK17 — middleware de request_id + logging estruturado
+fastapi_app.add_middleware(RequestIdMiddleware)
 
 # Épico 5 — autenticação (login/logout/recuperação/exclusão)
 fastapi_app.include_router(auth_controller)
