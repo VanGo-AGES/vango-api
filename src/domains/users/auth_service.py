@@ -130,7 +130,11 @@ class AuthService:
     # US19-TK02
     def logout(self, token_payload: TokenPayload) -> None:
         """Revoga o jti atual até o seu exp."""
-        raise NotImplementedError("US19-TK02")
+        jti = token_payload.jti
+        user_id = token_payload.sub
+        expires_at = token_payload.exp
+
+        self.revoked_token_repository.revoke(jti=jti, user_id=user_id, expires_at=expires_at)
 
     # US20-TK04
     def delete_account(self, user_id: UUID, confirm: bool) -> None:

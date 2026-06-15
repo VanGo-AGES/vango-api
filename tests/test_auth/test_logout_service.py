@@ -1,7 +1,6 @@
 """US19-TK02 — AuthService.logout.
 
 Remova o skip rodando:
-  sed -i '/@pytest.mark.skip(reason="US19-TK02")/d' tests/test_auth/test_logout_service.py
 """
 
 from datetime import datetime, timedelta, timezone
@@ -25,7 +24,6 @@ def _make_service(revoked_repo):
     )
 
 
-@pytest.mark.skip(reason="US19-TK02")
 def test_logout_revokes_current_jti():
     revoked = Mock()
     service = _make_service(revoked)
@@ -43,7 +41,6 @@ def test_logout_revokes_current_jti():
     assert called_jti == "jti-xyz"
 
 
-@pytest.mark.skip(reason="US19-TK02")
 def test_logout_revokes_with_user_and_expiry():
     """A entrada da denylist precisa carregar user_id e o exp do token (housekeeping)."""
     revoked = Mock()
