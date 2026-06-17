@@ -6,10 +6,27 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.domains.routes.service import RouteService
+from src.domains.users.entity import UserModel
+from src.infrastructure.auth.dependencies import get_current_driver, get_current_user
 from src.infrastructure.dependencies.route_dependencies import get_route_service
 from src.main import fastapi_app as app
 
 client = TestClient(app, raise_server_exceptions=False)
+
+FAKE_DRIVER = UserModel(id=uuid.uuid4(), name="Driver", email="d@test.com", role="driver")
+
+
+@pytest.fixture
+def override_auth():
+    """Auth fake (driver) para testes unitários: cobre endpoints que usam
+    get_current_driver e get_current_user."""
+    app.dependency_overrides[get_current_driver] = lambda: FAKE_DRIVER
+    app.dependency_overrides[get_current_user] = lambda: FAKE_DRIVER
+    try:
+        yield FAKE_DRIVER
+    finally:
+        app.dependency_overrides.pop(get_current_driver, None)
+        app.dependency_overrides.pop(get_current_user, None)
 
 
 # ---------------------------------------------------------------------------
@@ -73,49 +90,46 @@ def make_route_payload(**kwargs) -> dict:
     return defaults
 
 
-DRIVER_HEADERS = {"X-User-Id": str(uuid.uuid4()), "X-User-Role": "driver"}
-
-
 # ===========================================================================
 # US05 - TK04: POST /routes/ — criar rota
 # Arquivo:     src/domains/routes/controller.py
 # ===========================================================================
 
 
-def test_create_route_success_returns_201() -> None:
+def test_create_route_success_returns_201(override_auth) -> None:
     """POST /routes/ com payload válido deve retornar 201 e a rota criada."""
     mock_service = Mock(spec=RouteService)
     mock_service.create_route.return_value = make_route_response_mock()
     app.dependency_overrides[get_route_service] = lambda: mock_service
 
-    response = client.post("/routes/", json=make_route_payload(), headers=DRIVER_HEADERS)
+    response = client.post("/routes/", json=make_route_payload())
 
     app.dependency_overrides.clear()
     assert response.status_code == 201
     assert response.json()["invite_code"] == "A1B2C"
 
 
-def test_create_route_missing_name_returns_422() -> None:
+def test_create_route_missing_name_returns_422(override_auth) -> None:
     """POST /routes/ sem nome deve retornar 422."""
     payload = make_route_payload()
     del payload["name"]
-    response = client.post("/routes/", json=payload, headers=DRIVER_HEADERS)
+    response = client.post("/routes/", json=payload)
     assert response.status_code == 422
 
 
-def test_create_route_invalid_route_type_returns_422() -> None:
+def test_create_route_invalid_route_type_returns_422(override_auth) -> None:
     """POST /routes/ com route_type inválido deve retornar 422."""
-    response = client.post("/routes/", json=make_route_payload(route_type="ambos"), headers=DRIVER_HEADERS)
+    response = client.post("/routes/", json=make_route_payload(route_type="ambos"))
     assert response.status_code == 422
 
 
-def test_create_route_invalid_recurrence_returns_422() -> None:
+def test_create_route_invalid_recurrence_returns_422(override_auth) -> None:
     """POST /routes/ com dias de recorrência inválidos deve retornar 422."""
-    response = client.post("/routes/", json=make_route_payload(recurrence="monday,tuesday"), headers=DRIVER_HEADERS)
+    response = client.post("/routes/", json=make_route_payload(recurrence="monday,tuesday"))
     assert response.status_code == 422
 
 
-def test_create_route_no_vehicle_returns_400() -> None:
+def test_create_route_no_vehicle_returns_400(override_auth) -> None:
     """POST /routes/ quando motorista não tem veículo deve retornar 400."""
     from src.domains.routes.errors import NoVehicleError
 
@@ -123,19 +137,19 @@ def test_create_route_no_vehicle_returns_400() -> None:
     mock_service.create_route.side_effect = NoVehicleError()
     app.dependency_overrides[get_route_service] = lambda: mock_service
 
-    response = client.post("/routes/", json=make_route_payload(), headers=DRIVER_HEADERS)
+    response = client.post("/routes/", json=make_route_payload())
 
     app.dependency_overrides.clear()
     assert response.status_code == 400
 
 
-def test_create_route_response_has_correct_fields() -> None:
+def test_create_route_response_has_correct_fields(override_auth) -> None:
     """A resposta deve conter todos os campos esperados incluindo endereços aninhados."""
     mock_service = Mock(spec=RouteService)
     mock_service.create_route.return_value = make_route_response_mock()
     app.dependency_overrides[get_route_service] = lambda: mock_service
 
-    response = client.post("/routes/", json=make_route_payload(), headers=DRIVER_HEADERS)
+    response = client.post("/routes/", json=make_route_payload())
 
     app.dependency_overrides.clear()
     body = response.json()
@@ -152,7 +166,7 @@ def test_create_route_response_has_correct_fields() -> None:
 # ===========================================================================
 
 
-def test_regenerate_invite_code_success_returns_200() -> None:
+def test_regenerate_invite_code_success_returns_200(override_auth) -> None:
     """POST /routes/{id}/invite-code/regenerate deve retornar 200 com novo código."""
     route_id = uuid.uuid4()
     updated = make_route_response_mock()
@@ -162,14 +176,14 @@ def test_regenerate_invite_code_success_returns_200() -> None:
     mock_service.regenerate_invite_code.return_value = updated
     app.dependency_overrides[get_route_service] = lambda: mock_service
 
-    response = client.post(f"/routes/{route_id}/invite-code/regenerate", headers=DRIVER_HEADERS)
+    response = client.post(f"/routes/{route_id}/invite-code/regenerate")
 
     app.dependency_overrides.clear()
     assert response.status_code == 200
     assert response.json()["invite_code"] == "NEW99"
 
 
-def test_regenerate_invite_code_not_found_returns_404() -> None:
+def test_regenerate_invite_code_not_found_returns_404(override_auth) -> None:
     """POST /routes/{id}/invite-code/regenerate com rota inexistente deve retornar 404."""
     from src.domains.routes.errors import RouteNotFoundError
 
@@ -177,13 +191,13 @@ def test_regenerate_invite_code_not_found_returns_404() -> None:
     mock_service.regenerate_invite_code.side_effect = RouteNotFoundError()
     app.dependency_overrides[get_route_service] = lambda: mock_service
 
-    response = client.post(f"/routes/{uuid.uuid4()}/invite-code/regenerate", headers=DRIVER_HEADERS)
+    response = client.post(f"/routes/{uuid.uuid4()}/invite-code/regenerate")
 
     app.dependency_overrides.clear()
     assert response.status_code == 404
 
 
-def test_regenerate_invite_code_wrong_owner_returns_403() -> None:
+def test_regenerate_invite_code_wrong_owner_returns_403(override_auth) -> None:
     """POST /routes/{id}/invite-code/regenerate por motorista que não é dono deve retornar 403."""
     from src.domains.routes.errors import RouteOwnershipError
 
@@ -191,7 +205,7 @@ def test_regenerate_invite_code_wrong_owner_returns_403() -> None:
     mock_service.regenerate_invite_code.side_effect = RouteOwnershipError()
     app.dependency_overrides[get_route_service] = lambda: mock_service
 
-    response = client.post(f"/routes/{uuid.uuid4()}/invite-code/regenerate", headers=DRIVER_HEADERS)
+    response = client.post(f"/routes/{uuid.uuid4()}/invite-code/regenerate")
 
     app.dependency_overrides.clear()
     assert response.status_code == 403
@@ -203,33 +217,33 @@ def test_regenerate_invite_code_wrong_owner_returns_403() -> None:
 # ===========================================================================
 
 
-def test_list_routes_success_returns_200() -> None:
+def test_list_routes_success_returns_200(override_auth) -> None:
     """GET /routes/ deve retornar 200 e lista de rotas do motorista."""
     mock_service = Mock(spec=RouteService)
     mock_service.get_routes.return_value = [make_route_response_mock(), make_route_response_mock()]
     app.dependency_overrides[get_route_service] = lambda: mock_service
 
-    response = client.get("/routes/", headers=DRIVER_HEADERS)
+    response = client.get("/routes/")
 
     app.dependency_overrides.clear()
     assert response.status_code == 200
     assert len(response.json()) == 2
 
 
-def test_list_routes_empty_returns_empty_list() -> None:
+def test_list_routes_empty_returns_empty_list(override_auth) -> None:
     """GET /routes/ sem rotas deve retornar 200 com lista vazia."""
     mock_service = Mock(spec=RouteService)
     mock_service.get_routes.return_value = []
     app.dependency_overrides[get_route_service] = lambda: mock_service
 
-    response = client.get("/routes/", headers=DRIVER_HEADERS)
+    response = client.get("/routes/")
 
     app.dependency_overrides.clear()
     assert response.status_code == 200
     assert response.json() == []
 
 
-def test_get_route_success_returns_200() -> None:
+def test_get_route_success_returns_200(override_auth) -> None:
     """GET /routes/{id} deve retornar 200 com dados completos da rota."""
     route_id = uuid.uuid4()
     mock_service = Mock(spec=RouteService)
@@ -237,7 +251,7 @@ def test_get_route_success_returns_200() -> None:
     mock_service.get_accepted_count.return_value = 0
     app.dependency_overrides[get_route_service] = lambda: mock_service
 
-    response = client.get(f"/routes/{route_id}", headers=DRIVER_HEADERS)
+    response = client.get(f"/routes/{route_id}")
 
     app.dependency_overrides.clear()
     assert response.status_code == 200
@@ -247,7 +261,7 @@ def test_get_route_success_returns_200() -> None:
     assert "accepted_count" in body
 
 
-def test_get_route_not_found_returns_404() -> None:
+def test_get_route_not_found_returns_404(override_auth) -> None:
     """GET /routes/{id} com rota inexistente deve retornar 404."""
     from src.domains.routes.errors import RouteNotFoundError
 
@@ -255,13 +269,13 @@ def test_get_route_not_found_returns_404() -> None:
     mock_service.get_route.side_effect = RouteNotFoundError()
     app.dependency_overrides[get_route_service] = lambda: mock_service
 
-    response = client.get(f"/routes/{uuid.uuid4()}", headers=DRIVER_HEADERS)
+    response = client.get(f"/routes/{uuid.uuid4()}")
 
     app.dependency_overrides.clear()
     assert response.status_code == 404
 
 
-def test_get_route_wrong_owner_returns_403() -> None:
+def test_get_route_wrong_owner_returns_403(override_auth) -> None:
     """GET /routes/{id} por motorista que não é dono deve retornar 403."""
     from src.domains.routes.errors import RouteOwnershipError
 
@@ -269,7 +283,7 @@ def test_get_route_wrong_owner_returns_403() -> None:
     mock_service.get_route.side_effect = RouteOwnershipError()
     app.dependency_overrides[get_route_service] = lambda: mock_service
 
-    response = client.get(f"/routes/{uuid.uuid4()}", headers=DRIVER_HEADERS)
+    response = client.get(f"/routes/{uuid.uuid4()}")
 
     app.dependency_overrides.clear()
     assert response.status_code == 403
@@ -278,7 +292,7 @@ def test_get_route_wrong_owner_returns_403() -> None:
 # ===========================================================================
 # INTEGRAÇÃO — testes ponta a ponta (HTTP → controller → service → repo → DB)
 # Não mocka service nem repositório. Apenas get_db.
-# Auth via headers X-User-Id / X-User-Role (sem Firebase).
+# Auth via Bearer JWT real (auth_header fixture).
 # ===========================================================================
 
 from src.domains.users.entity import UserModel
@@ -373,10 +387,10 @@ def route_payload(**kwargs) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def test_integration_create_route_success(integration_client, db_session) -> None:
+def test_integration_create_route_success(integration_client, db_session, auth_header) -> None:
     """[Integração] POST /routes/ com motorista e veículo deve retornar 201."""
     driver, vehicle = make_driver_with_vehicle(db_session)
-    headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+    headers = auth_header(driver)
 
     response = integration_client.post("/routes/", json=route_payload(), headers=headers)
 
@@ -386,30 +400,30 @@ def test_integration_create_route_success(integration_client, db_session) -> Non
     assert body["max_passengers"] == vehicle.capacity
 
 
-def test_integration_create_route_no_vehicle_returns_400(integration_client, db_session) -> None:
+def test_integration_create_route_no_vehicle_returns_400(integration_client, db_session, auth_header) -> None:
     """[Integração] POST /routes/ por motorista sem veículo deve retornar 400."""
     driver = make_driver_only(db_session)
-    headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+    headers = auth_header(driver)
 
     response = integration_client.post("/routes/", json=route_payload(), headers=headers)
 
     assert response.status_code == 400
 
 
-def test_integration_create_route_invalid_recurrence_returns_422(integration_client, db_session) -> None:
+def test_integration_create_route_invalid_recurrence_returns_422(integration_client, db_session, auth_header) -> None:
     """[Integração] POST /routes/ com recorrência inválida deve retornar 422."""
     driver, _ = make_driver_with_vehicle(db_session)
-    headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+    headers = auth_header(driver)
 
     response = integration_client.post("/routes/", json=route_payload(recurrence="monday,tuesday"), headers=headers)
 
     assert response.status_code == 422
 
 
-def test_integration_create_route_invalid_type_returns_422(integration_client, db_session) -> None:
+def test_integration_create_route_invalid_type_returns_422(integration_client, db_session, auth_header) -> None:
     """[Integração] POST /routes/ com route_type inválido deve retornar 422."""
     driver, _ = make_driver_with_vehicle(db_session)
-    headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+    headers = auth_header(driver)
 
     response = integration_client.post("/routes/", json=route_payload(route_type="ambos"), headers=headers)
 
@@ -421,10 +435,10 @@ def test_integration_create_route_invalid_type_returns_422(integration_client, d
 # ---------------------------------------------------------------------------
 
 
-def test_integration_regenerate_invite_code_success(integration_client, db_session) -> None:
+def test_integration_regenerate_invite_code_success(integration_client, db_session, auth_header) -> None:
     """[Integração] POST regenerate deve retornar 200 com novo invite_code."""
     driver, vehicle = make_driver_with_vehicle(db_session)
-    headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+    headers = auth_header(driver)
 
     create_response = integration_client.post("/routes/", json=route_payload(), headers=headers)
     route_id = create_response.json()["id"]
@@ -436,17 +450,17 @@ def test_integration_regenerate_invite_code_success(integration_client, db_sessi
     assert response.json()["invite_code"] != original_code
 
 
-def test_integration_regenerate_invite_code_not_found_returns_404(integration_client, db_session) -> None:
+def test_integration_regenerate_invite_code_not_found_returns_404(integration_client, db_session, auth_header) -> None:
     """[Integração] POST regenerate com rota inexistente deve retornar 404."""
     driver, _ = make_driver_with_vehicle(db_session)
-    headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+    headers = auth_header(driver)
 
     response = integration_client.post(f"/routes/{uuid.uuid4()}/invite-code/regenerate", headers=headers)
 
     assert response.status_code == 404
 
 
-def test_integration_regenerate_invite_code_wrong_owner_returns_403(integration_client, db_session) -> None:
+def test_integration_regenerate_invite_code_wrong_owner_returns_403(integration_client, db_session, auth_header) -> None:
     """[Integração] POST regenerate por motorista que não é dono deve retornar 403."""
     driver1, vehicle1 = make_driver_with_vehicle(db_session)
     driver2, _ = make_driver_with_vehicle(db_session)
@@ -454,13 +468,13 @@ def test_integration_regenerate_invite_code_wrong_owner_returns_403(integration_
     create_response = integration_client.post(
         "/routes/",
         json=route_payload(),
-        headers={"X-User-Id": str(driver1.id), "X-User-Role": "driver"},
+        headers=auth_header(driver1),
     )
     route_id = create_response.json()["id"]
 
     response = integration_client.post(
         f"/routes/{route_id}/invite-code/regenerate",
-        headers={"X-User-Id": str(driver2.id), "X-User-Role": "driver"},
+        headers=auth_header(driver2),
     )
 
     assert response.status_code == 403
@@ -471,10 +485,10 @@ def test_integration_regenerate_invite_code_wrong_owner_returns_403(integration_
 # ---------------------------------------------------------------------------
 
 
-def test_integration_list_routes_empty(integration_client, db_session) -> None:
+def test_integration_list_routes_empty(integration_client, db_session, auth_header) -> None:
     """[Integração] GET /routes/ sem rotas deve retornar 200 com lista vazia."""
     driver, _ = make_driver_with_vehicle(db_session)
-    headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+    headers = auth_header(driver)
 
     response = integration_client.get("/routes/", headers=headers)
 
@@ -482,15 +496,15 @@ def test_integration_list_routes_empty(integration_client, db_session) -> None:
     assert response.json() == []
 
 
-def test_integration_list_routes_returns_own_only(integration_client, db_session) -> None:
+def test_integration_list_routes_returns_own_only(integration_client, db_session, auth_header) -> None:
     """[Integração] GET /routes/ deve retornar apenas rotas do motorista autenticado."""
     driver1, _ = make_driver_with_vehicle(db_session)
     driver2, _ = make_driver_with_vehicle(db_session)
 
-    integration_client.post("/routes/", json=route_payload(name="Rota D1"), headers={"X-User-Id": str(driver1.id), "X-User-Role": "driver"})
-    integration_client.post("/routes/", json=route_payload(name="Rota D2"), headers={"X-User-Id": str(driver2.id), "X-User-Role": "driver"})
+    integration_client.post("/routes/", json=route_payload(name="Rota D1"), headers=auth_header(driver1))
+    integration_client.post("/routes/", json=route_payload(name="Rota D2"), headers=auth_header(driver2))
 
-    response = integration_client.get("/routes/", headers={"X-User-Id": str(driver1.id), "X-User-Role": "driver"})
+    response = integration_client.get("/routes/", headers=auth_header(driver1))
 
     assert response.status_code == 200
     assert len(response.json()) == 1
@@ -502,10 +516,10 @@ def test_integration_list_routes_returns_own_only(integration_client, db_session
 # ---------------------------------------------------------------------------
 
 
-def test_integration_get_route_success(integration_client, db_session) -> None:
+def test_integration_get_route_success(integration_client, db_session, auth_header) -> None:
     """[Integração] GET /routes/{id} deve retornar 200 com dados completos da rota."""
     driver, _ = make_driver_with_vehicle(db_session)
-    headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+    headers = auth_header(driver)
 
     create_response = integration_client.post("/routes/", json=route_payload(), headers=headers)
     route_id = create_response.json()["id"]
@@ -519,17 +533,17 @@ def test_integration_get_route_success(integration_client, db_session) -> None:
     assert "invite_code" in body
 
 
-def test_integration_get_route_not_found_returns_404(integration_client, db_session) -> None:
+def test_integration_get_route_not_found_returns_404(integration_client, db_session, auth_header) -> None:
     """[Integração] GET /routes/{id} com id inexistente deve retornar 404."""
     driver, _ = make_driver_with_vehicle(db_session)
-    headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+    headers = auth_header(driver)
 
     response = integration_client.get(f"/routes/{uuid.uuid4()}", headers=headers)
 
     assert response.status_code == 404
 
 
-def test_integration_get_route_wrong_owner_returns_403(integration_client, db_session) -> None:
+def test_integration_get_route_wrong_owner_returns_403(integration_client, db_session, auth_header) -> None:
     """[Integração] GET /routes/{id} por motorista que não é dono deve retornar 403."""
     driver1, _ = make_driver_with_vehicle(db_session)
     driver2, _ = make_driver_with_vehicle(db_session)
@@ -537,14 +551,14 @@ def test_integration_get_route_wrong_owner_returns_403(integration_client, db_se
     create_response = integration_client.post(
         "/routes/",
         json=route_payload(),
-        headers={"X-User-Id": str(driver1.id), "X-User-Role": "driver"},
+        headers=auth_header(driver1),
     )
 
     route_id = create_response.json()["id"]
 
     response = integration_client.get(
         f"/routes/{route_id}",
-        headers={"X-User-Id": str(driver2.id), "X-User-Role": "driver"},
+        headers=auth_header(driver2),
     )
 
     assert response.status_code == 403
@@ -556,78 +570,77 @@ def test_integration_get_route_wrong_owner_returns_403(integration_client, db_se
 # ===========================================================================
 
 
-def test_update_route_success_returns_200() -> None:
+def test_update_route_success_returns_200(override_auth) -> None:
     """PUT /routes/{id} com payload válido deve retornar 200 e a rota atualizada."""
     route_id = uuid.uuid4()
     mock_service = Mock(spec=RouteService)
     mock_service.update_route.return_value = make_route_response_mock()
     app.dependency_overrides[get_route_service] = lambda: mock_service
 
-    response = client.put(f"/routes/{route_id}", json={"name": "Nova"}, headers=DRIVER_HEADERS)
+    response = client.put(f"/routes/{route_id}", json={"name": "Nova"})
 
     app.dependency_overrides.clear()
     assert response.status_code == 200
 
 
-def test_update_route_not_found_returns_404() -> None:
+def test_update_route_not_found_returns_404(override_auth) -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
     mock_service = Mock(spec=RouteService)
     mock_service.update_route.side_effect = RouteNotFoundError()
     app.dependency_overrides[get_route_service] = lambda: mock_service
 
-    response = client.put(f"/routes/{uuid.uuid4()}", json={"name": "Nova"}, headers=DRIVER_HEADERS)
+    response = client.put(f"/routes/{uuid.uuid4()}", json={"name": "Nova"})
 
     app.dependency_overrides.clear()
     assert response.status_code == 404
 
 
-def test_update_route_wrong_owner_returns_403() -> None:
+def test_update_route_wrong_owner_returns_403(override_auth) -> None:
     from src.domains.routes.errors import RouteOwnershipError
 
     mock_service = Mock(spec=RouteService)
     mock_service.update_route.side_effect = RouteOwnershipError()
     app.dependency_overrides[get_route_service] = lambda: mock_service
 
-    response = client.put(f"/routes/{uuid.uuid4()}", json={"name": "Nova"}, headers=DRIVER_HEADERS)
+    response = client.put(f"/routes/{uuid.uuid4()}", json={"name": "Nova"})
 
     app.dependency_overrides.clear()
     assert response.status_code == 403
 
 
-def test_update_route_in_progress_returns_409() -> None:
+def test_update_route_in_progress_returns_409(override_auth) -> None:
     from src.domains.routes.errors import RouteInProgressError
 
     mock_service = Mock(spec=RouteService)
     mock_service.update_route.side_effect = RouteInProgressError()
     app.dependency_overrides[get_route_service] = lambda: mock_service
 
-    response = client.put(f"/routes/{uuid.uuid4()}", json={"name": "Nova"}, headers=DRIVER_HEADERS)
+    response = client.put(f"/routes/{uuid.uuid4()}", json={"name": "Nova"})
 
     app.dependency_overrides.clear()
     assert response.status_code == 409
 
 
-def test_update_route_invalid_recurrence_returns_422() -> None:
+def test_update_route_invalid_recurrence_returns_422(override_auth) -> None:
     response = client.put(
         f"/routes/{uuid.uuid4()}",
         json={"recurrence": "monday,tuesday"},
-        headers=DRIVER_HEADERS,
     )
     assert response.status_code == 422
 
 
-def test_update_route_invalid_route_type_returns_422() -> None:
-    response = client.put(f"/routes/{uuid.uuid4()}", json={"route_type": "ambos"}, headers=DRIVER_HEADERS)
+def test_update_route_invalid_route_type_returns_422(override_auth) -> None:
+    response = client.put(f"/routes/{uuid.uuid4()}", json={"route_type": "ambos"})
     assert response.status_code == 422
 
 
 # --- Integração ---
 
 
-def test_integration_update_route_success_updates_name(integration_client, db_session) -> None:
+def test_integration_update_route_success_updates_name(integration_client, db_session, auth_header) -> None:
     driver, _ = make_driver_with_vehicle(db_session)
-    headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+    headers = auth_header(driver)
 
     create_response = integration_client.post("/routes/", json=route_payload(), headers=headers)
     route_id = create_response.json()["id"]
@@ -638,9 +651,9 @@ def test_integration_update_route_success_updates_name(integration_client, db_se
     assert response.json()["name"] == "Rota Editada"
 
 
-def test_integration_update_route_replaces_origin_address(integration_client, db_session) -> None:
+def test_integration_update_route_replaces_origin_address(integration_client, db_session, auth_header) -> None:
     driver, _ = make_driver_with_vehicle(db_session)
-    headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+    headers = auth_header(driver)
 
     create_response = integration_client.post("/routes/", json=route_payload(), headers=headers)
     route_id = create_response.json()["id"]
@@ -661,11 +674,11 @@ def test_integration_update_route_replaces_origin_address(integration_client, db
     assert response.json()["origin_address"]["id"] != old_origin_id
 
 
-def test_integration_update_route_in_progress_returns_409(integration_client, db_session) -> None:
+def test_integration_update_route_in_progress_returns_409(integration_client, db_session, auth_header) -> None:
     from src.domains.routes.entity import RouteModel
 
     driver, _ = make_driver_with_vehicle(db_session)
-    headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+    headers = auth_header(driver)
 
     create_response = integration_client.post("/routes/", json=route_payload(), headers=headers)
     route_id = create_response.json()["id"]
@@ -680,29 +693,29 @@ def test_integration_update_route_in_progress_returns_409(integration_client, db
     assert response.status_code == 409
 
 
-def test_integration_update_route_wrong_owner_returns_403(integration_client, db_session) -> None:
+def test_integration_update_route_wrong_owner_returns_403(integration_client, db_session, auth_header) -> None:
     driver1, _ = make_driver_with_vehicle(db_session)
     driver2, _ = make_driver_with_vehicle(db_session)
 
     create_response = integration_client.post(
         "/routes/",
         json=route_payload(),
-        headers={"X-User-Id": str(driver1.id), "X-User-Role": "driver"},
+        headers=auth_header(driver1),
     )
     route_id = create_response.json()["id"]
 
     response = integration_client.put(
         f"/routes/{route_id}",
         json={"name": "X"},
-        headers={"X-User-Id": str(driver2.id), "X-User-Role": "driver"},
+        headers=auth_header(driver2),
     )
 
     assert response.status_code == 403
 
 
-def test_integration_update_route_partial_preserves_unchanged_fields(integration_client, db_session) -> None:
+def test_integration_update_route_partial_preserves_unchanged_fields(integration_client, db_session, auth_header) -> None:
     driver, _ = make_driver_with_vehicle(db_session)
-    headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+    headers = auth_header(driver)
 
     create_response = integration_client.post("/routes/", json=route_payload(), headers=headers)
     route_id = create_response.json()["id"]
@@ -721,7 +734,7 @@ def test_integration_update_route_partial_preserves_unchanged_fields(integration
 # ===========================================================================
 
 
-def test_get_route_response_has_stops_field() -> None:
+def test_get_route_response_has_stops_field(override_auth) -> None:
     """GET /routes/{id} deve retornar um campo 'stops' no body (default []))."""
     route_id = uuid.uuid4()
     mock_service = Mock(spec=RouteService)
@@ -729,7 +742,7 @@ def test_get_route_response_has_stops_field() -> None:
     mock_service.get_accepted_count.return_value = 0
     app.dependency_overrides[get_route_service] = lambda: mock_service
 
-    response = client.get(f"/routes/{route_id}", headers=DRIVER_HEADERS)
+    response = client.get(f"/routes/{route_id}")
 
     app.dependency_overrides.clear()
     assert response.status_code == 200
@@ -738,10 +751,10 @@ def test_get_route_response_has_stops_field() -> None:
     assert isinstance(body["stops"], list)
 
 
-def test_integration_get_route_returns_accepted_count_zero_when_no_passangers(integration_client, db_session) -> None:
+def test_integration_get_route_returns_accepted_count_zero_when_no_passangers(integration_client, db_session, auth_header) -> None:
     """[Integração] GET /routes/{id} sem passageiros aceitos deve retornar accepted_count=0."""
     driver, _ = make_driver_with_vehicle(db_session)
-    headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+    headers = auth_header(driver)
 
     create_response = integration_client.post("/routes/", json=route_payload(), headers=headers)
     route_id = create_response.json()["id"]
@@ -752,14 +765,14 @@ def test_integration_get_route_returns_accepted_count_zero_when_no_passangers(in
     assert response.json()["accepted_count"] == 0
 
 
-def test_integration_get_route_returns_correct_accepted_count(integration_client, db_session) -> None:
+def test_integration_get_route_returns_correct_accepted_count(integration_client, db_session, auth_header) -> None:
     """[Integração] GET /routes/{id} deve retornar accepted_count igual ao nº de passageiros aceitos."""
     from src.domains.addresses.entity import AddressModel
     from src.domains.route_passangers.entity import RoutePassangerModel
     from src.domains.users.entity import UserModel
 
     driver, _ = make_driver_with_vehicle(db_session)
-    headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+    headers = auth_header(driver)
 
     create_response = integration_client.post("/routes/", json=route_payload(), headers=headers)
     route_id = uuid.UUID(create_response.json()["id"])
@@ -802,10 +815,10 @@ def test_integration_get_route_returns_correct_accepted_count(integration_client
     assert response.json()["accepted_count"] == 2
 
 
-def test_integration_get_route_without_passangers_returns_empty_stops(integration_client, db_session) -> None:
+def test_integration_get_route_without_passangers_returns_empty_stops(integration_client, db_session, auth_header) -> None:
     """[Integração] GET /routes/{id} sem passageiros aceitos deve retornar stops=[]."""
     driver, _ = make_driver_with_vehicle(db_session)
-    headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+    headers = auth_header(driver)
 
     create_response = integration_client.post("/routes/", json=route_payload(), headers=headers)
     route_id = create_response.json()["id"]
@@ -816,7 +829,7 @@ def test_integration_get_route_without_passangers_returns_empty_stops(integratio
     assert response.json()["stops"] == []
 
 
-def test_integration_get_route_with_stops_returns_all_stops(integration_client, db_session) -> None:
+def test_integration_get_route_with_stops_returns_all_stops(integration_client, db_session, auth_header) -> None:
     """[Integração] GET /routes/{id} com stops persistidas deve retorná-las."""
     from src.domains.addresses.entity import AddressModel
     from src.domains.route_passangers.entity import RoutePassangerModel
@@ -824,7 +837,7 @@ def test_integration_get_route_with_stops_returns_all_stops(integration_client, 
     from src.domains.users.entity import UserModel
 
     driver, _ = make_driver_with_vehicle(db_session)
-    headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+    headers = auth_header(driver)
 
     create_response = integration_client.post("/routes/", json=route_payload(), headers=headers)
     route_id = uuid.UUID(create_response.json()["id"])
@@ -878,10 +891,10 @@ def test_integration_get_route_with_stops_returns_all_stops(integration_client, 
     assert len(response.json()["stops"]) == 1
 
 
-def test_integration_list_routes_include_stops_field(integration_client, db_session) -> None:
+def test_integration_list_routes_include_stops_field(integration_client, db_session, auth_header) -> None:
     """[Integração] GET /routes/ deve retornar cada rota com campo stops."""
     driver, _ = make_driver_with_vehicle(db_session)
-    headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+    headers = auth_header(driver)
 
     integration_client.post("/routes/", json=route_payload(), headers=headers)
 
@@ -899,7 +912,7 @@ def test_integration_list_routes_include_stops_field(integration_client, db_sess
 # ===========================================================================
 
 
-def test_get_by_invite_code_unit_returns_summary() -> None:
+def test_get_by_invite_code_unit_returns_summary(override_auth) -> None:
     """[Unit] Controller chama service.get_invite_summary e retorna o DTO."""
     from src.domains.routes.dtos import RouteInviteSummaryResponse
 
@@ -939,7 +952,7 @@ def test_get_by_invite_code_unit_returns_summary() -> None:
 
     app.dependency_overrides[get_route_service] = lambda: svc
     try:
-        response = client.get("/routes/invite/A1B2C", headers=DRIVER_HEADERS)
+        response = client.get("/routes/invite/A1B2C")
     finally:
         app.dependency_overrides.clear()
 
@@ -953,7 +966,7 @@ def test_get_by_invite_code_unit_returns_summary() -> None:
     assert "stops" not in body
 
 
-def test_get_by_invite_code_unit_not_found_returns_404() -> None:
+def test_get_by_invite_code_unit_not_found_returns_404(override_auth) -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
     svc = Mock(spec=RouteService)
@@ -961,17 +974,17 @@ def test_get_by_invite_code_unit_not_found_returns_404() -> None:
 
     app.dependency_overrides[get_route_service] = lambda: svc
     try:
-        response = client.get("/routes/invite/ZZZZZ", headers=DRIVER_HEADERS)
+        response = client.get("/routes/invite/ZZZZZ")
     finally:
         app.dependency_overrides.clear()
 
     assert response.status_code == 404
 
 
-def test_integration_get_by_invite_code_success(integration_client, db_session) -> None:
+def test_integration_get_by_invite_code_success(integration_client, db_session, auth_header) -> None:
     """[Integração] Criar rota, fazer GET /routes/invite/{code} e validar payload."""
     driver, _ = make_driver_with_vehicle(db_session)
-    headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+    headers = auth_header(driver)
 
     create_resp = integration_client.post("/routes/", json=route_payload(), headers=headers)
     invite_code = create_resp.json()["invite_code"]
@@ -988,20 +1001,20 @@ def test_integration_get_by_invite_code_success(integration_client, db_session) 
     assert "stops" not in body
 
 
-def test_integration_get_by_invite_code_not_found_returns_404(integration_client, db_session) -> None:
+def test_integration_get_by_invite_code_not_found_returns_404(integration_client, db_session, auth_header) -> None:
     driver, _ = make_driver_with_vehicle(db_session)
-    headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+    headers = auth_header(driver)
 
     response = integration_client.get("/routes/invite/ZZZZZ", headers=headers)
     assert response.status_code == 404
 
 
-def test_integration_get_by_invite_code_counts_accepted_passangers(integration_client, db_session) -> None:
+def test_integration_get_by_invite_code_counts_accepted_passangers(integration_client, db_session, auth_header) -> None:
     """Cria rota + dois RPs aceitos + um pending → accepted_count = 2."""
     from src.domains.route_passangers.entity import RoutePassangerModel
 
     driver, _ = make_driver_with_vehicle(db_session)
-    headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+    headers = auth_header(driver)
     create_resp = integration_client.post("/routes/", json=route_payload(), headers=headers)
     route_id = uuid.UUID(create_resp.json()["id"])
     invite_code = create_resp.json()["invite_code"]
@@ -1037,52 +1050,52 @@ def test_integration_get_by_invite_code_counts_accepted_passangers(integration_c
 # ===========================================================================
 
 
-def test_delete_route_success_returns_204() -> None:
+def test_delete_route_success_returns_204(override_auth) -> None:
     mock_service = Mock(spec=RouteService)
     mock_service.delete_route.return_value = None
     app.dependency_overrides[get_route_service] = lambda: mock_service
 
-    response = client.delete(f"/routes/{uuid.uuid4()}", headers=DRIVER_HEADERS)
+    response = client.delete(f"/routes/{uuid.uuid4()}")
 
     app.dependency_overrides.clear()
     assert response.status_code == 204
     mock_service.delete_route.assert_called_once()
 
 
-def test_delete_route_not_found_returns_404() -> None:
+def test_delete_route_not_found_returns_404(override_auth) -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
     mock_service = Mock(spec=RouteService)
     mock_service.delete_route.side_effect = RouteNotFoundError()
     app.dependency_overrides[get_route_service] = lambda: mock_service
 
-    response = client.delete(f"/routes/{uuid.uuid4()}", headers=DRIVER_HEADERS)
+    response = client.delete(f"/routes/{uuid.uuid4()}")
 
     app.dependency_overrides.clear()
     assert response.status_code == 404
 
 
-def test_delete_route_wrong_owner_returns_403() -> None:
+def test_delete_route_wrong_owner_returns_403(override_auth) -> None:
     from src.domains.routes.errors import RouteOwnershipError
 
     mock_service = Mock(spec=RouteService)
     mock_service.delete_route.side_effect = RouteOwnershipError()
     app.dependency_overrides[get_route_service] = lambda: mock_service
 
-    response = client.delete(f"/routes/{uuid.uuid4()}", headers=DRIVER_HEADERS)
+    response = client.delete(f"/routes/{uuid.uuid4()}")
 
     app.dependency_overrides.clear()
     assert response.status_code == 403
 
 
-def test_delete_route_in_progress_returns_409() -> None:
+def test_delete_route_in_progress_returns_409(override_auth) -> None:
     from src.domains.routes.errors import RouteInProgressError
 
     mock_service = Mock(spec=RouteService)
     mock_service.delete_route.side_effect = RouteInProgressError()
     app.dependency_overrides[get_route_service] = lambda: mock_service
 
-    response = client.delete(f"/routes/{uuid.uuid4()}", headers=DRIVER_HEADERS)
+    response = client.delete(f"/routes/{uuid.uuid4()}")
 
     app.dependency_overrides.clear()
     assert response.status_code == 409
@@ -1091,11 +1104,11 @@ def test_delete_route_in_progress_returns_409() -> None:
 # --- Integração ---
 
 
-def test_integration_delete_route_success(integration_client, db_session) -> None:
+def test_integration_delete_route_success(integration_client, db_session, auth_header) -> None:
     from src.domains.routes.entity import RouteModel
 
     driver, _ = make_driver_with_vehicle(db_session)
-    headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+    headers = auth_header(driver)
     create_resp = integration_client.post("/routes/", json=route_payload(), headers=headers)
     route_id = uuid.UUID(create_resp.json()["id"])
 
@@ -1106,38 +1119,38 @@ def test_integration_delete_route_success(integration_client, db_session) -> Non
     assert remaining is None
 
 
-def test_integration_delete_route_not_found_returns_404(integration_client, db_session) -> None:
+def test_integration_delete_route_not_found_returns_404(integration_client, db_session, auth_header) -> None:
     driver, _ = make_driver_with_vehicle(db_session)
-    headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+    headers = auth_header(driver)
 
     response = integration_client.delete(f"/routes/{uuid.uuid4()}", headers=headers)
 
     assert response.status_code == 404
 
 
-def test_integration_delete_route_wrong_owner_returns_403(integration_client, db_session) -> None:
+def test_integration_delete_route_wrong_owner_returns_403(integration_client, db_session, auth_header) -> None:
     driver1, _ = make_driver_with_vehicle(db_session)
     driver2, _ = make_driver_with_vehicle(db_session)
     create_resp = integration_client.post(
         "/routes/",
         json=route_payload(),
-        headers={"X-User-Id": str(driver1.id), "X-User-Role": "driver"},
+        headers=auth_header(driver1),
     )
     route_id = uuid.UUID(create_resp.json()["id"])
 
     response = integration_client.delete(
         f"/routes/{route_id}",
-        headers={"X-User-Id": str(driver2.id), "X-User-Role": "driver"},
+        headers=auth_header(driver2),
     )
 
     assert response.status_code == 403
 
 
-def test_integration_delete_route_in_progress_returns_409(integration_client, db_session) -> None:
+def test_integration_delete_route_in_progress_returns_409(integration_client, db_session, auth_header) -> None:
     from src.domains.routes.entity import RouteModel
 
     driver, _ = make_driver_with_vehicle(db_session)
-    headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+    headers = auth_header(driver)
     create_resp = integration_client.post("/routes/", json=route_payload(), headers=headers)
     route_id = uuid.UUID(create_resp.json()["id"])
 
@@ -1150,13 +1163,13 @@ def test_integration_delete_route_in_progress_returns_409(integration_client, db
     assert response.status_code == 409
 
 
-def test_integration_delete_route_cascades_passangers(integration_client, db_session) -> None:
+def test_integration_delete_route_cascades_passangers(integration_client, db_session, auth_header) -> None:
     """Ao deletar rota, route_passangers e stops associadas são removidos via cascade."""
     from src.domains.route_passangers.entity import RoutePassangerModel
     from src.domains.stops.entity import StopModel
 
     driver, _ = make_driver_with_vehicle(db_session)
-    headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+    headers = auth_header(driver)
     create_resp = integration_client.post("/routes/", json=route_payload(), headers=headers)
     route_id = uuid.UUID(create_resp.json()["id"])
     pickup_addr_id = uuid.UUID(create_resp.json()["origin_address"]["id"])
@@ -1208,7 +1221,7 @@ def test_integration_delete_route_cascades_passangers(integration_client, db_ses
 # --- unit (mocked service) ---
 
 
-def test_list_route_absences_driver_returns_200() -> None:
+def test_list_route_absences_driver_returns_200(override_auth) -> None:
     from src.domains.absences.dtos import RouteAbsenceResponse
     import uuid as _uuid
     from datetime import datetime, timezone
@@ -1226,48 +1239,49 @@ def test_list_route_absences_driver_returns_200() -> None:
     mock_service.get_route_absences.return_value = [absence]
     app.dependency_overrides[get_route_service] = lambda: mock_service
 
-    response = client.get(f"/routes/{uuid.uuid4()}/absences", headers=DRIVER_HEADERS)
+    response = client.get(f"/routes/{uuid.uuid4()}/absences")
 
     app.dependency_overrides.clear()
     assert response.status_code == 200
     assert len(response.json()) == 1
 
 
-def test_list_route_absences_not_found_returns_404() -> None:
+def test_list_route_absences_not_found_returns_404(override_auth) -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
     mock_service = Mock(spec=RouteService)
     mock_service.get_route_absences.side_effect = RouteNotFoundError()
     app.dependency_overrides[get_route_service] = lambda: mock_service
 
-    response = client.get(f"/routes/{uuid.uuid4()}/absences", headers=DRIVER_HEADERS)
+    response = client.get(f"/routes/{uuid.uuid4()}/absences")
 
     app.dependency_overrides.clear()
     assert response.status_code == 404
 
 
-def test_list_route_absences_forbidden_returns_403() -> None:
+def test_list_route_absences_forbidden_returns_403(override_auth) -> None:
     from src.domains.routes.errors import RouteOwnershipError
 
     mock_service = Mock(spec=RouteService)
     mock_service.get_route_absences.side_effect = RouteOwnershipError()
     app.dependency_overrides[get_route_service] = lambda: mock_service
 
-    response = client.get(f"/routes/{uuid.uuid4()}/absences", headers=DRIVER_HEADERS)
+    response = client.get(f"/routes/{uuid.uuid4()}/absences")
 
     app.dependency_overrides.clear()
     assert response.status_code == 403
 
 
-def test_list_route_absences_forwards_caller_id_from_header() -> None:
-    """O controller deve encaminhar o X-User-Id como caller_id para o service."""
+def test_list_route_absences_forwards_caller_id_from_token() -> None:
+    """O controller deve encaminhar o id do usuário autenticado como caller_id."""
     mock_service = Mock(spec=RouteService)
     mock_service.get_route_absences.return_value = []
     app.dependency_overrides[get_route_service] = lambda: mock_service
 
     caller_id = uuid.uuid4()
-    headers = {"X-User-Id": str(caller_id), "X-User-Role": "guardian"}
-    client.get(f"/routes/{uuid.uuid4()}/absences", headers=headers)
+    caller = UserModel(id=caller_id, name="Caller", email="c@test.com", role="guardian")
+    app.dependency_overrides[get_current_user] = lambda: caller
+    client.get(f"/routes/{uuid.uuid4()}/absences")
 
     app.dependency_overrides.clear()
     call_args = mock_service.get_route_absences.call_args
@@ -1321,9 +1335,9 @@ def _make_rp_for_absences(db_session, route_id, user_id, status: str = "accepted
     return rp
 
 
-def test_integration_list_absences_driver_returns_200(integration_client, db_session) -> None:
+def test_integration_list_absences_driver_returns_200(integration_client, db_session, auth_header) -> None:
     driver, _ = make_driver_with_vehicle(db_session)
-    headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+    headers = auth_header(driver)
     create_resp = integration_client.post("/routes/", json=route_payload(), headers=headers)
     route_id = create_resp.json()["id"]
 
@@ -1333,10 +1347,10 @@ def test_integration_list_absences_driver_returns_200(integration_client, db_ses
     assert response.json() == []
 
 
-def test_integration_list_absences_accepted_passanger_returns_200(integration_client, db_session) -> None:
+def test_integration_list_absences_accepted_passanger_returns_200(integration_client, db_session, auth_header) -> None:
     """Passageiro com status 'accepted' consegue acessar as ausências da rota."""
     driver, _ = make_driver_with_vehicle(db_session)
-    driver_headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+    driver_headers = auth_header(driver)
     create_resp = integration_client.post("/routes/", json=route_payload(), headers=driver_headers)
     route_id = uuid.UUID(create_resp.json()["id"])
 
@@ -1344,21 +1358,21 @@ def test_integration_list_absences_accepted_passanger_returns_200(integration_cl
     _make_rp_for_absences(db_session, route_id, passenger.id, status="accepted")
     db_session.commit()
 
-    passanger_headers = {"X-User-Id": str(passenger.id), "X-User-Role": "guardian"}
+    passanger_headers = auth_header(passenger)
     response = integration_client.get(f"/routes/{route_id}/absences", headers=passanger_headers)
 
     assert response.status_code == 200
 
 
-def test_integration_list_absences_outsider_returns_403(integration_client, db_session) -> None:
+def test_integration_list_absences_outsider_returns_403(integration_client, db_session, auth_header) -> None:
     """Usuário sem vínculo com a rota recebe 403."""
     driver, _ = make_driver_with_vehicle(db_session)
-    driver_headers = {"X-User-Id": str(driver.id), "X-User-Role": "driver"}
+    driver_headers = auth_header(driver)
     create_resp = integration_client.post("/routes/", json=route_payload(), headers=driver_headers)
     route_id = create_resp.json()["id"]
 
     outsider = _make_passenger(db_session, "Forasteiro")
-    outsider_headers = {"X-User-Id": str(outsider.id), "X-User-Role": "guardian"}
+    outsider_headers = auth_header(outsider)
 
     response = integration_client.get(f"/routes/{route_id}/absences", headers=outsider_headers)
 

@@ -1,9 +1,11 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from src.domains.notifications.service import INotificationService
+from src.domains.users.entity import UserModel
+from src.infrastructure.auth.dependencies import get_current_user
 from src.infrastructure.dependencies.notification_dependencies import get_notification_service
 from src.infrastructure.dependencies.user_dependencies import get_user_service
 
@@ -119,10 +121,10 @@ def delete_user(user_id: UUID, service: Annotated[UserService, Depends(get_user_
 def register_push_token(
     body: RegisterPushTokenRequest,
     service: Annotated[UserService, Depends(get_user_service)],
-    x_user_id: Annotated[UUID, Header(alias="X-User-Id")],
+    current_user: Annotated[UserModel, Depends(get_current_user)],
 ) -> UserResponse:
     try:
-        return service.register_push_token(x_user_id, body)
+        return service.register_push_token(current_user.id, body)
     except UserNotFoundError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
 
@@ -143,12 +145,12 @@ def register_push_token(
 def send_test_notification(
     service: Annotated[UserService, Depends(get_user_service)],
     notification_service: Annotated[INotificationService, Depends(get_notification_service)],
-    x_user_id: Annotated[UUID, Header(alias="X-User-Id")],
+    current_user: Annotated[UserModel, Depends(get_current_user)],
     body: SendTestNotificationRequest | None = None,
 ) -> SendTestNotificationResponse:
     payload = body or SendTestNotificationRequest()
 
-    user = service.get_user(x_user_id)
+    user = service.get_user(current_user.id)
 
     if not user.push_token:
         raise HTTPException(

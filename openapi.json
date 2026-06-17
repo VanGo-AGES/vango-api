@@ -2552,20 +2552,18 @@
         "parameters": [
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-User-Role",
-            "required": true,
-            "schema": {
-              "title": "X-User-Role",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -2606,20 +2604,18 @@
         "parameters": [
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-User-Role",
-            "required": true,
-            "schema": {
-              "title": "X-User-Role",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -2678,20 +2674,18 @@
           },
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-User-Role",
-            "required": true,
-            "schema": {
-              "title": "X-User-Role",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -2731,20 +2725,18 @@
           },
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-User-Role",
-            "required": true,
-            "schema": {
-              "title": "X-User-Role",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -2791,20 +2783,18 @@
           },
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-User-Role",
-            "required": true,
-            "schema": {
-              "title": "X-User-Role",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -4960,12 +4950,18 @@
         "parameters": [
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "format": "uuid",
-              "title": "X-User-Id",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -5014,12 +5010,18 @@
         "parameters": [
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "format": "uuid",
-              "title": "X-User-Id",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -5207,20 +5209,18 @@
         "parameters": [
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-User-Role",
-            "required": true,
-            "schema": {
-              "title": "X-User-Role",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -5261,20 +5261,18 @@
         "parameters": [
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-User-Role",
-            "required": true,
-            "schema": {
-              "title": "X-User-Role",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -5333,20 +5331,18 @@
           },
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-User-Role",
-            "required": true,
-            "schema": {
-              "title": "X-User-Role",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -5386,20 +5382,18 @@
           },
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-User-Role",
-            "required": true,
-            "schema": {
-              "title": "X-User-Role",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -5446,20 +5440,18 @@
           },
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-User-Role",
-            "required": true,
-            "schema": {
-              "title": "X-User-Role",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],

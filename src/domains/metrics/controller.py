@@ -2,8 +2,7 @@
 
 Expõe o endpoint consumido pela tela `trip-reports-screen` do motorista.
 
-Obs.: usa o header mock `X-User-Id` (convenção atual do projeto). A migração
-para `get_current_user` (JWT) acontece na US17-TK05.
+Autenticação via JWT real (`get_current_driver`) — endpoint só de motorista.
 """
 
 from datetime import date
