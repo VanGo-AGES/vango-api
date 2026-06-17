@@ -17,6 +17,7 @@ from firebase_admin import credentials, messaging
 
 from src.config import settings
 from src.domains.notifications.service import INotificationService
+from src.infrastructure.middleware.request_id import get_request_id
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +51,16 @@ class FirebaseNotificationService(INotificationService):
         if not token:
             raise ValueError("push token vazio")
 
+        request_id = get_request_id()
+        provider = "expo" if _is_expo_token(token) else "firebase"
+        logger.info(
+            "PUSH: enviando notificação [type=%s, provider=%s, request_id=%s, trace_id=%s]",
+            data.get("type"),
+            provider,
+            request_id,
+            request_id,
+        )
+
         if _is_expo_token(token):
             resp = requests.post(
                 EXPO_PUSH_URL,
@@ -73,7 +84,14 @@ class FirebaseNotificationService(INotificationService):
             if token:
                 self._send_push(token, title, body, data)
         except Exception as e:  # noqa: BLE001 - push nunca deve quebrar o fluxo de negócio
-            logger.warning("PUSH: falha ao enviar (%s): %s", data.get("type"), e)
+            request_id = get_request_id()
+            logger.warning(
+                "PUSH: falha ao enviar [type=%s, request_id=%s, trace_id=%s]: %s",
+                data.get("type"),
+                request_id,
+                request_id,
+                e,
+            )
 
     # -----------------------------------------------------------------
     # Eventos de viagem

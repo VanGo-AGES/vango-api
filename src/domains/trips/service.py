@@ -18,6 +18,8 @@ import asyncio
 from datetime import UTC, datetime
 from uuid import UUID
 
+from loguru import logger
+
 from src.domains.notifications.service import INotificationService
 from src.domains.route_passangers.errors import NotRoutePassangerError
 from src.domains.route_passangers.repository import IRoutePassangerRepository
@@ -51,6 +53,7 @@ from src.domains.trips.repository import (
     ITripRepository,
 )
 from src.domains.vehicles.repository import IVehicleRepository
+from src.infrastructure.middleware.request_id import get_request_id
 from src.shared.enums import RoutePassangerStatus, RouteStatus, TripPassangerStatus, TripStatus
 
 
@@ -78,6 +81,9 @@ class TripService:
     # US09-TK06
     def start_trip(self, route_id: UUID, driver_id: UUID, data: StartTripRequest) -> TripResponse:
         """Inicia a execução de uma rota."""
+        request_id = get_request_id()
+        log = logger.bind(request_id=request_id, trace_id=request_id, route_id=str(route_id), driver_id=str(driver_id))
+        log.info("Trip start requested", vehicle_id=str(data.vehicle_id), trip_date=data.trip_date.isoformat() if data.trip_date else None)
 
         route = self.route_repository.find_by_id(route_id)
         if route is None:
@@ -126,6 +132,13 @@ class TripService:
         self.route_repository.update(route_id, {"status": RouteStatus.EM_ANDAMENTO})
 
         self.notification_service.notify_trip_started(saved_trip)
+        log.info(
+            "Trip started",
+            trip_id=str(saved_trip.id),
+            vehicle_id=str(data.vehicle_id),
+            passenger_count=len(trip_passangers),
+            absent_count=len(absent_ids),
+        )
 
         return TripResponse(
             id=saved_trip.id,
@@ -410,6 +423,9 @@ class TripService:
         - Dispara notify_trip_finished.
         - Retorna TripResponse final.
         """
+        request_id = get_request_id()
+        log = logger.bind(request_id=request_id, trace_id=request_id, trip_id=str(trip_id), driver_id=str(driver_id))
+        log.info("Trip finish requested", total_km=data.total_km)
 
         trip = self.trip_repository.find_by_id(trip_id)
 
@@ -434,6 +450,13 @@ class TripService:
 
         # Notifica push
         self.notification_service.notify_trip_finished(finished)
+        log.info(
+            "Trip finished",
+            route_id=str(trip.route_id),
+            vehicle_id=str(finished.vehicle_id),
+            total_km=finished.total_km,
+            finished_at=finished.finished_at.isoformat() if finished.finished_at else None,
+        )
 
         # US11-TK04 — emitir evento Socket.IO trip_finished para followers
         from src.infrastructure.socketio.server import emit_trip_finished

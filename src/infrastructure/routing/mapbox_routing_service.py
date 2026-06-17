@@ -10,9 +10,11 @@ Implementação concreta usando a Mapbox API:
 from urllib.parse import quote
 
 import requests
+from loguru import logger
 
 from src.domains.routing.dtos import GeocodeResult, RouteInfoResult
 from src.domains.routing.service import IGeocodingService, IRoutingService
+from src.infrastructure.middleware.request_id import get_request_id
 
 
 class MapboxRoutingService(IRoutingService):
@@ -193,4 +195,11 @@ class MapboxGeocodingService(IGeocodingService):
 
             return None
         except Exception:
+            request_id = get_request_id()
+            logger.bind(request_id=request_id, trace_id=request_id).exception(
+                "Mapbox geocoding failed",
+                city=city,
+                state=state,
+                zip_code=zip_code,
+            )
             return None
