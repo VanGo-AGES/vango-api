@@ -95,6 +95,7 @@ rich==15.0.0
 ruff==0.15.6
 s3transfer==0.9.0
 simple-websocket==1.1.0
+sentry-sdk[fastapi]==2.54.0
 six==1.17.0
 sortedcontainers==2.4.0
 SQLAlchemy==2.0.48

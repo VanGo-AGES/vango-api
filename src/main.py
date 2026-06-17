@@ -3,6 +3,7 @@ import traceback
 from contextlib import asynccontextmanager
 
 import firebase_admin
+import sentry_sdk
 import socketio
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -35,6 +36,7 @@ from src.domains.vehicles.entity import VehicleModel
 from src.infrastructure.database import Base, engine
 from src.infrastructure.middleware.request_id import RequestIdMiddleware
 from src.infrastructure.observability.prometheus import setup_prometheus
+from src.infrastructure.observability.sentry import init_sentry
 from src.infrastructure.socketio.server import sio
 from src.shared.error_handler import register_exception_handlers
 
@@ -54,6 +56,8 @@ _ = (
     RevokedTokenModel,
     RefreshTokenModel,
 )
+
+init_sentry(settings)
 
 
 @asynccontextmanager
@@ -102,6 +106,7 @@ app = socketio.ASGIApp(sio, fastapi_app)
 
 @fastapi_app.exception_handler(Exception)
 async def catch_all_handler(request: Request, exc: Exception) -> JSONResponse:
+    sentry_sdk.capture_exception(exc)
     traceback.print_exc(file=sys.stderr)
 
     return JSONResponse(

@@ -9,6 +9,7 @@ import time
 import uuid
 from contextvars import ContextVar
 
+import sentry_sdk
 from loguru import logger
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
@@ -34,6 +35,8 @@ class RequestIdMiddleware(BaseHTTPMiddleware):
 
         # Definir no contextvar
         token = request_id_ctx.set(request_id)
+        sentry_sdk.set_tag("request_id", request_id)
+        sentry_sdk.set_tag("trace_id", request_id)
 
         try:
             # Marcar início
