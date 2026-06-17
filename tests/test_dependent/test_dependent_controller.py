@@ -16,7 +16,8 @@ from fastapi.testclient import TestClient
 from src.domains.dependents.entity import DependentModel
 from src.domains.dependents.errors import DependentAccessDeniedError
 from src.domains.dependents.service import DependentService
-from src.infrastructure.dependencies.auth_dependencies import get_current_user
+from src.domains.users.entity import UserModel
+from src.infrastructure.auth.dependencies import get_current_user
 from src.infrastructure.dependencies.dependent_dependencies import get_dependent_service
 from src.main import fastapi_app as app
 
@@ -46,7 +47,7 @@ def test_create_dependent_passenger_success(client):
     mock_service.add_dependent.return_value = make_mock_dependent()
 
     app.dependency_overrides[get_dependent_service] = lambda: mock_service
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "passenger"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="passenger")
 
     response = client.post("/dependents/", json={"name": "Ana"})
 
@@ -61,7 +62,7 @@ def test_create_dependent_guardian_success(client):
     mock_service.add_dependent.return_value = make_mock_dependent()
 
     app.dependency_overrides[get_dependent_service] = lambda: mock_service
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "guardian"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="guardian")
 
     response = client.post("/dependents/", json={"name": "Pedro"})
 
@@ -77,7 +78,7 @@ def test_create_dependent_response_has_correct_fields(client):
     mock_service.add_dependent.return_value = dependent
 
     app.dependency_overrides[get_dependent_service] = lambda: mock_service
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "passenger"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="passenger")
 
     response = client.post("/dependents/", json={"name": "Ana"})
 
@@ -102,7 +103,7 @@ def test_create_dependent_driver_returns_403(client):
     mock_service.add_dependent.side_effect = DependentAccessDeniedError()
 
     app.dependency_overrides[get_dependent_service] = lambda: mock_service
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "driver"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="driver")
 
     response = client.post("/dependents/", json={"name": "Ana"})
 
@@ -118,7 +119,7 @@ def test_create_dependent_driver_returns_403(client):
 
 def test_create_dependent_missing_name_returns_422(client):
     """Payload sem name deve retornar 422."""
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "passenger"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="passenger")
 
     response = client.post("/dependents/", json={})
 
@@ -129,7 +130,7 @@ def test_create_dependent_missing_name_returns_422(client):
 
 def test_create_dependent_empty_name_returns_422(client):
     """name vazio deve ser rejeitado com 422."""
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "passenger"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="passenger")
 
     response = client.post("/dependents/", json={"name": ""})
 
@@ -140,7 +141,7 @@ def test_create_dependent_empty_name_returns_422(client):
 
 def test_create_dependent_invalid_payload_returns_422(client):
     """Payload com campos incorretos deve retornar 422."""
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "passenger"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="passenger")
 
     response = client.post("/dependents/", json={"invalid_field": "value"})
 
@@ -174,7 +175,7 @@ def test_list_dependents_success(client):
     mock_service.get_dependents.return_value = make_dependent_list()
 
     app.dependency_overrides[get_dependent_service] = lambda: mock_service
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "passenger"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="passenger")
 
     response = client.get("/dependents/")
 
@@ -191,7 +192,7 @@ def test_list_dependents_empty(client):
     mock_service.get_dependents.return_value = []
 
     app.dependency_overrides[get_dependent_service] = lambda: mock_service
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "passenger"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="passenger")
 
     response = client.get("/dependents/")
 
@@ -213,7 +214,7 @@ def test_get_dependent_by_id_success(client):
     mock_service.get_dependent.return_value = dependent
 
     app.dependency_overrides[get_dependent_service] = lambda: mock_service
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "passenger"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="passenger")
 
     response = client.get(f"/dependents/{dependent.id}")
 
@@ -229,7 +230,7 @@ def test_get_dependent_not_found_returns_404(client):
     mock_service.get_dependent.side_effect = DependentNotFoundError()
 
     app.dependency_overrides[get_dependent_service] = lambda: mock_service
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "passenger"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="passenger")
 
     response = client.get(f"/dependents/{uuid.uuid4()}")
 
@@ -244,7 +245,7 @@ def test_get_dependent_wrong_owner_returns_403(client):
     mock_service.get_dependent.side_effect = DependentOwnershipError()
 
     app.dependency_overrides[get_dependent_service] = lambda: mock_service
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "passenger"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="passenger")
 
     response = client.get(f"/dependents/{uuid.uuid4()}")
 
@@ -265,7 +266,7 @@ def test_update_dependent_success(client):
     mock_service.update_dependent.return_value = dependent
 
     app.dependency_overrides[get_dependent_service] = lambda: mock_service
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "passenger"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="passenger")
 
     response = client.put(f"/dependents/{dependent.id}", json={"name": "Ana Paula"})
 
@@ -281,7 +282,7 @@ def test_update_dependent_not_found_returns_404(client):
     mock_service.update_dependent.side_effect = DependentNotFoundError()
 
     app.dependency_overrides[get_dependent_service] = lambda: mock_service
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "passenger"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="passenger")
 
     response = client.put(f"/dependents/{uuid.uuid4()}", json={"name": "Novo"})
 
@@ -296,7 +297,7 @@ def test_update_dependent_wrong_owner_returns_403(client):
     mock_service.update_dependent.side_effect = DependentOwnershipError()
 
     app.dependency_overrides[get_dependent_service] = lambda: mock_service
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "passenger"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="passenger")
 
     response = client.put(f"/dependents/{uuid.uuid4()}", json={"name": "Novo"})
 
@@ -307,7 +308,7 @@ def test_update_dependent_wrong_owner_returns_403(client):
 
 def test_update_dependent_empty_name_returns_422(client):
     """PUT /dependents/{id} com name vazio deve retornar 422."""
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "passenger"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="passenger")
 
     response = client.put(f"/dependents/{uuid.uuid4()}", json={"name": ""})
 
@@ -327,7 +328,7 @@ def test_delete_dependent_success(client):
     mock_service.delete_dependent.return_value = None
 
     app.dependency_overrides[get_dependent_service] = lambda: mock_service
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "passenger"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="passenger")
 
     response = client.delete(f"/dependents/{uuid.uuid4()}")
 
@@ -342,7 +343,7 @@ def test_delete_dependent_not_found_returns_404(client):
     mock_service.delete_dependent.side_effect = DependentNotFoundError()
 
     app.dependency_overrides[get_dependent_service] = lambda: mock_service
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "passenger"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="passenger")
 
     response = client.delete(f"/dependents/{uuid.uuid4()}")
 
@@ -357,7 +358,7 @@ def test_delete_dependent_wrong_owner_returns_403(client):
     mock_service.delete_dependent.side_effect = DependentOwnershipError()
 
     app.dependency_overrides[get_dependent_service] = lambda: mock_service
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "passenger"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="passenger")
 
     response = client.delete(f"/dependents/{uuid.uuid4()}")
 
@@ -407,7 +408,7 @@ def integration_client(db_session):
 def test_integration_create_dependent_passenger_success(integration_client, db_session):
     """[Integração] POST /dependents/ com role passenger deve persistir e retornar 201."""
     guardian = make_guardian_in_db(db_session, role="passenger")
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(guardian.id), "role": "passenger"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=guardian.id, name="Auth", email="auth@test.com", role="passenger")
 
     response = integration_client.post("/dependents/", json={"name": "Ana"})
 
@@ -420,7 +421,7 @@ def test_integration_create_dependent_passenger_success(integration_client, db_s
 def test_integration_create_dependent_guardian_success(integration_client, db_session):
     """[Integração] POST /dependents/ com role guardian deve persistir e retornar 201."""
     guardian = make_guardian_in_db(db_session, role="guardian")
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(guardian.id), "role": "guardian"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=guardian.id, name="Auth", email="auth@test.com", role="guardian")
 
     response = integration_client.post("/dependents/", json={"name": "Pedro"})
 
@@ -439,7 +440,7 @@ def test_integration_create_dependent_driver_returns_403(integration_client, db_
     )
     db_session.add(driver)
     db_session.flush()
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(driver.id), "role": "driver"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=driver.id, name="Auth", email="auth@test.com", role="driver")
 
     response = integration_client.post("/dependents/", json={"name": "Ana"})
 
@@ -454,7 +455,7 @@ def test_integration_create_dependent_driver_returns_403(integration_client, db_
 def test_integration_list_dependents_empty(integration_client, db_session):
     """[Integração] GET /dependents/ sem dependentes deve retornar 200 com lista vazia."""
     guardian = make_guardian_in_db(db_session)
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(guardian.id), "role": "passenger"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=guardian.id, name="Auth", email="auth@test.com", role="passenger")
 
     response = integration_client.get("/dependents/")
 
@@ -469,7 +470,7 @@ def test_integration_list_dependents_returns_own_only(integration_client, db_ses
     repo = DependentRepositoryImpl(db_session)
     repo.create(DependentModel(guardian_id=guardian1.id, name="Filho G1"))
     repo.create(DependentModel(guardian_id=guardian2.id, name="Filho G2"))
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(guardian1.id), "role": "passenger"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=guardian1.id, name="Auth", email="auth@test.com", role="passenger")
 
     response = integration_client.get("/dependents/")
 
@@ -488,7 +489,7 @@ def test_integration_get_dependent_by_id_success(integration_client, db_session)
     guardian = make_guardian_in_db(db_session)
     repo = DependentRepositoryImpl(db_session)
     dependent = repo.create(DependentModel(guardian_id=guardian.id, name="Maria"))
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(guardian.id), "role": "passenger"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=guardian.id, name="Auth", email="auth@test.com", role="passenger")
 
     response = integration_client.get(f"/dependents/{dependent.id}")
 
@@ -499,7 +500,7 @@ def test_integration_get_dependent_by_id_success(integration_client, db_session)
 def test_integration_get_dependent_not_found_returns_404(integration_client, db_session):
     """[Integração] GET /dependents/{id} com id inexistente deve retornar 404."""
     guardian = make_guardian_in_db(db_session)
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(guardian.id), "role": "passenger"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=guardian.id, name="Auth", email="auth@test.com", role="passenger")
 
     response = integration_client.get(f"/dependents/{uuid.uuid4()}")
 
@@ -512,7 +513,7 @@ def test_integration_get_dependent_wrong_owner_returns_403(integration_client, d
     guardian2 = make_guardian_in_db(db_session)
     repo = DependentRepositoryImpl(db_session)
     dependent = repo.create(DependentModel(guardian_id=guardian1.id, name="Lucas"))
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(guardian2.id), "role": "passenger"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=guardian2.id, name="Auth", email="auth@test.com", role="passenger")
 
     response = integration_client.get(f"/dependents/{dependent.id}")
 
@@ -529,7 +530,7 @@ def test_integration_update_dependent_success(integration_client, db_session):
     guardian = make_guardian_in_db(db_session)
     repo = DependentRepositoryImpl(db_session)
     dependent = repo.create(DependentModel(guardian_id=guardian.id, name="Ana"))
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(guardian.id), "role": "passenger"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=guardian.id, name="Auth", email="auth@test.com", role="passenger")
 
     response = integration_client.put(f"/dependents/{dependent.id}", json={"name": "Ana Paula"})
 
@@ -540,7 +541,7 @@ def test_integration_update_dependent_success(integration_client, db_session):
 def test_integration_update_dependent_not_found_returns_404(integration_client, db_session):
     """[Integração] PUT /dependents/{id} com id inexistente deve retornar 404."""
     guardian = make_guardian_in_db(db_session)
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(guardian.id), "role": "passenger"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=guardian.id, name="Auth", email="auth@test.com", role="passenger")
 
     response = integration_client.put(f"/dependents/{uuid.uuid4()}", json={"name": "Novo"})
 
@@ -553,7 +554,7 @@ def test_integration_update_dependent_wrong_owner_returns_403(integration_client
     guardian2 = make_guardian_in_db(db_session)
     repo = DependentRepositoryImpl(db_session)
     dependent = repo.create(DependentModel(guardian_id=guardian1.id, name="Julia"))
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(guardian2.id), "role": "passenger"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=guardian2.id, name="Auth", email="auth@test.com", role="passenger")
 
     response = integration_client.put(f"/dependents/{dependent.id}", json={"name": "Novo"})
 
@@ -570,7 +571,7 @@ def test_integration_delete_dependent_success(integration_client, db_session):
     guardian = make_guardian_in_db(db_session)
     repo = DependentRepositoryImpl(db_session)
     dependent = repo.create(DependentModel(guardian_id=guardian.id, name="Carla"))
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(guardian.id), "role": "passenger"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=guardian.id, name="Auth", email="auth@test.com", role="passenger")
 
     response = integration_client.delete(f"/dependents/{dependent.id}")
 
@@ -580,7 +581,7 @@ def test_integration_delete_dependent_success(integration_client, db_session):
 def test_integration_delete_dependent_not_found_returns_404(integration_client, db_session):
     """[Integração] DELETE /dependents/{id} com id inexistente deve retornar 404."""
     guardian = make_guardian_in_db(db_session)
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(guardian.id), "role": "passenger"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=guardian.id, name="Auth", email="auth@test.com", role="passenger")
 
     response = integration_client.delete(f"/dependents/{uuid.uuid4()}")
 
@@ -593,7 +594,7 @@ def test_integration_delete_dependent_wrong_owner_returns_403(integration_client
     guardian2 = make_guardian_in_db(db_session)
     repo = DependentRepositoryImpl(db_session)
     dependent = repo.create(DependentModel(guardian_id=guardian1.id, name="Roberto"))
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(guardian2.id), "role": "passenger"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=guardian2.id, name="Auth", email="auth@test.com", role="passenger")
 
     response = integration_client.delete(f"/dependents/{dependent.id}")
 

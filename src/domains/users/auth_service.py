@@ -110,6 +110,7 @@ class AuthService:
         return hashlib.sha256(raw.encode()).hexdigest()
 
     def _issue_refresh(self, user_id: UUID) -> str:
+        assert self.refresh_token_repository is not None
         raw = secrets.token_urlsafe(32)
         expires_at = datetime.now(UTC) + timedelta(days=_REFRESH_TOKEN_TTL_DAYS)
         if self.refresh_token_repository is None:

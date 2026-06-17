@@ -2,9 +2,11 @@ from datetime import UTC, date, datetime
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from src.domains.absences.dtos import RouteAbsenceResponse
+from src.domains.users.entity import UserModel
+from src.infrastructure.auth.dependencies import get_current_driver, get_current_user
 from src.infrastructure.dependencies.route_dependencies import get_route_service
 
 from .dtos import (
@@ -54,10 +56,10 @@ _DESCRIPTION_CREATE = (
 def create_route(
     body: RouteCreate,
     service: Annotated[RouteService, Depends(get_route_service)],
-    driver_id: Annotated[UUID, Header(alias="X-User-Id")],
+    current_user: Annotated[UserModel, Depends(get_current_driver)],
 ) -> RouteResponse:
     try:
-        created_route = service.create_route(driver_id, body)
+        created_route = service.create_route(current_user.id, body)
         return created_route
     except NoVehicleError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
@@ -73,10 +75,10 @@ def create_route(
 def regenerate_invite_code(
     route_id: UUID,
     service: Annotated[RouteService, Depends(get_route_service)],
-    driver_id: Annotated[UUID, Header(alias="X-User-Id")],
+    current_user: Annotated[UserModel, Depends(get_current_driver)],
 ) -> RouteResponse:
     try:
-        updated_route = service.regenerate_invite_code(route_id, driver_id)
+        updated_route = service.regenerate_invite_code(route_id, current_user.id)
         return updated_route
     except RouteNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
@@ -93,9 +95,9 @@ def regenerate_invite_code(
 )
 def list_routes(
     service: Annotated[RouteService, Depends(get_route_service)],
-    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    current_user: Annotated[UserModel, Depends(get_current_driver)],
 ) -> list[RouteResponse]:
-    driver_id = UUID(x_user_id)
+    driver_id = current_user.id
     routes = service.get_routes(driver_id)
     responses: list[RouteResponse] = []
     for route in routes:
@@ -129,9 +131,9 @@ def update_route(
     route_id: UUID,
     body: RouteUpdate,
     service: Annotated[RouteService, Depends(get_route_service)],
-    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    current_user: Annotated[UserModel, Depends(get_current_driver)],
 ) -> RouteResponse:
-    driver_id = UUID(x_user_id)
+    driver_id = current_user.id
     try:
         return service.update_route(route_id, driver_id, body)
     except RouteNotFoundError as exc:
@@ -157,7 +159,7 @@ def update_route(
 def get_route_by_invite_code(
     invite_code: str,
     service: Annotated[RouteService, Depends(get_route_service)],
-    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    current_user: Annotated[UserModel, Depends(get_current_user)],
 ) -> RouteInviteSummaryResponse:
     try:
         return service.get_invite_summary(invite_code)
@@ -180,10 +182,10 @@ def get_route_by_invite_code(
 def list_route_absences(
     route_id: UUID,
     service: Annotated[RouteService, Depends(get_route_service)],
-    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    current_user: Annotated[UserModel, Depends(get_current_user)],
     date: Annotated[date, Query()] = None,
 ) -> list[RouteAbsenceResponse]:
-    caller_id = UUID(x_user_id)
+    caller_id = current_user.id
     absence_date = datetime.combine(date or datetime.now(UTC).date(), datetime.min.time())
     try:
         return service.get_route_absences(route_id, caller_id, absence_date)
@@ -203,9 +205,9 @@ def list_route_absences(
 def get_route(
     route_id: UUID,
     service: Annotated[RouteService, Depends(get_route_service)],
-    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    current_user: Annotated[UserModel, Depends(get_current_driver)],
 ) -> RouteResponse:
-    driver_id = UUID(x_user_id)
+    driver_id = current_user.id
     try:
         route = service.get_route(route_id, driver_id)
         accepted_count = service.get_accepted_count(route_id)
@@ -241,9 +243,9 @@ def get_route(
 def delete_route(
     route_id: UUID,
     service: Annotated[RouteService, Depends(get_route_service)],
-    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    current_user: Annotated[UserModel, Depends(get_current_driver)],
 ) -> None:
-    driver_id = UUID(x_user_id)
+    driver_id = current_user.id
     try:
         service.delete_route(route_id, driver_id)
     except RouteNotFoundError as exc:

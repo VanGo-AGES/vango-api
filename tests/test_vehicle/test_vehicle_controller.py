@@ -16,7 +16,8 @@ from fastapi.testclient import TestClient
 from src.domains.vehicles.entity import VehicleModel
 from src.domains.vehicles.errors import VehicleAccessDeniedError, VehiclePlateAlreadyExistsError
 from src.domains.vehicles.service import VehicleService
-from src.infrastructure.dependencies.auth_dependencies import get_current_user
+from src.domains.users.entity import UserModel
+from src.infrastructure.auth.dependencies import get_current_user
 from src.infrastructure.dependencies.vehicle_dependencies import get_vehicle_service
 from src.main import fastapi_app as app
 
@@ -49,7 +50,7 @@ def test_create_vehicle_driver_success(client):
     mock_service.add_vehicle.return_value = make_mock_vehicle()
 
     app.dependency_overrides[get_vehicle_service] = lambda: mock_service
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "driver"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="driver")
 
     response = client.post("/vehicles/", json={"plate": "ABC1D23", "capacity": 4})
 
@@ -65,7 +66,7 @@ def test_create_vehicle_response_has_correct_fields(client):
     mock_service.add_vehicle.return_value = vehicle
 
     app.dependency_overrides[get_vehicle_service] = lambda: mock_service
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "driver"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="driver")
 
     response = client.post("/vehicles/", json={"plate": "ABC1D23", "capacity": 4})
 
@@ -89,7 +90,7 @@ def test_create_vehicle_with_notes_success(client):
     mock_service.add_vehicle.return_value = vehicle
 
     app.dependency_overrides[get_vehicle_service] = lambda: mock_service
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "driver"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="driver")
 
     response = client.post("/vehicles/", json={"plate": "ABC1D23", "capacity": 4, "notes": "Ar condicionado"})
 
@@ -110,7 +111,7 @@ def test_create_vehicle_passenger_returns_403(client):
     mock_service.add_vehicle.side_effect = VehicleAccessDeniedError()
 
     app.dependency_overrides[get_vehicle_service] = lambda: mock_service
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "passenger"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="passenger")
 
     response = client.post("/vehicles/", json={"plate": "ABC1D23", "capacity": 4})
 
@@ -125,7 +126,7 @@ def test_create_vehicle_guardian_returns_403(client):
     mock_service.add_vehicle.side_effect = VehicleAccessDeniedError()
 
     app.dependency_overrides[get_vehicle_service] = lambda: mock_service
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "guardian"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="guardian")
 
     response = client.post("/vehicles/", json={"plate": "ABC1D23", "capacity": 4})
 
@@ -140,7 +141,7 @@ def test_create_vehicle_duplicate_plate_returns_409(client):
     mock_service.add_vehicle.side_effect = VehiclePlateAlreadyExistsError()
 
     app.dependency_overrides[get_vehicle_service] = lambda: mock_service
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "driver"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="driver")
 
     response = client.post("/vehicles/", json={"plate": "ABC1D23", "capacity": 4})
 
@@ -156,7 +157,7 @@ def test_create_vehicle_duplicate_plate_returns_409(client):
 
 def test_create_vehicle_missing_plate_returns_422(client):
     """Payload sem plate deve retornar 422."""
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "driver"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="driver")
 
     response = client.post("/vehicles/", json={"capacity": 4})
 
@@ -167,7 +168,7 @@ def test_create_vehicle_missing_plate_returns_422(client):
 
 def test_create_vehicle_missing_capacity_returns_422(client):
     """Payload sem capacity deve retornar 422."""
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "driver"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="driver")
 
     response = client.post("/vehicles/", json={"plate": "ABC1D23"})
 
@@ -178,7 +179,7 @@ def test_create_vehicle_missing_capacity_returns_422(client):
 
 def test_create_vehicle_empty_payload_returns_422(client):
     """Payload vazio deve retornar 422."""
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "driver"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="driver")
 
     response = client.post("/vehicles/", json={})
 
@@ -189,7 +190,7 @@ def test_create_vehicle_empty_payload_returns_422(client):
 
 def test_create_vehicle_empty_plate_returns_422(client):
     """Plate vazia deve ser rejeitada com 422."""
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "driver"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="driver")
 
     response = client.post("/vehicles/", json={"plate": "", "capacity": 4})
 
@@ -200,7 +201,7 @@ def test_create_vehicle_empty_plate_returns_422(client):
 
 def test_create_vehicle_zero_capacity_returns_422(client):
     """Capacity igual a zero deve ser rejeitada com 422."""
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "driver"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="driver")
 
     response = client.post("/vehicles/", json={"plate": "ABC1D23", "capacity": 0})
 
@@ -234,7 +235,7 @@ def test_list_vehicles_success(client):
     mock_service.get_vehicles.return_value = make_vehicle_list()
 
     app.dependency_overrides[get_vehicle_service] = lambda: mock_service
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "driver"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="driver")
 
     response = client.get("/vehicles/")
 
@@ -251,7 +252,7 @@ def test_list_vehicles_empty(client):
     mock_service.get_vehicles.return_value = []
 
     app.dependency_overrides[get_vehicle_service] = lambda: mock_service
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "driver"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="driver")
 
     response = client.get("/vehicles/")
 
@@ -273,7 +274,7 @@ def test_get_vehicle_by_id_success(client):
     mock_service.get_vehicle.return_value = vehicle
 
     app.dependency_overrides[get_vehicle_service] = lambda: mock_service
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "driver"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="driver")
 
     response = client.get(f"/vehicles/{vehicle.id}")
 
@@ -289,7 +290,7 @@ def test_get_vehicle_not_found_returns_404(client):
     mock_service.get_vehicle.side_effect = VehicleNotFoundError()
 
     app.dependency_overrides[get_vehicle_service] = lambda: mock_service
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "driver"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="driver")
 
     response = client.get(f"/vehicles/{uuid.uuid4()}")
 
@@ -304,7 +305,7 @@ def test_get_vehicle_wrong_owner_returns_403(client):
     mock_service.get_vehicle.side_effect = VehicleOwnershipError()
 
     app.dependency_overrides[get_vehicle_service] = lambda: mock_service
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "driver"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="driver")
 
     response = client.get(f"/vehicles/{uuid.uuid4()}")
 
@@ -325,7 +326,7 @@ def test_update_vehicle_success(client):
     mock_service.update_vehicle.return_value = vehicle
 
     app.dependency_overrides[get_vehicle_service] = lambda: mock_service
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "driver"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="driver")
 
     response = client.put(f"/vehicles/{vehicle.id}", json={"plate": "NEW0001", "capacity": 6})
 
@@ -341,7 +342,7 @@ def test_update_vehicle_not_found_returns_404(client):
     mock_service.update_vehicle.side_effect = VehicleNotFoundError()
 
     app.dependency_overrides[get_vehicle_service] = lambda: mock_service
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "driver"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="driver")
 
     response = client.put(f"/vehicles/{uuid.uuid4()}", json={"plate": "X"})
 
@@ -356,7 +357,7 @@ def test_update_vehicle_wrong_owner_returns_403(client):
     mock_service.update_vehicle.side_effect = VehicleOwnershipError()
 
     app.dependency_overrides[get_vehicle_service] = lambda: mock_service
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "driver"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="driver")
 
     response = client.put(f"/vehicles/{uuid.uuid4()}", json={"plate": "X"})
 
@@ -367,7 +368,7 @@ def test_update_vehicle_wrong_owner_returns_403(client):
 
 def test_update_vehicle_invalid_payload_returns_422(client):
     """PUT /vehicles/{id} com capacity inválida deve retornar 422."""
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "driver"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="driver")
 
     response = client.put(f"/vehicles/{uuid.uuid4()}", json={"capacity": -1})
 
@@ -387,7 +388,7 @@ def test_delete_vehicle_success(client):
     mock_service.delete_vehicle.return_value = None
 
     app.dependency_overrides[get_vehicle_service] = lambda: mock_service
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "driver"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="driver")
 
     response = client.delete(f"/vehicles/{uuid.uuid4()}")
 
@@ -402,7 +403,7 @@ def test_delete_vehicle_not_found_returns_404(client):
     mock_service.delete_vehicle.side_effect = VehicleNotFoundError()
 
     app.dependency_overrides[get_vehicle_service] = lambda: mock_service
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "driver"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="driver")
 
     response = client.delete(f"/vehicles/{uuid.uuid4()}")
 
@@ -417,7 +418,7 @@ def test_delete_vehicle_wrong_owner_returns_403(client):
     mock_service.delete_vehicle.side_effect = VehicleOwnershipError()
 
     app.dependency_overrides[get_vehicle_service] = lambda: mock_service
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(uuid.uuid4()), "role": "driver"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=uuid.uuid4(), name="Auth", email="auth@test.com", role="driver")
 
     response = client.delete(f"/vehicles/{uuid.uuid4()}")
 
@@ -467,7 +468,7 @@ def integration_client(db_session):
 def test_integration_create_vehicle_driver_success(integration_client, db_session):
     """[Integração] POST /vehicles/ com driver real deve persistir e retornar 201."""
     driver = make_driver_in_db(db_session)
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(driver.id), "role": "driver"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=driver.id, name="Auth", email="auth@test.com", role="driver")
 
     response = integration_client.post("/vehicles/", json={"plate": "ITG0001", "capacity": 4})
 
@@ -480,7 +481,7 @@ def test_integration_create_vehicle_driver_success(integration_client, db_sessio
 def test_integration_create_vehicle_with_notes(integration_client, db_session):
     """[Integração] POST /vehicles/ com notes deve persistir o campo no banco."""
     driver = make_driver_in_db(db_session)
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(driver.id), "role": "driver"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=driver.id, name="Auth", email="auth@test.com", role="driver")
 
     response = integration_client.post("/vehicles/", json={"plate": "ITG0002", "capacity": 4, "notes": "Ar condicionado"})
 
@@ -499,7 +500,7 @@ def test_integration_create_vehicle_passenger_returns_403(integration_client, db
     )
     db_session.add(user)
     db_session.flush()
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(user.id), "role": "passenger"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=user.id, name="Auth", email="auth@test.com", role="passenger")
 
     response = integration_client.post("/vehicles/", json={"plate": "ITG0003", "capacity": 4})
 
@@ -517,7 +518,7 @@ def test_integration_create_vehicle_guardian_returns_403(integration_client, db_
     )
     db_session.add(user)
     db_session.flush()
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(user.id), "role": "guardian"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=user.id, name="Auth", email="auth@test.com", role="guardian")
 
     response = integration_client.post("/vehicles/", json={"plate": "ITG0004", "capacity": 4})
 
@@ -527,7 +528,7 @@ def test_integration_create_vehicle_guardian_returns_403(integration_client, db_
 def test_integration_create_vehicle_duplicate_plate_returns_409(integration_client, db_session):
     """[Integração] POST /vehicles/ com placa já cadastrada deve retornar 409 Conflict."""
     driver = make_driver_in_db(db_session)
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(driver.id), "role": "driver"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=driver.id, name="Auth", email="auth@test.com", role="driver")
 
     integration_client.post("/vehicles/", json={"plate": "DUP0001", "capacity": 4})
     response = integration_client.post("/vehicles/", json={"plate": "DUP0001", "capacity": 6})
@@ -543,7 +544,7 @@ def test_integration_create_vehicle_duplicate_plate_returns_409(integration_clie
 def test_integration_list_vehicles_empty(integration_client, db_session):
     """[Integração] GET /vehicles/ sem veículos deve retornar 200 com lista vazia."""
     driver = make_driver_in_db(db_session)
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(driver.id), "role": "driver"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=driver.id, name="Auth", email="auth@test.com", role="driver")
 
     response = integration_client.get("/vehicles/")
 
@@ -558,7 +559,7 @@ def test_integration_list_vehicles_returns_own_only(integration_client, db_sessi
     repo = VehicleRepositoryImpl(db_session)
     repo.create(VehicleModel(driver_id=driver1.id, plate="LST0001", capacity=4))
     repo.create(VehicleModel(driver_id=driver2.id, plate="LST0002", capacity=4))
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(driver1.id), "role": "driver"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=driver1.id, name="Auth", email="auth@test.com", role="driver")
 
     response = integration_client.get("/vehicles/")
 
@@ -577,7 +578,7 @@ def test_integration_get_vehicle_by_id_success(integration_client, db_session):
     driver = make_driver_in_db(db_session)
     repo = VehicleRepositoryImpl(db_session)
     vehicle = repo.create(VehicleModel(driver_id=driver.id, plate="GET0001", capacity=4))
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(driver.id), "role": "driver"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=driver.id, name="Auth", email="auth@test.com", role="driver")
 
     response = integration_client.get(f"/vehicles/{vehicle.id}")
 
@@ -588,7 +589,7 @@ def test_integration_get_vehicle_by_id_success(integration_client, db_session):
 def test_integration_get_vehicle_not_found_returns_404(integration_client, db_session):
     """[Integração] GET /vehicles/{id} com id inexistente deve retornar 404."""
     driver = make_driver_in_db(db_session)
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(driver.id), "role": "driver"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=driver.id, name="Auth", email="auth@test.com", role="driver")
 
     response = integration_client.get(f"/vehicles/{uuid.uuid4()}")
 
@@ -601,7 +602,7 @@ def test_integration_get_vehicle_wrong_owner_returns_403(integration_client, db_
     driver2 = make_driver_in_db(db_session)
     repo = VehicleRepositoryImpl(db_session)
     vehicle = repo.create(VehicleModel(driver_id=driver1.id, plate="OWN0001", capacity=4))
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(driver2.id), "role": "driver"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=driver2.id, name="Auth", email="auth@test.com", role="driver")
 
     response = integration_client.get(f"/vehicles/{vehicle.id}")
 
@@ -618,7 +619,7 @@ def test_integration_update_vehicle_success(integration_client, db_session):
     driver = make_driver_in_db(db_session)
     repo = VehicleRepositoryImpl(db_session)
     vehicle = repo.create(VehicleModel(driver_id=driver.id, plate="UPD0001", capacity=4))
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(driver.id), "role": "driver"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=driver.id, name="Auth", email="auth@test.com", role="driver")
 
     response = integration_client.put(f"/vehicles/{vehicle.id}", json={"capacity": 8})
 
@@ -629,7 +630,7 @@ def test_integration_update_vehicle_success(integration_client, db_session):
 def test_integration_update_vehicle_not_found_returns_404(integration_client, db_session):
     """[Integração] PUT /vehicles/{id} com id inexistente deve retornar 404."""
     driver = make_driver_in_db(db_session)
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(driver.id), "role": "driver"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=driver.id, name="Auth", email="auth@test.com", role="driver")
 
     response = integration_client.put(f"/vehicles/{uuid.uuid4()}", json={"capacity": 8})
 
@@ -642,7 +643,7 @@ def test_integration_update_vehicle_wrong_owner_returns_403(integration_client, 
     driver2 = make_driver_in_db(db_session)
     repo = VehicleRepositoryImpl(db_session)
     vehicle = repo.create(VehicleModel(driver_id=driver1.id, plate="UPD0002", capacity=4))
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(driver2.id), "role": "driver"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=driver2.id, name="Auth", email="auth@test.com", role="driver")
 
     response = integration_client.put(f"/vehicles/{vehicle.id}", json={"capacity": 8})
 
@@ -659,7 +660,7 @@ def test_integration_delete_vehicle_success(integration_client, db_session):
     driver = make_driver_in_db(db_session)
     repo = VehicleRepositoryImpl(db_session)
     vehicle = repo.create(VehicleModel(driver_id=driver.id, plate="DEL0001", capacity=4))
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(driver.id), "role": "driver"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=driver.id, name="Auth", email="auth@test.com", role="driver")
 
     response = integration_client.delete(f"/vehicles/{vehicle.id}")
 
@@ -669,7 +670,7 @@ def test_integration_delete_vehicle_success(integration_client, db_session):
 def test_integration_delete_vehicle_not_found_returns_404(integration_client, db_session):
     """[Integração] DELETE /vehicles/{id} com id inexistente deve retornar 404."""
     driver = make_driver_in_db(db_session)
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(driver.id), "role": "driver"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=driver.id, name="Auth", email="auth@test.com", role="driver")
 
     response = integration_client.delete(f"/vehicles/{uuid.uuid4()}")
 
@@ -682,7 +683,7 @@ def test_integration_delete_vehicle_wrong_owner_returns_403(integration_client, 
     driver2 = make_driver_in_db(db_session)
     repo = VehicleRepositoryImpl(db_session)
     vehicle = repo.create(VehicleModel(driver_id=driver1.id, plate="DEL0002", capacity=4))
-    app.dependency_overrides[get_current_user] = lambda: {"id": str(driver2.id), "role": "driver"}
+    app.dependency_overrides[get_current_user] = lambda: UserModel(id=driver2.id, name="Auth", email="auth@test.com", role="driver")
 
     response = integration_client.delete(f"/vehicles/{vehicle.id}")
 

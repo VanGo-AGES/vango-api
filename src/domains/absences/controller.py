@@ -6,15 +6,16 @@ Endpoints:
 """
 
 from typing import Annotated
-from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from src.domains.absences.dtos import AbsenceResponse, CreateAbsenceRequest
 from src.domains.absences.errors import AbsenceAlreadyReportedError, AbsenceDateNotAllowedError
 from src.domains.absences.service import AbsenceService
 from src.domains.route_passangers.errors import NotRoutePassangerError
 from src.domains.routes.errors import RouteNotFoundError
+from src.domains.users.entity import UserModel
+from src.infrastructure.auth.dependencies import get_current_user
 from src.infrastructure.dependencies.absence_dependencies import get_absence_service
 
 router = APIRouter(prefix="/absences", tags=["Absences"])
@@ -35,10 +36,10 @@ router = APIRouter(prefix="/absences", tags=["Absences"])
 def create_absence(
     body: CreateAbsenceRequest,
     service: Annotated[AbsenceService, Depends(get_absence_service)],
-    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    current_user: Annotated[UserModel, Depends(get_current_user)],
 ) -> AbsenceResponse:
     try:
-        return service.create_absence(user_id=UUID(x_user_id), data=body)
+        return service.create_absence(user_id=current_user.id, data=body)
     except RouteNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
     except NotRoutePassangerError as error:
