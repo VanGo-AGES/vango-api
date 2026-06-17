@@ -37,3 +37,14 @@ def test_propagates_incoming_request_id():
 
     assert resp.headers["X-Request-Id"] == "abc-123"
     assert resp.json()["request_id"] == "abc-123"
+
+
+def test_sets_sentry_tags_for_request_id(mocker):
+    set_tag = mocker.patch("src.infrastructure.middleware.request_id.sentry_sdk.set_tag")
+    client = TestClient(_build_app())
+
+    resp = client.get("/ping", headers={"X-Request-Id": "req-123"})
+
+    assert resp.status_code == 200
+    set_tag.assert_any_call("request_id", "req-123")
+    set_tag.assert_any_call("trace_id", "req-123")
