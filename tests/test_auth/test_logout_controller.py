@@ -1,7 +1,6 @@
 """US19-TK03 — Controller POST /auth/logout.
 
 Remova o skip rodando:
-  sed -i '/@pytest.mark.skip(reason="US19-TK03")/d' tests/test_auth/test_logout_controller.py
 """
 
 from datetime import datetime, timedelta, timezone
@@ -17,7 +16,6 @@ from src.main import fastapi_app as app
 client = TestClient(app, raise_server_exceptions=False)
 
 
-@pytest.mark.skip(reason="US19-TK03")
 def test_logout_returns_204_and_revokes():
     payload = TokenPayload(sub=uuid4(), role="driver", jti="jti-1", exp=datetime.now(timezone.utc) + timedelta(hours=1))
     calls = {}
@@ -35,14 +33,12 @@ def test_logout_returns_204_and_revokes():
     assert calls.get("payload") is payload
 
 
-@pytest.mark.skip(reason="US19-TK03")
 def test_logout_without_auth_returns_401():
     """Sem Bearer token, o logout (rota protegida) deve responder 401."""
     resp = client.post("/auth/logout")
     assert resp.status_code == 401
 
 
-@pytest.mark.skip(reason="US19-TK03")
 def test_logout_integration_persists_revocation(db_session):
     """Stack real: token válido -> 204 -> jti gravado na denylist."""
     from src.config import settings
