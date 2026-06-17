@@ -2,7 +2,7 @@ from datetime import UTC, date, datetime
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 
 from src.domains.absences.dtos import RouteAbsenceResponse
 from src.domains.users.entity import UserModel
@@ -14,12 +14,6 @@ from .dtos import (
     RouteInviteSummaryResponse,
     RouteResponse,
     RouteUpdate,
-)
-from .errors import (
-    NoVehicleError,
-    RouteInProgressError,
-    RouteNotFoundError,
-    RouteOwnershipError,
 )
 from .service import RouteService
 
@@ -58,11 +52,7 @@ def create_route(
     service: Annotated[RouteService, Depends(get_route_service)],
     current_user: Annotated[UserModel, Depends(get_current_driver)],
 ) -> RouteResponse:
-    try:
-        created_route = service.create_route(current_user.id, body)
-        return created_route
-    except NoVehicleError as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
+    return service.create_route(current_user.id, body)
 
 
 @router.post(
@@ -77,13 +67,7 @@ def regenerate_invite_code(
     service: Annotated[RouteService, Depends(get_route_service)],
     current_user: Annotated[UserModel, Depends(get_current_driver)],
 ) -> RouteResponse:
-    try:
-        updated_route = service.regenerate_invite_code(route_id, current_user.id)
-        return updated_route
-    except RouteNotFoundError as error:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
-    except RouteOwnershipError as error:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error)) from error
+    return service.regenerate_invite_code(route_id, current_user.id)
 
 
 @router.get(
@@ -134,14 +118,7 @@ def update_route(
     current_user: Annotated[UserModel, Depends(get_current_driver)],
 ) -> RouteResponse:
     driver_id = current_user.id
-    try:
-        return service.update_route(route_id, driver_id, body)
-    except RouteNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    except RouteOwnershipError as exc:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
-    except RouteInProgressError as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    return service.update_route(route_id, driver_id, body)
 
 
 # US08-TK06
@@ -161,10 +138,7 @@ def get_route_by_invite_code(
     service: Annotated[RouteService, Depends(get_route_service)],
     current_user: Annotated[UserModel, Depends(get_current_user)],
 ) -> RouteInviteSummaryResponse:
-    try:
-        return service.get_invite_summary(invite_code)
-    except RouteNotFoundError as error:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
+    return service.get_invite_summary(invite_code)
 
 
 @router.get(
@@ -187,12 +161,7 @@ def list_route_absences(
 ) -> list[RouteAbsenceResponse]:
     caller_id = current_user.id
     absence_date = datetime.combine(date or datetime.now(UTC).date(), datetime.min.time())
-    try:
-        return service.get_route_absences(route_id, caller_id, absence_date)
-    except RouteNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    except RouteOwnershipError as exc:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+    return service.get_route_absences(route_id, caller_id, absence_date)
 
 
 @router.get(
@@ -208,23 +177,18 @@ def get_route(
     current_user: Annotated[UserModel, Depends(get_current_driver)],
 ) -> RouteResponse:
     driver_id = current_user.id
-    try:
-        route = service.get_route(route_id, driver_id)
-        accepted_count = service.get_accepted_count(route_id)
-        total_distance_km, estimated_duration_min = _safe_route_totals(service, route)
-        active_trip_id = _safe_active_trip_id(service, route_id)
-        return RouteResponse.from_orm(route).model_copy(
-            update={
-                "accepted_count": accepted_count,
-                "total_distance_km": total_distance_km,
-                "estimated_duration_min": estimated_duration_min,
-                "active_trip_id": active_trip_id,
-            }
-        )
-    except RouteNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    except RouteOwnershipError as exc:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+    route = service.get_route(route_id, driver_id)
+    accepted_count = service.get_accepted_count(route_id)
+    total_distance_km, estimated_duration_min = _safe_route_totals(service, route)
+    active_trip_id = _safe_active_trip_id(service, route_id)
+    return RouteResponse.from_orm(route).model_copy(
+        update={
+            "accepted_count": accepted_count,
+            "total_distance_km": total_distance_km,
+            "estimated_duration_min": estimated_duration_min,
+            "active_trip_id": active_trip_id,
+        }
+    )
 
 
 # US06-TK19
@@ -246,11 +210,4 @@ def delete_route(
     current_user: Annotated[UserModel, Depends(get_current_driver)],
 ) -> None:
     driver_id = current_user.id
-    try:
-        service.delete_route(route_id, driver_id)
-    except RouteNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    except RouteOwnershipError as exc:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
-    except RouteInProgressError as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    service.delete_route(route_id, driver_id)
