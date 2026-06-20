@@ -12,10 +12,8 @@ Endpoints:
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 
-from src.domains.route_passangers.errors import DuplicateRoutePassangerError, RouteCapacityExceededError
-from src.domains.routes.errors import RouteInProgressError, RouteNotFoundError, RouteOwnershipError
 from src.domains.users.entity import UserModel
 from src.infrastructure.auth.dependencies import get_current_driver, get_current_user
 from src.infrastructure.dependencies.route_passanger_dependencies import (
@@ -29,7 +27,6 @@ from .dtos import (
     RoutePassangerResponse,
     UpdateSchedulesRequest,
 )
-from .errors import NotRoutePassangerError, RoutePassangerAlreadyProcessedError, RoutePassangerNotFoundError
 from .service import RoutePassangerService
 
 router = APIRouter(prefix="/routes", tags=["RoutePassangers"])
@@ -71,20 +68,7 @@ def accept_request(
     service: Annotated[RoutePassangerService, Depends(get_route_passanger_service)],
     current_user: Annotated[UserModel, Depends(get_current_driver)],
 ) -> RoutePassangerResponse:
-    try:
-        return service.accept_request(route_id, rp_id, current_user.id)
-    except RouteNotFoundError as error:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
-    except RoutePassangerNotFoundError as error:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
-    except RouteOwnershipError as error:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error)) from error
-    except RouteInProgressError as error:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
-    except RoutePassangerAlreadyProcessedError as error:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
-    except RouteCapacityExceededError as error:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
+    return service.accept_request(route_id, rp_id, current_user.id)
 
 
 # US06-TK11
@@ -101,18 +85,7 @@ def reject_request(
     service: Annotated[RoutePassangerService, Depends(get_route_passanger_service)],
     current_user: Annotated[UserModel, Depends(get_current_driver)],
 ) -> RoutePassangerResponse:
-    try:
-        return service.reject_request(route_id, rp_id, current_user.id)
-    except RouteNotFoundError as error:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
-    except RoutePassangerNotFoundError as error:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
-    except RouteOwnershipError as error:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error)) from error
-    except RouteInProgressError as error:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
-    except RoutePassangerAlreadyProcessedError as error:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
+    return service.reject_request(route_id, rp_id, current_user.id)
 
 
 # US08-TK10
@@ -131,14 +104,7 @@ def leave_route(
     current_user: Annotated[UserModel, Depends(get_current_user)],
     dependent_id: Annotated[UUID | None, Query()] = None,
 ) -> None:
-    try:
-        service.leave_route(route_id, current_user.id, dependent_id=dependent_id)
-    except RouteNotFoundError as error:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
-    except RouteInProgressError as error:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
-    except RoutePassangerNotFoundError as error:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
+    service.leave_route(route_id, current_user.id, dependent_id=dependent_id)
 
 
 # US06-TK13
@@ -154,15 +120,7 @@ def remove_passanger(
     service: Annotated[RoutePassangerService, Depends(get_route_passanger_service)],
     current_user: Annotated[UserModel, Depends(get_current_driver)],
 ) -> None:
-    try:
-        service.remove_passanger(route_id, rp_id, current_user.id)
-        return None
-    except (NotRoutePassangerError, RouteNotFoundError, RoutePassangerNotFoundError) as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    except RouteOwnershipError as exc:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
-    except RouteInProgressError as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    service.remove_passanger(route_id, rp_id, current_user.id)
 
 
 # US06-TK15
@@ -181,14 +139,7 @@ def list_passangers(
     current_user: Annotated[UserModel, Depends(get_current_driver)],
     status_filter: Annotated[str | None, Query(alias="status")] = None,
 ) -> list[RoutePassangerResponse]:
-    try:
-        return service.list_by_status(route_id, current_user.id, status=status_filter)
-    except RouteNotFoundError as error:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
-    except RouteOwnershipError as error:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error)) from error
-    except ValueError as error:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error)) from error
+    return service.list_by_status(route_id, current_user.id, status=status_filter)
 
 
 # US08-TK08
@@ -208,18 +159,7 @@ def join_route(
     service: Annotated[RoutePassangerService, Depends(get_route_passanger_service)],
     current_user: Annotated[UserModel, Depends(get_current_user)],
 ) -> RoutePassangerResponse:
-    try:
-        return service.join_route(route_id, current_user.id, body)
-    except RouteNotFoundError as error:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
-    except RouteInProgressError as error:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
-    except RouteCapacityExceededError as error:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
-    except DuplicateRoutePassangerError as error:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
-    except ValueError as error:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error)) from error
+    return service.join_route(route_id, current_user.id, body)
 
 
 # US08-TK12
@@ -240,14 +180,7 @@ def update_schedules(
     current_user: Annotated[UserModel, Depends(get_current_user)],
     dependent_id: Annotated[UUID | None, Query()] = None,
 ) -> RoutePassangerResponse:
-    try:
-        return service.update_schedules(route_id, current_user.id, body, dependent_id=dependent_id)
-    except RouteNotFoundError as error:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
-    except RouteInProgressError as error:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
-    except RoutePassangerNotFoundError as error:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
+    return service.update_schedules(route_id, current_user.id, body, dependent_id=dependent_id)
 
 
 # IMPORTANTE: este endpoint precisa ser resolvido ANTES de
@@ -272,9 +205,4 @@ def get_my_route_detail(
     current_user: Annotated[UserModel, Depends(get_current_user)],
     dependent_id: Annotated[UUID | None, Query()] = None,
 ) -> PassangerRouteDetailResponse:
-    try:
-        return service.get_my_route_detail(route_id, current_user.id, dependent_id)
-    except RouteNotFoundError as error:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
-    except NotRoutePassangerError as error:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error)) from error
+    return service.get_my_route_detail(route_id, current_user.id, dependent_id)

@@ -1,14 +1,13 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 
 from src.domains.users.entity import UserModel
 from src.infrastructure.auth.dependencies import get_current_user
 from src.infrastructure.dependencies.vehicle_dependencies import get_vehicle_service
 
 from .dtos import VehicleCreate, VehicleResponse, VehicleUpdate
-from .errors import VehicleAccessDeniedError, VehicleNotFoundError, VehicleOwnershipError, VehiclePlateAlreadyExistsError
 from .service import VehicleService
 
 router = APIRouter(prefix="/vehicles", tags=["Vehicles"])
@@ -26,16 +25,11 @@ def create_vehicle(
     service: Annotated[VehicleService, Depends(get_vehicle_service)],
     current_user: Annotated[UserModel, Depends(get_current_user)],
 ) -> VehicleResponse:
-    try:
-        return service.add_vehicle(
-            user_id=str(current_user.id),
-            user_role=current_user.role,
-            data=body,
-        )
-    except VehicleAccessDeniedError as error:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error)) from error
-    except VehiclePlateAlreadyExistsError as error:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
+    return service.add_vehicle(
+        user_id=str(current_user.id),
+        user_role=current_user.role,
+        data=body,
+    )
 
 
 @router.get(
@@ -64,12 +58,7 @@ def get_vehicle(
     service: Annotated[VehicleService, Depends(get_vehicle_service)],
     current_user: Annotated[UserModel, Depends(get_current_user)],
 ) -> VehicleResponse:
-    try:
-        return service.get_vehicle(str(current_user.id), vehicle_id)
-    except VehicleNotFoundError as error:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
-    except VehicleOwnershipError as error:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error)) from error
+    return service.get_vehicle(str(current_user.id), vehicle_id)
 
 
 @router.put(
@@ -85,12 +74,7 @@ def update_vehicle(
     service: Annotated[VehicleService, Depends(get_vehicle_service)],
     current_user: Annotated[UserModel, Depends(get_current_user)],
 ) -> VehicleResponse:
-    try:
-        return service.update_vehicle(str(current_user.id), vehicle_id, body)
-    except VehicleNotFoundError as error:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
-    except VehicleOwnershipError as error:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error)) from error
+    return service.update_vehicle(str(current_user.id), vehicle_id, body)
 
 
 @router.delete(
@@ -104,9 +88,4 @@ def delete_vehicle(
     service: Annotated[VehicleService, Depends(get_vehicle_service)],
     current_user: Annotated[UserModel, Depends(get_current_user)],
 ) -> None:
-    try:
-        service.delete_vehicle(str(current_user.id), vehicle_id)
-    except VehicleNotFoundError as error:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
-    except VehicleOwnershipError as error:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error)) from error
+    service.delete_vehicle(str(current_user.id), vehicle_id)
