@@ -1,42 +1,65 @@
-"""US17/US18/US19 — Erros do fluxo de autenticação.
+"""US17/US18/US19/US20 — Erros do fluxo de autenticação.
 
-Seguem o padrão atual (subclasses de Exception). Na US00-TK16 passarão a
-herdar de DomainError com code/status_code.
+US00-TK16 — herdam de DomainError com code/status_code, para que o handler
+global responda sem try/except nos controllers.
 """
 
-
-class InvalidTokenError(Exception):
-    def __init__(self, message: str = "Token inválido ou expirado."):
-        super().__init__(message)
+from src.shared.errors import DomainError
 
 
-class RevokedTokenError(Exception):
-    def __init__(self, message: str = "Token revogado."):
-        super().__init__(message)
+class InvalidTokenError(DomainError):
+    code = "invalid_token"
+    status_code = 401
+
+    def __init__(self, message: str = "Token inválido ou expirado.", details: dict | None = None) -> None:
+        super().__init__(message=message, details=details)
 
 
-class InvalidResetTokenError(Exception):
-    def __init__(self, message: str = "Token de recuperação inválido, expirado ou já utilizado."):
-        super().__init__(message)
+class RevokedTokenError(DomainError):
+    code = "revoked_token"
+    status_code = 401
+
+    def __init__(self, message: str = "Token revogado.", details: dict | None = None) -> None:
+        super().__init__(message=message, details=details)
 
 
-class AccountInactiveError(Exception):
-    def __init__(self, message: str = "Conta inativa."):
-        super().__init__(message)
+class InvalidResetTokenError(DomainError):
+    code = "invalid_reset_token"
+    status_code = 400
+
+    def __init__(self, message: str = "Token de recuperação inválido, expirado ou já utilizado.", details: dict | None = None) -> None:
+        super().__init__(message=message, details=details)
 
 
-class DeletionNotConfirmedError(Exception):
-    def __init__(self, message: str = "A exclusão da conta precisa ser confirmada."):
-        super().__init__(message)
+class AccountInactiveError(DomainError):
+    code = "account_inactive"
+    status_code = 401
+
+    def __init__(self, message: str = "Conta inativa.", details: dict | None = None) -> None:
+        super().__init__(message=message, details=details)
+
+
+class DeletionNotConfirmedError(DomainError):
+    code = "deletion_not_confirmed"
+    status_code = 400
+
+    def __init__(self, message: str = "A exclusão da conta precisa ser confirmada.", details: dict | None = None) -> None:
+        super().__init__(message=message, details=details)
 
 
 # US17-TK07 — autorização por papel
-class ForbiddenRoleError(Exception):
-    def __init__(self, message: str = "Acesso negado para o papel do usuário."):
-        super().__init__(message)
+class ForbiddenRoleError(DomainError):
+    code = "forbidden_role"
+    status_code = 403
+
+    def __init__(self, message: str = "Acesso negado para o papel do usuário.", details: dict | None = None) -> None:
+        super().__init__(message=message, details=details)
 
 
 # US17-TK09 — refresh token
-class InvalidRefreshTokenError(Exception):
-    def __init__(self, message: str = "Refresh token inválido, expirado ou revogado."):
-        super().__init__(message)
+class InvalidRefreshTokenError(DomainError):
+    code = "invalid_refresh_token"
+    status_code = 401
+
+    def __init__(self, message: str = "Refresh token inválido, expirado ou revogado.", details: dict | None = None) -> None:
+        super().__init__(message=message, details=details)
