@@ -1,7 +1,6 @@
 """US18-TK04 — AuthService.request_password_reset / reset_password.
 
 Remova o skip rodando:
-  sed -i '/@pytest.mark.skip(reason="US18-TK04")/d' tests/test_auth/test_password_reset_service.py
 """
 
 from datetime import datetime, timedelta, timezone
@@ -27,7 +26,6 @@ def _make_service(**overrides):
     return AuthService(**deps), deps
 
 
-@pytest.mark.skip(reason="US18-TK04")
 def test_request_reset_existing_user_sends_email():
     repo = Mock()
     repo.find_by_email.return_value = Mock(id=uuid4())
@@ -41,7 +39,6 @@ def test_request_reset_existing_user_sends_email():
     assert email.send.called
 
 
-@pytest.mark.skip(reason="US18-TK04")
 def test_request_reset_unknown_email_is_neutral():
     repo = Mock()
     repo.find_by_email.return_value = None
@@ -53,7 +50,6 @@ def test_request_reset_unknown_email_is_neutral():
     assert not email.send.called
 
 
-@pytest.mark.skip(reason="US18-TK04")
 def test_reset_password_valid_token_updates_hash():
     user_id = uuid4()
     reset_repo = Mock()
@@ -70,7 +66,6 @@ def test_reset_password_valid_token_updates_hash():
     assert user_repo.update.called or user_repo.save.called
 
 
-@pytest.mark.skip(reason="US18-TK04")
 def test_reset_password_invalid_token_raises():
     reset_repo = Mock()
     reset_repo.find_valid.return_value = None
@@ -80,7 +75,6 @@ def test_reset_password_invalid_token_raises():
         service.reset_password("bad-token", "Nova@Senha1")
 
 
-@pytest.mark.skip(reason="US18-TK04")
 def test_reset_password_hashes_the_new_password():
     """A nova senha precisa ser de fato hasheada (não persistida em texto puro)."""
     reset_repo = Mock()
@@ -99,7 +93,6 @@ def test_reset_password_hashes_the_new_password():
     hasher.hash.assert_called_once_with("Nova@Senha1")
 
 
-@pytest.mark.skip(reason="US18-TK04")
 def test_request_reset_token_belongs_to_user():
     user = Mock(id=uuid4())
     repo = Mock()

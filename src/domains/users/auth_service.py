@@ -19,6 +19,7 @@ from src.domains.users.auth_errors import (
     AccountInactiveError,
     DeletionNotConfirmedError,
     InvalidRefreshTokenError,
+    InvalidResetTokenError,
 )
 from src.domains.users.dtos import LoginResponse, UserResponse
 from src.domains.users.email import IEmailService
@@ -123,14 +124,34 @@ class AuthService:
         """Gera token, persiste o hash e dispara o e-mail. Resposta neutra
         (não revela se o e-mail existe).
         """
-        raise NotImplementedError("US18-TK04")
+        user = self.user_repository.find_by_email(email)
+        if user is None:
+            return
+
+        raw_token = secrets.token_urlsafe(32)
+        token_hash = self._hash(raw_token)
+        expires_at = datetime.now(UTC) + timedelta(hours=1)
+        self.reset_token_repository.create(user.id, token_hash, expires_at)
+        self.email_service.send(
+            to=email,
+            subject="Recuperação de senha",
+            body_html=f"<p>Use o token: {raw_token}</p>",
+            body_text=f"Use o token: {raw_token}",
+        )
 
     # US18-TK04
     def reset_password(self, token: str, new_password: str) -> None:
         """Valida o token, aplica as regras de senha, troca o hash, marca o
         token como usado e revoga sessões ativas.
         """
-        raise NotImplementedError("US18-TK04")
+        token_hash = self._hash(token)
+        token_row = self.reset_token_repository.find_valid(token_hash)
+        if token_row is None:
+            raise InvalidResetTokenError()
+
+        new_hash = self.password_hasher.hash(new_password)
+        self.user_repository.update(token_row.user_id, {"password_hash": new_hash})
+        self.reset_token_repository.mark_used(token_row.id)
 
     # US19-TK02
     def logout(self, token_payload: TokenPayload) -> None:
