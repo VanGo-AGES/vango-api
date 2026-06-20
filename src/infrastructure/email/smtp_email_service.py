@@ -7,7 +7,10 @@ Usa `smtplib` da stdlib (sem dependência nova). As credenciais vêm do
 import smtplib
 from email.message import EmailMessage
 
+from loguru import logger
+
 from src.domains.users.email import IEmailService
+from src.infrastructure.middleware.request_id import get_request_id
 
 
 class SmtpEmailService(IEmailService):
@@ -31,7 +34,19 @@ class SmtpEmailService(IEmailService):
         else:
             msg.set_content(body_html, subtype="html")
 
-        with smtplib.SMTP(self.host, self.port) as smtp:
-            smtp.starttls()
-            smtp.login(self.username, self.password)
-            smtp.send_message(msg)
+        try:
+            with smtplib.SMTP(self.host, self.port) as smtp:
+                smtp.starttls()
+                smtp.login(self.username, self.password)
+                smtp.send_message(msg)
+        except Exception:
+            request_id = get_request_id()
+            logger.bind(request_id=request_id, trace_id=request_id).exception(
+                "SMTP email send failed",
+                host=self.host,
+                port=self.port,
+                sender=self.sender,
+                recipient=to,
+                subject=subject,
+            )
+            raise

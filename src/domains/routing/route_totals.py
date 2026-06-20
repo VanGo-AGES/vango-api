@@ -16,8 +16,11 @@ Retorna (total_distance_km, estimated_duration_min) ou (None, None) se:
 Nunca propaga exceção — totais são best-effort.
 """
 
+from loguru import logger
+
 from src.domains.routes.entity import RouteModel
 from src.domains.routing.service import IRoutingService
+from src.infrastructure.middleware.request_id import get_request_id
 
 _route_totals_cache: dict[tuple[int, float, float, tuple[tuple[float, float], ...], float, float], tuple[float | None, int | None]] = {}
 
@@ -82,6 +85,12 @@ def compute_route_totals(
     try:
         result = routing_service.get_route_info(origin, waypoints, destination)
     except Exception:
+        request_id = get_request_id()
+        logger.bind(request_id=request_id, trace_id=request_id).exception(
+            "Route totals calculation failed",
+            route_id=str(getattr(route, "id", "")),
+            waypoint_count=len(waypoints),
+        )
         return None, None
 
     totals = (result.total_distance_km, result.estimated_duration_min)
