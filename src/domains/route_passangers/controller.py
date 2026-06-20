@@ -12,10 +12,12 @@ Endpoints:
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from src.domains.route_passangers.errors import DuplicateRoutePassangerError, RouteCapacityExceededError
 from src.domains.routes.errors import RouteInProgressError, RouteNotFoundError, RouteOwnershipError
+from src.domains.users.entity import UserModel
+from src.infrastructure.auth.dependencies import get_current_driver, get_current_user
 from src.infrastructure.dependencies.route_passanger_dependencies import (
     get_route_passanger_service,
 )
@@ -50,9 +52,9 @@ router = APIRouter(prefix="/routes", tags=["RoutePassangers"])
 )
 def list_my_routes(
     service: Annotated[RoutePassangerService, Depends(get_route_passanger_service)],
-    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    current_user: Annotated[UserModel, Depends(get_current_user)],
 ) -> list[PassangerRouteResponse]:
-    return service.list_my_routes(UUID(x_user_id))
+    return service.list_my_routes(current_user.id)
 
 
 # US06-TK09
@@ -67,11 +69,10 @@ def accept_request(
     route_id: UUID,
     rp_id: UUID,
     service: Annotated[RoutePassangerService, Depends(get_route_passanger_service)],
-    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    current_user: Annotated[UserModel, Depends(get_current_driver)],
 ) -> RoutePassangerResponse:
     try:
-        driver_id = UUID(x_user_id)
-        return service.accept_request(route_id, rp_id, driver_id)
+        return service.accept_request(route_id, rp_id, current_user.id)
     except RouteNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
     except RoutePassangerNotFoundError as error:
@@ -98,11 +99,10 @@ def reject_request(
     route_id: UUID,
     rp_id: UUID,
     service: Annotated[RoutePassangerService, Depends(get_route_passanger_service)],
-    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    current_user: Annotated[UserModel, Depends(get_current_driver)],
 ) -> RoutePassangerResponse:
     try:
-        driver_id = UUID(x_user_id)
-        return service.reject_request(route_id, rp_id, driver_id)
+        return service.reject_request(route_id, rp_id, current_user.id)
     except RouteNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
     except RoutePassangerNotFoundError as error:
@@ -128,12 +128,11 @@ def reject_request(
 def leave_route(
     route_id: UUID,
     service: Annotated[RoutePassangerService, Depends(get_route_passanger_service)],
-    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    current_user: Annotated[UserModel, Depends(get_current_user)],
     dependent_id: Annotated[UUID | None, Query()] = None,
 ) -> None:
     try:
-        user_id = UUID(x_user_id)
-        service.leave_route(route_id, user_id, dependent_id=dependent_id)
+        service.leave_route(route_id, current_user.id, dependent_id=dependent_id)
     except RouteNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
     except RouteInProgressError as error:
@@ -153,11 +152,10 @@ def remove_passanger(
     route_id: UUID,
     rp_id: UUID,
     service: Annotated[RoutePassangerService, Depends(get_route_passanger_service)],
-    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    current_user: Annotated[UserModel, Depends(get_current_driver)],
 ) -> None:
-    driver_id = UUID(x_user_id)
     try:
-        service.remove_passanger(route_id, rp_id, driver_id)
+        service.remove_passanger(route_id, rp_id, current_user.id)
         return None
     except (NotRoutePassangerError, RouteNotFoundError, RoutePassangerNotFoundError) as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
@@ -180,12 +178,11 @@ def remove_passanger(
 def list_passangers(
     route_id: UUID,
     service: Annotated[RoutePassangerService, Depends(get_route_passanger_service)],
-    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    current_user: Annotated[UserModel, Depends(get_current_driver)],
     status_filter: Annotated[str | None, Query(alias="status")] = None,
 ) -> list[RoutePassangerResponse]:
     try:
-        driver_id = UUID(x_user_id)
-        return service.list_by_status(route_id, driver_id, status=status_filter)
+        return service.list_by_status(route_id, current_user.id, status=status_filter)
     except RouteNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
     except RouteOwnershipError as error:
@@ -209,11 +206,10 @@ def join_route(
     route_id: UUID,
     body: JoinRouteRequest,
     service: Annotated[RoutePassangerService, Depends(get_route_passanger_service)],
-    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    current_user: Annotated[UserModel, Depends(get_current_user)],
 ) -> RoutePassangerResponse:
     try:
-        user_id = UUID(x_user_id)
-        return service.join_route(route_id, user_id, body)
+        return service.join_route(route_id, current_user.id, body)
     except RouteNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
     except RouteInProgressError as error:
@@ -241,12 +237,11 @@ def update_schedules(
     route_id: UUID,
     body: UpdateSchedulesRequest,
     service: Annotated[RoutePassangerService, Depends(get_route_passanger_service)],
-    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    current_user: Annotated[UserModel, Depends(get_current_user)],
     dependent_id: Annotated[UUID | None, Query()] = None,
 ) -> RoutePassangerResponse:
     try:
-        user_id = UUID(x_user_id)
-        return service.update_schedules(route_id, user_id, body, dependent_id=dependent_id)
+        return service.update_schedules(route_id, current_user.id, body, dependent_id=dependent_id)
     except RouteNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
     except RouteInProgressError as error:
@@ -274,11 +269,11 @@ def update_schedules(
 def get_my_route_detail(
     route_id: UUID,
     service: Annotated[RoutePassangerService, Depends(get_route_passanger_service)],
-    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    current_user: Annotated[UserModel, Depends(get_current_user)],
     dependent_id: Annotated[UUID | None, Query()] = None,
 ) -> PassangerRouteDetailResponse:
     try:
-        return service.get_my_route_detail(route_id, UUID(x_user_id), dependent_id)
+        return service.get_my_route_detail(route_id, current_user.id, dependent_id)
     except RouteNotFoundError as error:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
     except NotRoutePassangerError as error:

@@ -14,6 +14,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from src.domains.metrics.dtos import MetricsReportResponse, ReportPeriod
+from src.domains.users.entity import UserModel
+from src.infrastructure.auth.dependencies import get_current_driver
 from src.infrastructure.database import get_db
 from src.infrastructure.dependencies.metrics_dependencies import get_metrics_service
 from src.main import fastapi_app as app
@@ -28,11 +30,21 @@ from tests.test_trip._helpers import (
 )
 
 client = TestClient(app, raise_server_exceptions=False)
-DRIVER_ID = str(uuid.uuid4())
-HEADERS = {"X-User-Id": DRIVER_ID, "X-User-Role": "driver"}
+DRIVER_ID = uuid.uuid4()
+FAKE_DRIVER = UserModel(id=DRIVER_ID, name="Driver", email="d@test.com", role="driver")
 
 
-def test_get_reports_returns_200_and_body():
+@pytest.fixture
+def override_driver():
+    """Sobrescreve a auth de motorista com um UserModel fake (testes unitários)."""
+    app.dependency_overrides[get_current_driver] = lambda: FAKE_DRIVER
+    try:
+        yield
+    finally:
+        app.dependency_overrides.pop(get_current_driver, None)
+
+
+def test_get_reports_returns_200_and_body(override_driver):
     fake = MetricsReportResponse(
         distance=15.5,
         duration=50,
@@ -48,7 +60,6 @@ def test_get_reports_returns_200_and_body():
         resp = client.get(
             "/metrics/reports",
             params={"period": "week", "start_date": "2025-08-17", "end_date": "2025-08-23"},
-            headers=HEADERS,
         )
     finally:
         app.dependency_overrides.pop(get_metrics_service, None)
@@ -61,32 +72,30 @@ def test_get_reports_returns_200_and_body():
     assert body["trips"] == 4
 
 
-def test_get_reports_invalid_period_returns_422():
+def test_get_reports_invalid_period_returns_422(override_driver):
     resp = client.get(
         "/metrics/reports",
         params={"period": "decade", "start_date": "2025-08-17"},
-        headers=HEADERS,
     )
     assert resp.status_code == 422
 
 
-def test_get_reports_missing_start_date_returns_422():
-    resp = client.get("/metrics/reports", params={"period": "week"}, headers=HEADERS)
+def test_get_reports_missing_start_date_returns_422(override_driver):
+    resp = client.get("/metrics/reports", params={"period": "week"})
     assert resp.status_code == 422
 
 
-def test_get_reports_malformed_date_returns_422():
+def test_get_reports_malformed_date_returns_422(override_driver):
     resp = client.get(
         "/metrics/reports",
         params={"period": "day", "start_date": "notadate"},
-        headers=HEADERS,
     )
     assert resp.status_code == 422
 
 
-def test_get_reports_passes_parsed_args_to_service():
-    """O controller deve repassar driver_id (do header), period (enum) e datas
-    parseadas para o service."""
+def test_get_reports_passes_parsed_args_to_service(override_driver):
+    """O controller deve repassar driver_id (do usuário autenticado), period
+    (enum) e datas parseadas para o service."""
     captured = {}
 
     def _get_report(self, driver_id, period, start_date, end_date=None):
@@ -107,19 +116,18 @@ def test_get_reports_passes_parsed_args_to_service():
         resp = client.get(
             "/metrics/reports",
             params={"period": "week", "start_date": "2025-08-17", "end_date": "2025-08-23"},
-            headers=HEADERS,
         )
     finally:
         app.dependency_overrides.pop(get_metrics_service, None)
 
     assert resp.status_code == 200
-    assert captured["driver_id"] == uuid.UUID(DRIVER_ID)
+    assert captured["driver_id"] == DRIVER_ID
     assert captured["period"] == ReportPeriod.WEEK
     assert captured["start_date"] == date(2025, 8, 17)
     assert captured["end_date"] == date(2025, 8, 23)
 
 
-def test_get_reports_integration_aggregates_real_data(db_session):
+def test_get_reports_integration_aggregates_real_data(db_session, auth_header):
     from datetime import datetime, timedelta, timezone
 
     driver = make_driver(db_session)
@@ -140,7 +148,7 @@ def test_get_reports_integration_aggregates_real_data(db_session):
         resp = client.get(
             "/metrics/reports",
             params={"period": "month", "start_date": "2025-08-01"},
-            headers={"X-User-Id": str(driver.id), "X-User-Role": "driver"},
+            headers=auth_header(driver),
         )
     finally:
         app.dependency_overrides.pop(get_db, None)

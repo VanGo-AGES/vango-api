@@ -2,18 +2,18 @@
 
 Expõe o endpoint consumido pela tela `trip-reports-screen` do motorista.
 
-Obs.: usa o header mock `X-User-Id` (convenção atual do projeto). A migração
-para `get_current_user` (JWT) acontece na US17-TK05.
+Autenticação via JWT real (`get_current_driver`) — endpoint só de motorista.
 """
 
 from datetime import date
 from typing import Annotated
-from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, Query
+from fastapi import APIRouter, Depends, Query
 
 from src.domains.metrics.dtos import MetricsReportResponse, ReportPeriod
 from src.domains.metrics.service import MetricsService
+from src.domains.users.entity import UserModel
+from src.infrastructure.auth.dependencies import get_current_driver
 from src.infrastructure.dependencies.metrics_dependencies import get_metrics_service
 
 router = APIRouter(prefix="/metrics", tags=["Metrics"])
@@ -34,7 +34,7 @@ def get_reports(
     service: Annotated[MetricsService, Depends(get_metrics_service)],
     period: Annotated[ReportPeriod, Query()],
     start_date: Annotated[date, Query()],
-    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    current_user: Annotated[UserModel, Depends(get_current_driver)],
     end_date: Annotated[date | None, Query()] = None,
 ) -> MetricsReportResponse:
-    return service.get_report(UUID(x_user_id), period, start_date, end_date)
+    return service.get_report(current_user.id, period, start_date, end_date)
