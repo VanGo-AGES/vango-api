@@ -27,3 +27,17 @@ def register_exception_handlers(app: FastAPI) -> None:
             trace_id=get_request_id(),
         )
         return JSONResponse(status_code=exc.status_code, content=response.dict())
+
+    # US00-TK16 — ValueError não é DomainError; mantém o 400 que os controllers
+    # mapeavam manualmente (ex.: filtro de status inválido).
+    @app.exception_handler(ValueError)
+    async def value_error_handler(request: Request, exc: ValueError) -> JSONResponse:
+        message = str(exc)
+        response = ErrorResponse(
+            detail=message,
+            code="value_error",
+            message=message,
+            details=None,
+            trace_id=get_request_id(),
+        )
+        return JSONResponse(status_code=400, content=response.dict())

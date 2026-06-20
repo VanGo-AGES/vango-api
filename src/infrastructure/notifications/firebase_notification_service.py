@@ -8,17 +8,16 @@ Isso permite manter o Android no FCM e atender o iOS via Expo Push sem
 react-native-firebase no app.
 """
 
-import logging
 from typing import Any
 
 import firebase_admin
 import requests
 from firebase_admin import credentials, messaging
+from loguru import logger
 
 from src.config import settings
 from src.domains.notifications.service import INotificationService
-
-logger = logging.getLogger(__name__)
+from src.infrastructure.middleware.request_id import get_request_id
 
 EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send"
 
@@ -37,11 +36,11 @@ class FirebaseNotificationService(INotificationService):
             if not getattr(firebase_admin, "_apps", None):
                 cred = credentials.Certificate(settings.firebase_credentials_path)
                 firebase_admin.initialize_app(cred)
-                logger.info("FIREBASE: Admin SDK inicializado com %s", settings.firebase_credentials_path)
+                logger.info("Firebase Admin SDK initialized", credentials_path=settings.firebase_credentials_path)
             else:
-                logger.debug("FIREBASE: Admin SDK já inicializado, pulando inicialização")
+                logger.debug("Firebase Admin SDK already initialized, skipping")
         except Exception as e:  # pragma: no cover - captura problemas de ambiente/credenciais
-            logger.warning("FIREBASE: falha ao inicializar Admin SDK: %s", e)
+            logger.warning("Firebase Admin SDK initialization failed", error=str(e))
 
     # -----------------------------------------------------------------
     # Envio — roteia por tipo de token. Propaga exceções (usado pelo teste).
@@ -49,6 +48,14 @@ class FirebaseNotificationService(INotificationService):
     def _send_push(self, token: str, title: str, body: str, data: dict[str, str]) -> str:
         if not token:
             raise ValueError("push token vazio")
+
+        request_id = get_request_id()
+        provider = "expo" if _is_expo_token(token) else "firebase"
+        logger.bind(request_id=request_id, trace_id=request_id).info(
+            "Push notification sending",
+            push_type=data.get("type"),
+            provider=provider,
+        )
 
         if _is_expo_token(token):
             resp = requests.post(
@@ -73,7 +80,12 @@ class FirebaseNotificationService(INotificationService):
             if token:
                 self._send_push(token, title, body, data)
         except Exception as e:  # noqa: BLE001 - push nunca deve quebrar o fluxo de negócio
-            logger.warning("PUSH: falha ao enviar (%s): %s", data.get("type"), e)
+            request_id = get_request_id()
+            logger.bind(request_id=request_id, trace_id=request_id).warning(
+                "Push notification failed",
+                push_type=data.get("type"),
+                error=str(e),
+            )
 
     # -----------------------------------------------------------------
     # Eventos de viagem
@@ -283,7 +295,7 @@ class FirebaseNotificationService(INotificationService):
             user = UserRepositoryImpl(session).find_by_id(UUID(user_id))
             return user.push_token if user else None
         except Exception as e:  # noqa: BLE001 - resolução de token nunca quebra o fluxo
-            logger.warning("PUSH: falha ao resolver push_token user_id=%s: %s", user_id, e)
+            logger.warning("Push token resolution failed", user_id=user_id, error=str(e))
             return None
         finally:
             session.close()

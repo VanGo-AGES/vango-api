@@ -1,5 +1,3 @@
-import sys
-import traceback
 from contextlib import asynccontextmanager
 
 import firebase_admin
@@ -9,6 +7,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from firebase_admin import credentials
+from loguru import logger
 from sqlalchemy import text
 
 from src.config import settings
@@ -34,7 +33,7 @@ from src.domains.users.revoked_token_entity import RevokedTokenModel
 from src.domains.vehicles.controller import router as vehicle_controller
 from src.domains.vehicles.entity import VehicleModel
 from src.infrastructure.database import Base, engine
-from src.infrastructure.middleware.request_id import RequestIdMiddleware
+from src.infrastructure.middleware.request_id import RequestIdMiddleware, get_request_id
 from src.infrastructure.observability.prometheus import setup_prometheus
 from src.infrastructure.observability.sentry import init_sentry
 from src.infrastructure.socketio.server import sio
@@ -67,28 +66,28 @@ async def lifespan(app: FastAPI):
         try:
             cred = credentials.Certificate(settings.firebase_credentials_path)
             firebase_admin.initialize_app(cred)
-            print("FIREBASE: Inicializado com sucesso.")
+            logger.info("Firebase initialized", credentials_path=settings.firebase_credentials_path)
         except Exception as e:
-            print(f"FIREBASE ERROR: Falha ao carregar credenciais: {e}")
+            logger.error("Firebase initialization failed", credentials_path=settings.firebase_credentials_path, error=str(e))
 
     # 2. Inicialização do PostgreSQL 16
     try:
         # Diagnóstico: Lista quais tabelas o SQLAlchemy detectou
-        print(f"DEBUG: Tabelas detectadas para criação: {list(Base.metadata.tables.keys())}")
+        logger.info("Database metadata tables detected", tables=list(Base.metadata.tables.keys()))
 
         # Teste rápido de conectividade
         with engine.connect() as connection:
             connection.execute(text("SELECT 1"))
 
-        print("DATABASE: Conexão estabelecida e tabelas sincronizadas!")
+        logger.info("Database connection established and tables synchronized")
     except Exception as e:
-        print(f"DATABASE ERROR: Falha ao conectar ou criar tabelas: {e}")
+        logger.error("Database initialization failed", error=str(e))
 
     yield
 
     # 3. Shutdown
     engine.dispose()
-    print("INFRA: Conexões de banco encerradas.")
+    logger.info("Database connections disposed")
 
 
 fastapi_app = FastAPI(
@@ -107,7 +106,13 @@ app = socketio.ASGIApp(sio, fastapi_app)
 @fastapi_app.exception_handler(Exception)
 async def catch_all_handler(request: Request, exc: Exception) -> JSONResponse:
     sentry_sdk.capture_exception(exc)
-    traceback.print_exc(file=sys.stderr)
+    request_id = get_request_id()
+    logger.bind(request_id=request_id, trace_id=request_id).exception(
+        "Unhandled request error",
+        method=request.method,
+        path=request.url.path,
+        error_type=exc.__class__.__name__,
+    )
 
     return JSONResponse(
         status_code=500,

@@ -1,0 +1,66 @@
+{
+  "title": "VanGO API Metrics",
+  "uid": "vango-api-01",
+  "timezone": "browser",
+  "schemaVersion": 36,
+  "refresh": "10s",
+  "templating": {
+    "list": [
+      {
+        "name": "request_id",
+        "type": "textbox",
+        "label": "Filtrar Logs por Request ID",
+        "query": ""
+      }
+    ]
+  },
+  "panels": [
+    {
+      "title": "Requisições por Minuto (Req/min)",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(rate(vango_http_requests_total[1m])) * 60",
+          "legendFormat": "Total Req/Min"
+        }
+      ]
+    },
+    {
+      "title": "Latência P95 (Segundos)",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 0 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(vango_http_request_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "P95 Latency"
+        }
+      ]
+    },
+    {
+      "title": "Taxa de Erro (4xx e 5xx)",
+      "type": "timeseries",
+      "datasource": "Prometheus",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 0 },
+      "targets": [
+        {
+          "expr": "sum(rate(vango_http_requests_total{status_code=~\"4..|5..\"}[5m]))",
+          "legendFormat": "Error Rate"
+        }
+      ]
+    },
+    {
+      "title": "Logs da API (Loki)",
+      "type": "logs",
+      "datasource": "Loki",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "expr": "{service=~\"vango_api.*\"} |~ \"(?i)${request_id}\""
+        }
+      ]
+    }
+  ]
+}

@@ -7,7 +7,7 @@ extend-exclude = ["migrations"]
 # E: pycodestyle, F: Pyflakes, I: isort (organiza imports)
 # ANN: flake8-annotations (Obrigada a ter tipagem em tudo)
 # B: flake8-bugbear (pega bugs comuns)
-select = ["E", "F", "I", "ANN", "B", "UP"]
+select = ["E", "F", "I", "ANN", "B", "UP", "T201"]
 ignore = [
     "ANN401", # Permite Any em casos muito específicos
 ]
