@@ -41,7 +41,7 @@ class AccountInactiveError(DomainError):
 
 class DeletionNotConfirmedError(DomainError):
     code = "deletion_not_confirmed"
-    status_code = 422
+    status_code = 400
 
     def __init__(self, message: str = "A exclusão da conta precisa ser confirmada.", details: dict | None = None) -> None:
         super().__init__(message=message, details=details)

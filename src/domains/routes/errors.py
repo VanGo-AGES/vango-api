@@ -27,7 +27,7 @@ class NoVehicleError(DomainError):
 
 class DuplicateInviteCodeError(DomainError):
     code = "duplicate_invite_code"
-    status_code = 500
+    status_code = 409
 
     def __init__(self, message: str = "Erro ao gerar código de convite único. Tente novamente.", details: dict | None = None) -> None:
         super().__init__(message=message, details=details)
