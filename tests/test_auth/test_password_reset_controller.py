@@ -1,7 +1,6 @@
 """US18-TK05 — Controllers POST /auth/password/forgot e /reset.
 
 Remova o skip rodando:
-  sed -i '/@pytest.mark.skip(reason="US18-TK05")/d' tests/test_auth/test_password_reset_controller.py
 """
 
 import pytest
@@ -22,7 +21,6 @@ def _clear():
     app.dependency_overrides.pop(get_auth_service, None)
 
 
-@pytest.mark.skip(reason="US18-TK05")
 def test_forgot_password_returns_neutral_200():
     calls = {}
     service = type("S", (), {"request_password_reset": lambda self, email: calls.setdefault("email", email)})()
@@ -34,7 +32,6 @@ def test_forgot_password_returns_neutral_200():
     assert resp.status_code == 200
 
 
-@pytest.mark.skip(reason="US18-TK05")
 def test_reset_password_success_200():
     service = type("S", (), {"reset_password": lambda self, token, new_password: None})()
     _override(service)
@@ -45,7 +42,6 @@ def test_reset_password_success_200():
     assert resp.status_code == 200
 
 
-@pytest.mark.skip(reason="US18-TK05")
 def test_reset_password_invalid_token_4xx():
     def _raise(self, token, new_password):
         raise InvalidResetTokenError()
@@ -59,13 +55,11 @@ def test_reset_password_invalid_token_4xx():
     assert resp.status_code in (400, 422)
 
 
-@pytest.mark.skip(reason="US18-TK05")
 def test_forgot_password_invalid_email_422():
     resp = client.post("/auth/password/forgot", json={"email": "not-an-email"})
     assert resp.status_code == 422
 
 
-@pytest.mark.skip(reason="US18-TK05")
 def test_forgot_password_integration_persists_reset_token(db_session):
     """Stack real (e-mail mockado): forgot de usuário existente cria 1 token de reset."""
     from datetime import datetime, timezone
