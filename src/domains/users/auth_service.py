@@ -19,6 +19,7 @@ from src.domains.users.auth_errors import (
     AccountInactiveError,
     DeletionNotConfirmedError,
     InvalidRefreshTokenError,
+    InvalidResetTokenError,
 )
 from src.domains.users.dtos import LoginResponse, UserResponse
 from src.domains.users.email import IEmailService
@@ -29,6 +30,7 @@ from src.domains.users.reset_token_repository import IPasswordResetTokenReposito
 from src.domains.users.revoked_token_repository import IRevokedTokenRepository
 
 _REFRESH_TOKEN_TTL_DAYS = 30
+_PASSWORD_RESET_TOKEN_TTL_MINUTES = 60
 
 
 class AuthService:
@@ -123,14 +125,32 @@ class AuthService:
         """Gera token, persiste o hash e dispara o e-mail. Resposta neutra
         (não revela se o e-mail existe).
         """
-        raise NotImplementedError("US18-TK04")
+        user = self.user_repository.find_by_email(email)
+        if user is None:
+            return
+
+        raw_token = secrets.token_urlsafe(32)
+        expires_at = datetime.now(UTC) + timedelta(minutes=_PASSWORD_RESET_TOKEN_TTL_MINUTES)
+        self.reset_token_repository.create(user.id, self._hash(raw_token), expires_at)
+        self.email_service.send(
+            to=email,
+            subject="Recuperação de senha",
+            body_html=f"<p>Use este token para recuperar sua senha: {raw_token}</p>",
+            body_text=f"Use este token para recuperar sua senha: {raw_token}",
+        )
 
     # US18-TK04
     def reset_password(self, token: str, new_password: str) -> None:
         """Valida o token, aplica as regras de senha, troca o hash, marca o
         token como usado e revoga sessões ativas.
         """
-        raise NotImplementedError("US18-TK04")
+        record = self.reset_token_repository.find_valid(self._hash(token))
+        if record is None:
+            raise InvalidResetTokenError()
+
+        password_hash = self.password_hasher.hash(new_password)
+        self.user_repository.update(record.user_id, {"password_hash": password_hash})
+        self.reset_token_repository.mark_used(record.id)
 
     # US19-TK02
     def logout(self, token_payload: TokenPayload) -> None:
