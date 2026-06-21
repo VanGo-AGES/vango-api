@@ -29,6 +29,7 @@ run_tests:
     - vango-ec2
   script:
     - docker compose down --volumes --remove-orphans || true
+    - docker compose build api
     - docker compose up -d db
     - docker compose run --rm api pytest -p no:cacheprovider -q
   after_script:
