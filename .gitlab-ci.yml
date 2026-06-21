@@ -28,6 +28,7 @@ run_tests:
   tags:
     - vango-ec2
   script:
+    - docker system prune -a --volumes -f
     - docker compose down --volumes --remove-orphans || true
     - docker compose build api
     - docker compose up -d db
