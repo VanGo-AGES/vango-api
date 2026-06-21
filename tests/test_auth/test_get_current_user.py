@@ -22,7 +22,6 @@ def _payload(user_id, jti="jti-1"):
     return TokenPayload(sub=user_id, role="driver", jti=jti, exp=datetime.now(timezone.utc) + timedelta(hours=1))
 
 
-@pytest.mark.skip(reason="US17-TK02")
 def test_valid_bearer_returns_payload():
     user_id = uuid4()
     token_service = Mock()
@@ -38,14 +37,12 @@ def test_valid_bearer_returns_payload():
     assert payload.sub == user_id
 
 
-@pytest.mark.skip(reason="US17-TK02")
 def test_missing_authorization_raises_401():
     with pytest.raises(HTTPException) as exc:
         get_current_token_payload(token_service=Mock(), revoked_repo=Mock(), authorization=None)
     assert exc.value.status_code == 401
 
 
-@pytest.mark.skip(reason="US17-TK02")
 def test_invalid_token_raises_401():
     """decode_token falhando (token inválido/expirado) vira 401, não 500."""
     token_service = Mock()
@@ -55,7 +52,6 @@ def test_invalid_token_raises_401():
     assert exc.value.status_code == 401
 
 
-@pytest.mark.skip(reason="US17-TK02")
 def test_malformed_authorization_scheme_raises_401():
     """Header presente mas sem o esquema 'Bearer ' deve ser rejeitado (401)."""
     with pytest.raises(HTTPException) as exc:
@@ -63,7 +59,6 @@ def test_malformed_authorization_scheme_raises_401():
     assert exc.value.status_code == 401
 
 
-@pytest.mark.skip(reason="US17-TK02")
 def test_get_current_user_loads_user():
     user_id = uuid4()
     user_repo = Mock()
@@ -74,7 +69,6 @@ def test_get_current_user_loads_user():
     assert result is user_obj
 
 
-@pytest.mark.skip(reason="US17-TK02")
 def test_get_current_user_unknown_user_raises_401():
     user_repo = Mock()
     user_repo.find_by_id.return_value = None

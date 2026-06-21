@@ -15,6 +15,7 @@ e INotificationService.
 """
 
 import asyncio
+import math
 from datetime import UTC, datetime
 from uuid import UUID
 
@@ -55,6 +56,43 @@ from src.domains.trips.repository import (
 from src.domains.vehicles.repository import IVehicleRepository
 from src.infrastructure.middleware.request_id import get_request_id
 from src.shared.enums import RoutePassangerStatus, RouteStatus, TripPassangerStatus, TripStatus
+
+
+def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Distância em km entre dois pontos geográficos (fórmula de Haversine)."""
+    R = 6371.0
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlambda = math.radians(lon2 - lon1)
+    a = math.sin(dphi / 2) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2) ** 2
+    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+
+
+def _calculate_route_km(trip: TripModel) -> float | None:
+    """Calcula o total de km da rota somando distâncias entre pontos consecutivos:
+    origin → stops (order_index) → destination.
+    Retorna None se não houver coordenadas suficientes."""
+    route = trip.route
+    points: list[tuple[float, float]] = []
+
+    origin = route.origin_address
+    if origin and origin.latitude is not None and origin.longitude is not None:
+        points.append((origin.latitude, origin.longitude))
+
+    for stop in sorted(route.stops, key=lambda s: s.order_index):
+        addr = stop.address
+        if addr and addr.latitude is not None and addr.longitude is not None:
+            points.append((addr.latitude, addr.longitude))
+
+    destination = route.destination_address
+    if destination and destination.latitude is not None and destination.longitude is not None:
+        points.append((destination.latitude, destination.longitude))
+
+    if len(points) < 2:
+        return None
+
+    total = sum(_haversine_km(points[i][0], points[i][1], points[i + 1][0], points[i + 1][1]) for i in range(len(points) - 1))
+    return round(total, 2)
 
 
 class TripService:
@@ -140,6 +178,7 @@ class TripService:
             absent_count=len(absent_ids),
         )
 
+        dest = route.destination_address
         return TripResponse(
             id=saved_trip.id,
             route_id=route_id,
@@ -151,6 +190,8 @@ class TripService:
             finished_at=None,
             total_km=None,
             trip_passangers=[],
+            destination_latitude=dest.latitude if dest else None,
+            destination_longitude=dest.longitude if dest else None,
         )
 
     # US09-TK07
@@ -165,6 +206,7 @@ class TripService:
         if trip.route.driver_id != driver_id:
             raise TripOwnershipError("Motorista não é dono desta viagem.")
 
+        dest = trip.route.destination_address
         return TripResponse(
             id=trip.id,
             route_id=trip.route_id,
@@ -176,6 +218,8 @@ class TripService:
             started_at=trip.started_at,
             finished_at=trip.finished_at,
             trip_passangers=[self._build_trip_passanger_response(tp) for tp in trip.trip_passangers],
+            destination_latitude=dest.latitude if dest else None,
+            destination_longitude=dest.longitude if dest else None,
         )
 
     def _build_trip_passanger_response(self, tp: TripPassangerModel) -> TripPassangerResponse:
@@ -425,7 +469,7 @@ class TripService:
         """
         request_id = get_request_id()
         log = logger.bind(request_id=request_id, trace_id=request_id, trip_id=str(trip_id), driver_id=str(driver_id))
-        log.info("Trip finish requested", total_km=data.total_km)
+        log.info("Trip finish requested", total_km_from_client=data.total_km)
 
         trip = self.trip_repository.find_by_id(trip_id)
 
@@ -442,8 +486,11 @@ class TripService:
 
         self.trip_passanger_repository.bulk_alight_presents(trip_id, now)
 
+        # Calcula total_km: usa o valor do frontend se enviado, senão calcula da rota
+        total_km = data.total_km if data.total_km else _calculate_route_km(trip)
+
         # Finaliza a trip
-        finished = self.trip_repository.update_status(trip_id, TripStatus.FINALIZADA, now, data.total_km)
+        finished = self.trip_repository.update_status(trip_id, TripStatus.FINALIZADA, now, total_km)
 
         # Libera a rota
         self.route_repository.update(trip.route_id, {"status": RouteStatus.ATIVA})
@@ -467,6 +514,7 @@ class TripService:
         except RuntimeError:
             asyncio.run(emit_trip_finished(str(trip_id)))
 
+        dest = trip.route.destination_address
         return TripResponse(
             id=finished.id,
             route_id=trip.route_id,
@@ -478,6 +526,8 @@ class TripService:
             started_at=finished.started_at,
             finished_at=finished.finished_at,
             trip_passangers=[self._build_trip_passanger_response(tp) for tp in trip.trip_passangers],
+            destination_latitude=dest.latitude if dest else None,
+            destination_longitude=dest.longitude if dest else None,
         )
 
     # US10-TK17 — usado pelo socket.io server para calcular ETA do tracker

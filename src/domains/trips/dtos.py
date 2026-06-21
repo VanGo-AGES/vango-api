@@ -94,6 +94,8 @@ class TripResponse(BaseModel):
     started_at: datetime | None = None
     finished_at: datetime | None = None
     trip_passangers: list[TripPassangerResponse] = Field(default_factory=list)
+    destination_latitude: float | None = None
+    destination_longitude: float | None = None
 
 
 # US09-TK01
