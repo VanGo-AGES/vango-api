@@ -16,3 +16,5 @@ passlib[bcrypt]
 importlib
 python-multipart
 python-socketio
+loguru
+sentry-sdk
