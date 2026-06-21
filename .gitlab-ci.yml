@@ -32,8 +32,8 @@ run_tests:
     - docker compose down --volumes --remove-orphans || true
     - docker compose build api
     - docker compose up -d db
-    - docker compose run --rm -e DATABASE_URL="postgresql://root:12345678@db:5432/vango_db" api alembic upgrade head
-    - docker compose run --rm -e DATABASE_URL="postgresql://root:12345678@db:5432/vango_db" api pytest -p no:cacheprovider -q
+    - docker compose run --rm -e DATABASE_URL="postgresql://$DB_USER:$DB_PASSWORD@db:5432/$DB_NAME" api alembic upgrade head
+    - docker compose run --rm -e DATABASE_URL="postgresql://$DB_USER:$DB_PASSWORD@db:5432/$DB_NAME" api pytest -p no:cacheprovider -q
   after_script:
     - docker compose down --volumes --remove-orphans
 
