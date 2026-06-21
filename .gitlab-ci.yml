@@ -30,8 +30,11 @@ run_tests:
   script:
     - docker system prune -a --volumes -f
     - docker compose down --volumes --remove-orphans || true
+    - sed -i '/DATABASE_URL/d' .env
+    - echo "DATABASE_URL=postgresql://root:12345678@db:5432/vango_db" >> .env
     - docker compose build api
     - docker compose up -d db
+    - docker compose run --rm api alembic upgrade head
     - docker compose run --rm api pytest -p no:cacheprovider -q
   after_script:
     - docker compose down --volumes --remove-orphans
