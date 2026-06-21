@@ -8,6 +8,9 @@ from src.config import settings
 # 1. Importações Absolutas do seu projeto
 from src.infrastructure.database import Base
 from src.domains.users.entity import UserModel
+from src.domains.users.reset_token_entity import PasswordResetTokenModel
+from src.domains.users.revoked_token_entity import RevokedTokenModel
+from src.domains.users.refresh_token_entity import RefreshTokenModel
 from src.domains.addresses.entity import AddressModel
 from src.domains.dependents.entity import DependentModel
 from src.domains.routes.entity import RouteModel
@@ -29,6 +32,9 @@ _ = (
     TripModel,
     TripPassangerModel,
     AbsenceModel,
+    PasswordResetTokenModel,
+    RevokedTokenModel,
+    RefreshTokenModel,
 )
 
 # Objeto de configuração do Alembic (lê o alembic.ini)

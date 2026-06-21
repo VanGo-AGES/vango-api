@@ -17,6 +17,7 @@ from src.domains.addresses.entity import AddressModel
 from src.domains.route_passangers.entity import RoutePassangerModel
 from src.domains.routes.entity import RouteModel
 from src.domains.users.entity import UserModel
+from src.infrastructure.auth.dependencies import get_current_user
 from src.infrastructure.database import get_db
 from src.infrastructure.dependencies.routing_dependencies import (
     get_geocoding_service,
@@ -27,7 +28,18 @@ from src.main import fastapi_app as app
 
 client = TestClient(app, raise_server_exceptions=False)
 
-PASSENGER_HEADERS = {"X-User-Id": str(uuid.uuid4()), "X-User-Role": "guardian"}
+PASSENGER_ID = uuid.uuid4()
+FAKE_PASSENGER = UserModel(id=PASSENGER_ID, name="Passageiro", email="p@test.com", role="guardian")
+
+
+@pytest.fixture
+def override_passenger():
+    """Sobrescreve a auth com um passageiro fake (testes unitários)."""
+    app.dependency_overrides[get_current_user] = lambda: FAKE_PASSENGER
+    try:
+        yield
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
 
 
 def future_weekday_iso():
@@ -65,92 +77,90 @@ def valid_payload(**overrides) -> dict:
 # ===========================================================================
 
 
-def test_create_absence_success_returns_201() -> None:
+def test_create_absence_success_returns_201(override_passenger) -> None:
     mock_service = Mock(spec=AbsenceService)
     mock_service.create_absence.return_value = make_absence_response()
     app.dependency_overrides[get_absence_service] = lambda: mock_service
 
-    response = client.post("/absences", json=valid_payload(), headers=PASSENGER_HEADERS)
+    response = client.post("/absences", json=valid_payload())
 
-    app.dependency_overrides.clear()
+    app.dependency_overrides.pop(get_absence_service, None)
     assert response.status_code == 201
     assert response.json()["reason"] == "Consulta"
 
 
-def test_create_absence_route_not_found_returns_404() -> None:
+def test_create_absence_route_not_found_returns_404(override_passenger) -> None:
     from src.domains.routes.errors import RouteNotFoundError
 
     mock_service = Mock(spec=AbsenceService)
     mock_service.create_absence.side_effect = RouteNotFoundError()
     app.dependency_overrides[get_absence_service] = lambda: mock_service
 
-    response = client.post("/absences", json=valid_payload(), headers=PASSENGER_HEADERS)
+    response = client.post("/absences", json=valid_payload())
 
-    app.dependency_overrides.clear()
+    app.dependency_overrides.pop(get_absence_service, None)
     assert response.status_code == 404
 
 
-def test_create_absence_not_passanger_returns_403() -> None:
+def test_create_absence_not_passanger_returns_403(override_passenger) -> None:
     from src.domains.route_passangers.errors import NotRoutePassangerError
 
     mock_service = Mock(spec=AbsenceService)
     mock_service.create_absence.side_effect = NotRoutePassangerError()
     app.dependency_overrides[get_absence_service] = lambda: mock_service
 
-    response = client.post("/absences", json=valid_payload(), headers=PASSENGER_HEADERS)
+    response = client.post("/absences", json=valid_payload())
 
-    app.dependency_overrides.clear()
+    app.dependency_overrides.pop(get_absence_service, None)
     assert response.status_code == 403
 
 
-def test_create_absence_duplicate_returns_409() -> None:
+def test_create_absence_duplicate_returns_409(override_passenger) -> None:
     from src.domains.absences.errors import AbsenceAlreadyReportedError
 
     mock_service = Mock(spec=AbsenceService)
     mock_service.create_absence.side_effect = AbsenceAlreadyReportedError()
     app.dependency_overrides[get_absence_service] = lambda: mock_service
 
-    response = client.post("/absences", json=valid_payload(), headers=PASSENGER_HEADERS)
+    response = client.post("/absences", json=valid_payload())
 
-    app.dependency_overrides.clear()
+    app.dependency_overrides.pop(get_absence_service, None)
     assert response.status_code == 409
 
 
-def test_create_absence_invalid_date_returns_409() -> None:
+def test_create_absence_invalid_date_returns_409(override_passenger) -> None:
     from src.domains.absences.errors import AbsenceDateNotAllowedError
 
     mock_service = Mock(spec=AbsenceService)
     mock_service.create_absence.side_effect = AbsenceDateNotAllowedError()
     app.dependency_overrides[get_absence_service] = lambda: mock_service
 
-    response = client.post("/absences", json=valid_payload(), headers=PASSENGER_HEADERS)
+    response = client.post("/absences", json=valid_payload())
 
-    app.dependency_overrides.clear()
+    app.dependency_overrides.pop(get_absence_service, None)
     assert response.status_code == 409
 
 
-def test_create_absence_missing_body_fields_returns_422() -> None:
+def test_create_absence_missing_body_fields_returns_422(override_passenger) -> None:
     mock_service = Mock(spec=AbsenceService)
     app.dependency_overrides[get_absence_service] = lambda: mock_service
 
-    response = client.post("/absences", json={}, headers=PASSENGER_HEADERS)
+    response = client.post("/absences", json={})
 
-    app.dependency_overrides.clear()
+    app.dependency_overrides.pop(get_absence_service, None)
     assert response.status_code == 422
 
 
-def test_create_absence_forwards_user_id_from_header() -> None:
+def test_create_absence_forwards_user_id_from_token(override_passenger) -> None:
     mock_service = Mock(spec=AbsenceService)
     mock_service.create_absence.return_value = make_absence_response()
     app.dependency_overrides[get_absence_service] = lambda: mock_service
 
-    user_id = uuid.uuid4()
-    headers = {"X-User-Id": str(user_id), "X-User-Role": "guardian"}
-    client.post("/absences", json=valid_payload(), headers=headers)
+    client.post("/absences", json=valid_payload())
 
-    app.dependency_overrides.clear()
+    app.dependency_overrides.pop(get_absence_service, None)
     call = mock_service.create_absence.call_args
-    assert user_id in call.args or call.kwargs.get("user_id") == user_id
+    assert PASSENGER_ID in call.args or call.kwargs.get("user_id") == PASSENGER_ID
 
 
 # ===========================================================================
@@ -265,13 +275,13 @@ def make_integration_rp(db_session, route_id, user_id, status: str = "accepted")
     return rp
 
 
-def test_integration_create_absence_success(integration_client, db_session) -> None:
+def test_integration_create_absence_success(integration_client, db_session, auth_header) -> None:
     driver = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)
     route = make_integration_route(db_session, driver.id)
     make_integration_rp(db_session, route.id, passenger.id, status="accepted")
 
-    headers = {"X-User-Id": str(passenger.id), "X-User-Role": "guardian"}
+    headers = auth_header(passenger)
     response = integration_client.post(
         "/absences",
         json={
@@ -287,9 +297,9 @@ def test_integration_create_absence_success(integration_client, db_session) -> N
     assert body["reason"] == "Consulta"
 
 
-def test_integration_create_absence_route_not_found_returns_404(integration_client, db_session) -> None:
+def test_integration_create_absence_route_not_found_returns_404(integration_client, db_session, auth_header) -> None:
     passenger = make_integration_passenger(db_session)
-    headers = {"X-User-Id": str(passenger.id), "X-User-Role": "guardian"}
+    headers = auth_header(passenger)
 
     response = integration_client.post(
         "/absences",
@@ -300,12 +310,12 @@ def test_integration_create_absence_route_not_found_returns_404(integration_clie
     assert response.status_code == 404
 
 
-def test_integration_create_absence_outsider_returns_403(integration_client, db_session) -> None:
+def test_integration_create_absence_outsider_returns_403(integration_client, db_session, auth_header) -> None:
     driver = make_integration_driver(db_session)
     outsider = make_integration_passenger(db_session, "Outsider")
     route = make_integration_route(db_session, driver.id)
 
-    headers = {"X-User-Id": str(outsider.id), "X-User-Role": "guardian"}
+    headers = auth_header(outsider)
     response = integration_client.post(
         "/absences",
         json={"route_id": str(route.id), "absence_date": future_weekday_iso()},
@@ -315,13 +325,13 @@ def test_integration_create_absence_outsider_returns_403(integration_client, db_
     assert response.status_code == 403
 
 
-def test_integration_create_absence_duplicate_returns_409(integration_client, db_session) -> None:
+def test_integration_create_absence_duplicate_returns_409(integration_client, db_session, auth_header) -> None:
     driver = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)
     route = make_integration_route(db_session, driver.id)
     make_integration_rp(db_session, route.id, passenger.id, status="accepted")
 
-    headers = {"X-User-Id": str(passenger.id), "X-User-Role": "guardian"}
+    headers = auth_header(passenger)
     payload = {"route_id": str(route.id), "absence_date": future_weekday_iso()}
 
     first = integration_client.post("/absences", json=payload, headers=headers)
@@ -331,7 +341,7 @@ def test_integration_create_absence_duplicate_returns_409(integration_client, db
     assert second.status_code == 409
 
 
-def test_integration_create_absence_persists_in_db(integration_client, db_session) -> None:
+def test_integration_create_absence_persists_in_db(integration_client, db_session, auth_header) -> None:
     from src.domains.trips.entity import AbsenceModel
 
     driver = make_integration_driver(db_session)
@@ -339,7 +349,7 @@ def test_integration_create_absence_persists_in_db(integration_client, db_sessio
     route = make_integration_route(db_session, driver.id)
     rp = make_integration_rp(db_session, route.id, passenger.id, status="accepted")
 
-    headers = {"X-User-Id": str(passenger.id), "X-User-Role": "guardian"}
+    headers = auth_header(passenger)
     integration_client.post(
         "/absences",
         json={"route_id": str(route.id), "absence_date": future_weekday_iso()},
@@ -350,14 +360,14 @@ def test_integration_create_absence_persists_in_db(integration_client, db_sessio
     assert len(stored) == 1
 
 
-def test_integration_create_absence_invalid_recurrence_returns_409(integration_client, db_session) -> None:
+def test_integration_create_absence_invalid_recurrence_returns_409(integration_client, db_session, auth_header) -> None:
     """Rota recorre só em segundas; avisar ausência em sábado deve dar 409."""
     driver = make_integration_driver(db_session)
     passenger = make_integration_passenger(db_session)
     route = make_integration_route(db_session, driver.id, recurrence="seg")
     make_integration_rp(db_session, route.id, passenger.id, status="accepted")
 
-    headers = {"X-User-Id": str(passenger.id), "X-User-Role": "guardian"}
+    headers = auth_header(passenger)
     response = integration_client.post(
         "/absences",
         json={"route_id": str(route.id), "absence_date": "2026-04-25"},  # sábado

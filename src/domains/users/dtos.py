@@ -1,7 +1,9 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
+
+from src.domains.users.password_rules import validate_password
 
 
 # 1. O que a API RECEBE (Entrada)
@@ -17,6 +19,12 @@ class UserCreate(BaseModel):
     # Opcional — obrigatório apenas para motoristas no fluxo de cadastro
     cpf: str | None = Field(default=None, json_schema_extra={"example": "999.999.999-99"})
     photo_url: str | None = None
+
+    # US16-TK01 — política de senha forte centralizada
+    @field_validator("password")
+    @classmethod
+    def _validate_password(cls, value: str) -> str:
+        return validate_password(value)
 
 
 # 2. O que a API DEVOLVE (Saída)
@@ -64,6 +72,14 @@ class UserUpdate(BaseModel):
                     raise ValueError(f"Campo '{field}' inválido (vazio).")
         return data
 
+    # US16-TK01 — reaproveita a mesma política na troca de senha
+    @field_validator("password")
+    @classmethod
+    def _validate_password(cls, value: str | None) -> str | None:
+        if value is None:
+            return value
+        return validate_password(value)
+
 
 # 4. Login (intermediário, sem JWT)
 class LoginRequest(BaseModel):
@@ -103,3 +119,44 @@ class SendTestNotificationResponse(BaseModel):
     success: bool
     message_id: str | None = None
     detail: str
+
+
+# US17-TK03 — resposta do login com JWT
+class LoginResponse(BaseModel):
+    """Retornado por POST /auth/login e /auth/refresh: tokens + dados do usuário.
+
+    `refresh_token` é populado quando o fluxo de refresh está ativo (US17-TK09).
+    """
+
+    access_token: str
+    token_type: str = "bearer"
+    user: UserResponse
+    refresh_token: str | None = None
+
+
+# US17-TK10 — troca de refresh token por novo par de tokens
+class RefreshRequest(BaseModel):
+    refresh_token: str = Field(..., min_length=1)
+
+
+# US18-TK03 — solicitar recuperação de senha
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr = Field(..., example="john.doe@example.com")
+
+
+# US18-TK03 — confirmar nova senha via token
+class ResetPasswordConfirm(BaseModel):
+    """A nova senha respeita as mesmas regras do cadastro (US16-TK01)."""
+
+    token: str = Field(..., min_length=1)
+    new_password: str = Field(..., min_length=1)
+
+    @field_validator("new_password")
+    @classmethod
+    def _validate_new_password(cls, value: str) -> str:
+        return validate_password(value)
+
+
+# US20-TK05 — confirmação de exclusão de conta
+class DeleteAccountRequest(BaseModel):
+    confirm: bool = Field(default=False, description="Precisa ser true para excluir a conta.")

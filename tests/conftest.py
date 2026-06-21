@@ -3,8 +3,13 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from src.config import settings
+from src.infrastructure.auth.jwt_token_service import JwtTokenService
 from src.infrastructure.database import Base
 from src.domains.users.entity import UserModel
+from src.domains.users.reset_token_entity import PasswordResetTokenModel  # noqa: F401 — US18-TK02
+from src.domains.users.revoked_token_entity import RevokedTokenModel  # noqa: F401 — US19-TK01
+from src.domains.users.refresh_token_entity import RefreshTokenModel  # noqa: F401 — US17-TK08
 from src.domains.vehicles.entity import VehicleModel
 from src.domains.dependents.entity import DependentModel
 from src.domains.addresses.entity import AddressModel
@@ -47,3 +52,19 @@ def db_session(engine):
     if transaction.is_active:
         transaction.rollback()
     connection.close()
+
+
+# US17-TK05 — header de autenticação Bearer com JWT real
+@pytest.fixture
+def auth_header():
+    """Factory: dado um UserModel real, emite um JWT e retorna o header Bearer."""
+
+    def _make(user):
+        token = JwtTokenService(
+            settings.jwt_secret,
+            settings.jwt_algorithm,
+            settings.jwt_access_token_expire_minutes,
+        ).create_access_token(user.id, user.role)
+        return {"Authorization": f"Bearer {token}"}
+
+    return _make

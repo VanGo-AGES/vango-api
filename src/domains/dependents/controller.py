@@ -1,13 +1,13 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 
-from src.infrastructure.dependencies.auth_dependencies import get_current_user
+from src.domains.users.entity import UserModel
+from src.infrastructure.auth.dependencies import get_current_user
 from src.infrastructure.dependencies.dependent_dependencies import get_dependent_service
 
 from .dtos import DependentCreate, DependentResponse, DependentUpdate
-from .errors import DependentAccessDeniedError, DependentNotFoundError, DependentOwnershipError
 from .service import DependentService
 
 router = APIRouter(prefix="/dependents", tags=["Dependents"])
@@ -23,16 +23,13 @@ router = APIRouter(prefix="/dependents", tags=["Dependents"])
 def create_dependent(
     body: DependentCreate,
     service: Annotated[DependentService, Depends(get_dependent_service)],
-    current_user: Annotated[dict, Depends(get_current_user)],
+    current_user: Annotated[UserModel, Depends(get_current_user)],
 ) -> DependentResponse:
-    try:
-        return service.add_dependent(
-            user_id=current_user["id"],
-            user_role=current_user["role"],
-            data=body,
-        )
-    except DependentAccessDeniedError as error:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error)) from error
+    return service.add_dependent(
+        user_id=str(current_user.id),
+        user_role=current_user.role,
+        data=body,
+    )
 
 
 @router.get(
@@ -44,9 +41,9 @@ def create_dependent(
 )
 def list_dependents(
     service: Annotated[DependentService, Depends(get_dependent_service)],
-    current_user: Annotated[dict, Depends(get_current_user)],
+    current_user: Annotated[UserModel, Depends(get_current_user)],
 ) -> list[DependentResponse]:
-    return service.get_dependents(current_user["id"])
+    return service.get_dependents(str(current_user.id))
 
 
 @router.get(
@@ -59,14 +56,9 @@ def list_dependents(
 def get_dependent(
     dependent_id: UUID,
     service: Annotated[DependentService, Depends(get_dependent_service)],
-    current_user: Annotated[dict, Depends(get_current_user)],
+    current_user: Annotated[UserModel, Depends(get_current_user)],
 ) -> DependentResponse:
-    try:
-        return service.get_dependent(current_user["id"], dependent_id)
-    except DependentNotFoundError as error:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
-    except DependentOwnershipError as error:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error)) from error
+    return service.get_dependent(str(current_user.id), dependent_id)
 
 
 @router.put(
@@ -80,14 +72,9 @@ def update_dependent(
     dependent_id: UUID,
     body: DependentUpdate,
     service: Annotated[DependentService, Depends(get_dependent_service)],
-    current_user: Annotated[dict, Depends(get_current_user)],
+    current_user: Annotated[UserModel, Depends(get_current_user)],
 ) -> DependentResponse:
-    try:
-        return service.update_dependent(current_user["id"], dependent_id, body)
-    except DependentNotFoundError as error:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
-    except DependentOwnershipError as error:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error)) from error
+    return service.update_dependent(str(current_user.id), dependent_id, body)
 
 
 @router.delete(
@@ -99,11 +86,6 @@ def update_dependent(
 def delete_dependent(
     dependent_id: UUID,
     service: Annotated[DependentService, Depends(get_dependent_service)],
-    current_user: Annotated[dict, Depends(get_current_user)],
+    current_user: Annotated[UserModel, Depends(get_current_user)],
 ) -> None:
-    try:
-        service.delete_dependent(current_user["id"], dependent_id)
-    except DependentNotFoundError as error:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
-    except DependentOwnershipError as error:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error)) from error
+    service.delete_dependent(str(current_user.id), dependent_id)

@@ -1,0 +1,40 @@
+"""US15 — Controller de Métricas & Relatórios.
+
+Expõe o endpoint consumido pela tela `trip-reports-screen` do motorista.
+
+Autenticação via JWT real (`get_current_driver`) — endpoint só de motorista.
+"""
+
+from datetime import date
+from typing import Annotated
+
+from fastapi import APIRouter, Depends, Query
+
+from src.domains.metrics.dtos import MetricsReportResponse, ReportPeriod
+from src.domains.metrics.service import MetricsService
+from src.domains.users.entity import UserModel
+from src.infrastructure.auth.dependencies import get_current_driver
+from src.infrastructure.dependencies.metrics_dependencies import get_metrics_service
+
+router = APIRouter(prefix="/metrics", tags=["Metrics"])
+
+
+# US15-TK04
+@router.get(
+    "/reports",
+    response_model=MetricsReportResponse,
+    summary="Relatório agregado de viagens do motorista",
+    description=(
+        "Retorna distância (km), duração (min), passageiros transportados e "
+        "viagens realizadas do motorista logado no período selecionado "
+        "(day/week/month) e intervalo de datas."
+    ),
+)
+def get_reports(
+    service: Annotated[MetricsService, Depends(get_metrics_service)],
+    period: Annotated[ReportPeriod, Query()],
+    start_date: Annotated[date, Query()],
+    current_user: Annotated[UserModel, Depends(get_current_driver)],
+    end_date: Annotated[date | None, Query()] = None,
+) -> MetricsReportResponse:
+    return service.get_report(current_user.id, period, start_date, end_date)

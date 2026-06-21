@@ -1,13 +1,13 @@
-import sys
-import traceback
 from contextlib import asynccontextmanager
 
 import firebase_admin
+import sentry_sdk
 import socketio
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from firebase_admin import credentials
+from loguru import logger
 from sqlalchemy import text
 
 from src.config import settings
@@ -15,6 +15,7 @@ from src.domains.absences.controller import router as absence_controller
 from src.domains.addresses.entity import AddressModel
 from src.domains.dependents.controller import router as dependent_controller
 from src.domains.dependents.entity import DependentModel
+from src.domains.metrics.controller import router as metrics_controller
 from src.domains.route_passangers.controller import router as route_passanger_controller
 from src.domains.route_passangers.entity import RoutePassangerModel
 from src.domains.route_passangers.schedule_entity import RoutePassangerScheduleModel
@@ -23,12 +24,20 @@ from src.domains.routes.entity import RouteModel
 from src.domains.trips.controller import router as trip_controller
 from src.domains.trips.entity import AbsenceModel, TripModel, TripPassangerModel
 from src.domains.uploads.controller import router as upload_controller
+from src.domains.users.auth_controller import router as auth_controller
 from src.domains.users.controller import router as user_controller
 from src.domains.users.entity import UserModel
+from src.domains.users.refresh_token_entity import RefreshTokenModel
+from src.domains.users.reset_token_entity import PasswordResetTokenModel
+from src.domains.users.revoked_token_entity import RevokedTokenModel
 from src.domains.vehicles.controller import router as vehicle_controller
 from src.domains.vehicles.entity import VehicleModel
 from src.infrastructure.database import Base, engine
+from src.infrastructure.middleware.request_id import RequestIdMiddleware, get_request_id
+from src.infrastructure.observability.prometheus import setup_prometheus
+from src.infrastructure.observability.sentry import init_sentry
 from src.infrastructure.socketio.server import sio
+from src.shared.error_handler import register_exception_handlers
 
 # Force SQLAlchemy to register all mappers so relationship() string refs resolve
 _ = (
@@ -42,7 +51,12 @@ _ = (
     TripModel,
     TripPassangerModel,
     AbsenceModel,
+    PasswordResetTokenModel,
+    RevokedTokenModel,
+    RefreshTokenModel,
 )
+
+init_sentry(settings)
 
 
 @asynccontextmanager
@@ -52,28 +66,28 @@ async def lifespan(app: FastAPI):
         try:
             cred = credentials.Certificate(settings.firebase_credentials_path)
             firebase_admin.initialize_app(cred)
-            print("FIREBASE: Inicializado com sucesso.")
+            logger.info("Firebase initialized", credentials_path=settings.firebase_credentials_path)
         except Exception as e:
-            print(f"FIREBASE ERROR: Falha ao carregar credenciais: {e}")
+            logger.error("Firebase initialization failed", credentials_path=settings.firebase_credentials_path, error=str(e))
 
     # 2. Inicialização do PostgreSQL 16
     try:
         # Diagnóstico: Lista quais tabelas o SQLAlchemy detectou
-        print(f"DEBUG: Tabelas detectadas para criação: {list(Base.metadata.tables.keys())}")
+        logger.info("Database metadata tables detected", tables=list(Base.metadata.tables.keys()))
 
         # Teste rápido de conectividade
         with engine.connect() as connection:
             connection.execute(text("SELECT 1"))
 
-        print("DATABASE: Conexão estabelecida e tabelas sincronizadas!")
+        logger.info("Database connection established and tables synchronized")
     except Exception as e:
-        print(f"DATABASE ERROR: Falha ao conectar ou criar tabelas: {e}")
+        logger.error("Database initialization failed", error=str(e))
 
     yield
 
     # 3. Shutdown
     engine.dispose()
-    print("INFRA: Conexões de banco encerradas.")
+    logger.info("Database connections disposed")
 
 
 fastapi_app = FastAPI(
@@ -83,12 +97,22 @@ fastapi_app = FastAPI(
     lifespan=lifespan,
 )
 
+register_exception_handlers(fastapi_app)
+setup_prometheus(fastapi_app)
+
 app = socketio.ASGIApp(sio, fastapi_app)
 
 
 @fastapi_app.exception_handler(Exception)
 async def catch_all_handler(request: Request, exc: Exception) -> JSONResponse:
-    traceback.print_exc(file=sys.stderr)
+    sentry_sdk.capture_exception(exc)
+    request_id = get_request_id()
+    logger.bind(request_id=request_id, trace_id=request_id).exception(
+        "Unhandled request error",
+        method=request.method,
+        path=request.url.path,
+        error_type=exc.__class__.__name__,
+    )
 
     return JSONResponse(
         status_code=500,
@@ -108,6 +132,11 @@ fastapi_app.add_middleware(
     allow_headers=["*"],
 )
 
+# US00-TK17 — middleware de request_id + logging estruturado
+fastapi_app.add_middleware(RequestIdMiddleware)
+
+# Épico 5 — autenticação (login/logout/recuperação/exclusão)
+fastapi_app.include_router(auth_controller)
 fastapi_app.include_router(user_controller)
 fastapi_app.include_router(vehicle_controller)
 fastapi_app.include_router(dependent_controller)
@@ -118,10 +147,12 @@ fastapi_app.include_router(trip_controller)
 fastapi_app.include_router(upload_controller)
 # US06-TK20 — aviso de ausência (passageiro/guardian)
 fastapi_app.include_router(absence_controller)
+# US15 — métricas e relatórios (/metrics/reports)
+fastapi_app.include_router(metrics_controller)
 
 
-@fastapi_app.get("/health", tags=["Infrastructure"])
-def health_check() -> dict[str, str]:
+@fastapi_app.get("/health", tags=["Infrastructure"], response_model=None)
+def health_check() -> dict[str, str] | JSONResponse:
     db_status = "ok"
     try:
         with engine.connect() as conn:
@@ -129,7 +160,26 @@ def health_check() -> dict[str, str]:
     except Exception:
         db_status = "down"
 
-    return {"status": "ok", "database": db_status, "environment": "development"}
+    mapbox_status = "ok" if settings.mapbox_api_key else "not_configured"
+    firebase_status = "ok" if firebase_admin._apps else "down"
+
+    dependencies = {
+        "database": db_status,
+        "mapbox": mapbox_status,
+        "firebase": firebase_status,
+    }
+    aggregate_status = "ok" if all(status == "ok" for status in dependencies.values()) else "degraded"
+    content = {
+        "status": aggregate_status,
+        **dependencies,
+        "version": settings.app_version,
+        "commit": settings.git_commit,
+    }
+
+    if aggregate_status != "ok":
+        return JSONResponse(status_code=503, content=content)
+
+    return content
 
 
 @fastapi_app.get("/")

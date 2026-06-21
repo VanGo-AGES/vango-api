@@ -32,6 +32,7 @@ from src.infrastructure.repositories.stop_repository import StopRepositoryImpl
 from src.infrastructure.repositories.trip_passanger_repository import TripPassangerRepositoryImpl
 from src.infrastructure.repositories.trip_repository import TripRepositoryImpl
 from src.infrastructure.repositories.vehicle_repository import VehicleRepositoryImpl
+from src.shared.enums import RoutePassangerStatus
 
 logger = logging.getLogger(__name__)
 
@@ -654,7 +655,7 @@ def _validate_follower(user_id: str, trip_id: str) -> bool:
             return False
 
         route_passangers = rp_repo.find_by_user_and_route_id(user_uuid, trip.route_id)
-        return any(rp.status in ("pending", "accepted") for rp in route_passangers)
+        return any(rp.status in (RoutePassangerStatus.PENDING, RoutePassangerStatus.ACCEPTED) for rp in route_passangers)
     except Exception:
         return False
     finally:

@@ -3,13 +3,8 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 
-from src.domains.route_passangers.errors import NotRoutePassangerError
-from src.domains.routes.errors import (
-    RouteNotFoundError,
-    RouteOwnershipError,
-)
 from src.domains.trips.dtos import (
     CurrentTripResponse,
     FinishTripRequest,
@@ -18,19 +13,9 @@ from src.domains.trips.dtos import (
     TripPassangerResponse,
     TripResponse,
 )
-from src.domains.trips.errors import (
-    InvalidTripPassangerStatusError,
-    NoPassangersToStartError,
-    TripAlreadyFinishedError,
-    TripAlreadyInProgressError,
-    TripNotFoundError,
-    TripNotInProgressError,
-    TripOwnershipError,
-    TripPassangerNotFoundError,
-    TripStopNotFoundError,
-    VehicleNotOwnedError,
-)
 from src.domains.trips.service import TripService
+from src.domains.users.entity import UserModel
+from src.infrastructure.auth.dependencies import get_current_driver, get_current_user
 from src.infrastructure.dependencies.trip_dependencies import get_trip_service
 
 router = APIRouter(tags=["Trips"])
@@ -47,20 +32,9 @@ def start_trip(
     route_id: UUID,
     data: StartTripRequest,
     service: Annotated[TripService, Depends(get_trip_service)],
-    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    current_user: Annotated[UserModel, Depends(get_current_driver)],
 ) -> TripResponse:
-    try:
-        return service.start_trip(route_id, UUID(x_user_id), data)
-    except RouteNotFoundError as error:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(error)) from error
-    except (RouteOwnershipError, TripOwnershipError) as error:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error)) from error
-    except VehicleNotOwnedError as error:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(error)) from error
-    except TripAlreadyInProgressError as error:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
-    except NoPassangersToStartError as error:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(error)) from error
+    return service.start_trip(route_id, current_user.id, data)
 
 
 # US09-TK15
@@ -72,15 +46,9 @@ def start_trip(
 def get_trip(
     trip_id: UUID,
     service: Annotated[TripService, Depends(get_trip_service)],
-    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    current_user: Annotated[UserModel, Depends(get_current_driver)],
 ) -> TripResponse:
-    try:
-        driver_id = UUID(x_user_id)
-        return service.get_current_trip(trip_id, driver_id)
-    except TripNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    except TripOwnershipError as exc:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+    return service.get_current_trip(trip_id, current_user.id)
 
 
 # US09-TK16
@@ -92,14 +60,9 @@ def get_trip(
 def get_next_stop(
     trip_id: UUID,
     service: Annotated[TripService, Depends(get_trip_service)],
-    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    current_user: Annotated[UserModel, Depends(get_current_driver)],
 ) -> TripNextStopResponse | None:
-    try:
-        return service.get_next_stop(trip_id, UUID(x_user_id))
-    except TripNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    except TripOwnershipError as exc:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+    return service.get_next_stop(trip_id, current_user.id)
 
 
 # US09-TK17
@@ -112,16 +75,9 @@ def board_passanger(
     trip_id: UUID,
     trip_passanger_id: UUID,
     service: Annotated[TripService, Depends(get_trip_service)],
-    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    current_user: Annotated[UserModel, Depends(get_current_driver)],
 ) -> TripPassangerResponse:
-    try:
-        return service.board_passanger(trip_id, trip_passanger_id, UUID(x_user_id))
-    except (TripNotFoundError, TripPassangerNotFoundError) as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    except TripOwnershipError as exc:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
-    except (TripNotInProgressError, InvalidTripPassangerStatusError) as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    return service.board_passanger(trip_id, trip_passanger_id, current_user.id)
 
 
 # US09-TK18
@@ -134,16 +90,9 @@ def mark_passanger_absent(
     trip_id: UUID,
     trip_passanger_id: UUID,
     service: Annotated[TripService, Depends(get_trip_service)],
-    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    current_user: Annotated[UserModel, Depends(get_current_driver)],
 ) -> TripPassangerResponse:
-    try:
-        return service.mark_passanger_absent(trip_id, trip_passanger_id, UUID(x_user_id))
-    except (TripNotFoundError, TripPassangerNotFoundError) as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    except TripOwnershipError as exc:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
-    except (TripNotInProgressError, InvalidTripPassangerStatusError) as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    return service.mark_passanger_absent(trip_id, trip_passanger_id, current_user.id)
 
 
 # US09-TK19
@@ -156,18 +105,9 @@ def skip_stop(
     trip_id: UUID,
     stop_id: UUID,
     service: Annotated[TripService, Depends(get_trip_service)],
-    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    current_user: Annotated[UserModel, Depends(get_current_driver)],
 ) -> list[TripPassangerResponse]:
-    try:
-        return service.skip_stop(trip_id, stop_id, UUID(x_user_id))
-    except TripNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    except TripStopNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    except TripOwnershipError as exc:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
-    except TripNotInProgressError as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    return service.skip_stop(trip_id, stop_id, current_user.id)
 
 
 # US09-TK20
@@ -180,16 +120,9 @@ def alight_passanger(
     trip_id: UUID,
     trip_passanger_id: UUID,
     service: Annotated[TripService, Depends(get_trip_service)],
-    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    current_user: Annotated[UserModel, Depends(get_current_driver)],
 ) -> TripPassangerResponse:
-    try:
-        return service.alight_passanger(trip_id, trip_passanger_id, UUID(x_user_id))
-    except (TripNotFoundError, TripPassangerNotFoundError) as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    except TripOwnershipError as exc:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
-    except (TripNotInProgressError, InvalidTripPassangerStatusError) as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    return service.alight_passanger(trip_id, trip_passanger_id, current_user.id)
 
 
 # US09-TK21
@@ -202,16 +135,9 @@ def finish_trip(
     trip_id: UUID,
     data: FinishTripRequest,
     service: Annotated[TripService, Depends(get_trip_service)],
-    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    current_user: Annotated[UserModel, Depends(get_current_driver)],
 ) -> TripResponse:
-    try:
-        return service.finish_trip(trip_id, UUID(x_user_id), data)
-    except TripNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    except TripOwnershipError as exc:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
-    except TripAlreadyFinishedError as exc:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    return service.finish_trip(trip_id, current_user.id, data)
 
 
 # US11-TK01 — viagem atual para o passageiro
@@ -231,16 +157,11 @@ def finish_trip(
 def get_current_trip_for_passanger(
     route_id: UUID,
     service: Annotated[TripService, Depends(get_trip_service)],
-    x_user_id: Annotated[str, Header(alias="X-User-Id")],
+    current_user: Annotated[UserModel, Depends(get_current_user)],
     dependent_id: Annotated[UUID | None, Query()] = None,
 ) -> CurrentTripResponse | None:
-    try:
-        return service.get_current_trip_for_passanger(
-            route_id,
-            UUID(x_user_id),
-            dependent_id=dependent_id,
-        )
-    except RouteNotFoundError as exc:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
-    except NotRoutePassangerError as exc:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(exc)) from exc
+    return service.get_current_trip_for_passanger(
+        route_id,
+        current_user.id,
+        dependent_id=dependent_id,
+    )

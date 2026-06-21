@@ -298,6 +298,18 @@
         "title": "CurrentTripResponse",
         "type": "object"
       },
+      "DeleteAccountRequest": {
+        "properties": {
+          "confirm": {
+            "default": false,
+            "description": "Precisa ser true para excluir a conta.",
+            "title": "Confirm",
+            "type": "boolean"
+          }
+        },
+        "title": "DeleteAccountRequest",
+        "type": "object"
+      },
       "DependentCreate": {
         "properties": {
           "name": {
@@ -377,6 +389,21 @@
           }
         },
         "title": "FinishTripRequest",
+        "type": "object"
+      },
+      "ForgotPasswordRequest": {
+        "properties": {
+          "email": {
+            "example": "john.doe@example.com",
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "title": "ForgotPasswordRequest",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -473,6 +500,84 @@
           "password"
         ],
         "title": "LoginRequest",
+        "type": "object"
+      },
+      "LoginResponse": {
+        "description": "Retornado por POST /auth/login e /auth/refresh: tokens + dados do usuário.\n\n`refresh_token` é populado quando o fluxo de refresh está ativo (US17-TK09).",
+        "properties": {
+          "access_token": {
+            "title": "Access Token",
+            "type": "string"
+          },
+          "refresh_token": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Refresh Token"
+          },
+          "token_type": {
+            "default": "bearer",
+            "title": "Token Type",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/UserResponse"
+          }
+        },
+        "required": [
+          "access_token",
+          "user"
+        ],
+        "title": "LoginResponse",
+        "type": "object"
+      },
+      "MetricsReportResponse": {
+        "properties": {
+          "distance": {
+            "default": 0.0,
+            "title": "Distance",
+            "type": "number"
+          },
+          "duration": {
+            "default": 0,
+            "title": "Duration",
+            "type": "integer"
+          },
+          "end_date": {
+            "format": "date",
+            "title": "End Date",
+            "type": "string"
+          },
+          "passengers": {
+            "default": 0,
+            "title": "Passengers",
+            "type": "integer"
+          },
+          "period": {
+            "$ref": "#/components/schemas/ReportPeriod"
+          },
+          "start_date": {
+            "format": "date",
+            "title": "Start Date",
+            "type": "string"
+          },
+          "trips": {
+            "default": 0,
+            "title": "Trips",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "period",
+          "start_date",
+          "end_date"
+        ],
+        "title": "MetricsReportResponse",
         "type": "object"
       },
       "PassangerRouteDetailResponse": {
@@ -789,6 +894,20 @@
         "title": "PassangerRouteResponse",
         "type": "object"
       },
+      "RefreshRequest": {
+        "properties": {
+          "refresh_token": {
+            "minLength": 1,
+            "title": "Refresh Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "refresh_token"
+        ],
+        "title": "RefreshRequest",
+        "type": "object"
+      },
       "RegisterPushTokenRequest": {
         "description": "Payload para registrar o FCM push token do dispositivo do usuário.\n\nFields:\n- token: str — token FCM gerado pelo Firebase SDK no app mobile",
         "properties": {
@@ -803,6 +922,37 @@
           "token"
         ],
         "title": "RegisterPushTokenRequest",
+        "type": "object"
+      },
+      "ReportPeriod": {
+        "description": "Granularidade do relatório selecionada nas abas Dia / Semana / Mês.",
+        "enum": [
+          "day",
+          "week",
+          "month"
+        ],
+        "title": "ReportPeriod",
+        "type": "string"
+      },
+      "ResetPasswordConfirm": {
+        "description": "A nova senha respeita as mesmas regras do cadastro (US16-TK01).",
+        "properties": {
+          "new_password": {
+            "minLength": 1,
+            "title": "New Password",
+            "type": "string"
+          },
+          "token": {
+            "minLength": 1,
+            "title": "Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "new_password"
+        ],
+        "title": "ResetPasswordConfirm",
         "type": "object"
       },
       "RouteAbsenceResponse": {
@@ -2132,11 +2282,18 @@
         "parameters": [
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -2178,6 +2335,216 @@
         ]
       }
     },
+    "/auth/login": {
+      "post": {
+        "operationId": "login_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Login",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "operationId": "logout_auth_logout_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Logout",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/password/forgot": {
+      "post": {
+        "operationId": "forgot_password_auth_password_forgot_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Forgot Password Auth Password Forgot Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Forgot Password",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/password/reset": {
+      "post": {
+        "operationId": "reset_password_auth_password_reset_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordConfirm"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Reset Password Auth Password Reset Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Reset Password",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "operationId": "refresh_auth_refresh_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Refresh",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
     "/dependents/": {
       "get": {
         "description": "Retorna todos os dependentes cadastrados pelo usuário logado.",
@@ -2185,20 +2552,18 @@
         "parameters": [
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-User-Role",
-            "required": true,
-            "schema": {
-              "title": "X-User-Role",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -2239,20 +2604,18 @@
         "parameters": [
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-User-Role",
-            "required": true,
-            "schema": {
-              "title": "X-User-Role",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -2311,20 +2674,18 @@
           },
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-User-Role",
-            "required": true,
-            "schema": {
-              "title": "X-User-Role",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -2364,20 +2725,18 @@
           },
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-User-Role",
-            "required": true,
-            "schema": {
-              "title": "X-User-Role",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -2424,20 +2783,18 @@
           },
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-User-Role",
-            "required": true,
-            "schema": {
-              "title": "X-User-Role",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -2486,13 +2843,7 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {
-                  "additionalProperties": {
-                    "type": "string"
-                  },
-                  "title": "Response Health Check Health Get",
-                  "type": "object"
-                }
+                "schema": {}
               }
             },
             "description": "Successful Response"
@@ -2504,6 +2855,91 @@
         ]
       }
     },
+    "/metrics/reports": {
+      "get": {
+        "description": "Retorna distância (km), duração (min), passageiros transportados e viagens realizadas do motorista logado no período selecionado (day/week/month) e intervalo de datas.",
+        "operationId": "get_reports_metrics_reports_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "period",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ReportPeriod"
+            }
+          },
+          {
+            "in": "query",
+            "name": "start_date",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "title": "Start Date",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "end_date",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "End Date"
+            }
+          },
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetricsReportResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Relatório agregado de viagens do motorista",
+        "tags": [
+          "Metrics"
+        ]
+      }
+    },
     "/routes/": {
       "get": {
         "description": "Retorna todas as rotas cadastradas pelo motorista, independente de status.",
@@ -2511,11 +2947,18 @@
         "parameters": [
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -2556,12 +2999,18 @@
         "parameters": [
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "format": "uuid",
-              "title": "X-User-Id",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -2619,11 +3068,18 @@
           },
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -2662,11 +3118,18 @@
         "parameters": [
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -2719,11 +3182,18 @@
           },
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -2763,11 +3233,18 @@
           },
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -2814,11 +3291,18 @@
           },
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -2887,11 +3371,18 @@
           },
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -2944,12 +3435,18 @@
           },
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "format": "uuid",
-              "title": "X-User-Id",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -3015,11 +3512,18 @@
           },
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -3084,11 +3588,18 @@
           },
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -3139,11 +3650,18 @@
           },
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -3219,11 +3737,18 @@
           },
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -3280,11 +3805,18 @@
           },
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -3353,11 +3885,18 @@
           },
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -3409,11 +3948,18 @@
           },
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -3472,11 +4018,18 @@
           },
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -3524,11 +4077,18 @@
           },
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -3604,11 +4164,18 @@
           },
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -3664,11 +4231,18 @@
           },
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -3716,11 +4290,18 @@
           },
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -3778,11 +4359,18 @@
           },
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -3848,11 +4436,18 @@
           },
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -3910,11 +4505,18 @@
           },
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -3972,11 +4574,18 @@
           },
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -4034,11 +4643,18 @@
           },
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -4228,6 +4844,105 @@
         ]
       }
     },
+    "/users/me": {
+      "delete": {
+        "operationId": "delete_my_account_users_me_delete",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteAccountRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete My Account",
+        "tags": [
+          "Auth"
+        ]
+      },
+      "get": {
+        "operationId": "get_me_users_me_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "authorization",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Me",
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
     "/users/me/push-token": {
       "post": {
         "description": "Associa o token FCM do dispositivo ao usuário autenticado. Usado pelo app mobile logo após o login para habilitar notificações push. 404 se o usuário não existir.",
@@ -4235,12 +4950,18 @@
         "parameters": [
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "format": "uuid",
-              "title": "X-User-Id",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -4289,12 +5010,18 @@
         "parameters": [
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "format": "uuid",
-              "title": "X-User-Id",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -4345,7 +5072,8 @@
     },
     "/users/{user_id}": {
       "delete": {
-        "description": "Remove a conta do usuário e todos os dados associados em cascata.",
+        "deprecated": true,
+        "description": "Remove a conta do usuário e todos os dados associados em cascata. Este endpoint está depreciado em favor de DELETE /users/me.",
         "operationId": "delete_user_users__user_id__delete",
         "parameters": [
           {
@@ -4374,7 +5102,7 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Excluir usuário",
+        "summary": "Excluir usuário (deprecated)",
         "tags": [
           "Users"
         ]
@@ -4481,20 +5209,18 @@
         "parameters": [
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-User-Role",
-            "required": true,
-            "schema": {
-              "title": "X-User-Role",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -4535,20 +5261,18 @@
         "parameters": [
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-User-Role",
-            "required": true,
-            "schema": {
-              "title": "X-User-Role",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -4607,20 +5331,18 @@
           },
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-User-Role",
-            "required": true,
-            "schema": {
-              "title": "X-User-Role",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -4660,20 +5382,18 @@
           },
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-User-Role",
-            "required": true,
-            "schema": {
-              "title": "X-User-Role",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],
@@ -4720,20 +5440,18 @@
           },
           {
             "in": "header",
-            "name": "X-User-Id",
-            "required": true,
+            "name": "authorization",
+            "required": false,
             "schema": {
-              "title": "X-User-Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "header",
-            "name": "X-User-Role",
-            "required": true,
-            "schema": {
-              "title": "X-User-Role",
-              "type": "string"
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
             }
           }
         ],

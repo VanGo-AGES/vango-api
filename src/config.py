@@ -10,6 +10,27 @@ class Settings(BaseSettings):
     # US10-TK06 — Mapbox
     mapbox_api_key: str = Field(default="", alias="MAPBOX_API_KEY")
 
+    # US17 — JWT
+    jwt_secret: str = Field(default="dev-insecure-change-me", alias="JWT_SECRET")
+    jwt_algorithm: str = Field(default="HS256", alias="JWT_ALGORITHM")
+    jwt_access_token_expire_minutes: int = Field(default=60, alias="JWT_ACCESS_TOKEN_EXPIRE_MINUTES")
+    jwt_refresh_token_expire_days: int = Field(default=30, alias="JWT_REFRESH_TOKEN_EXPIRE_DAYS")
+
+    # US18 — SMTP/SES (recuperação de senha)
+    smtp_host: str = Field(default="", alias="SMTP_HOST")
+    smtp_port: int = Field(default=587, alias="SMTP_PORT")
+    smtp_username: str = Field(default="", alias="SMTP_USERNAME")
+    smtp_password: str = Field(default="", alias="SMTP_PASSWORD")
+    smtp_from: str = Field(default="no-reply@vango.app", alias="SMTP_FROM")
+
+    # US00-TK19 — versão/commit expostos no /health
+    app_version: str = Field(default="0.1.0", alias="APP_VERSION")
+    git_commit: str = Field(default="dev", alias="GIT_COMMIT")
+
+    # US00-TK21 — Sentry
+    sentry_dsn: str = Field(default="", alias="SENTRY_DSN")
+    sentry_environment: str = Field(default="development", alias="SENTRY_ENVIRONMENT")
+
     app_name: str = "VanGO API"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")

@@ -4,6 +4,9 @@ from uuid import uuid4
 
 import boto3
 from fastapi import UploadFile
+from loguru import logger
+
+from src.infrastructure.middleware.request_id import get_request_id
 
 
 class IPhotoUploader(ABC):
@@ -53,7 +56,12 @@ class S3PhotoUploader(IPhotoUploader):
             # Retorna a URL estruturada do S3
             return f"https://{self.bucket_name}.s3.{os.getenv('AWS_REGION')}.amazonaws.com/{object_name}"
 
-        except Exception as e:
-            # Log de erro para debug no terminal do Docker (EC2)
-            print(f"Erro ao fazer upload para o S3: {e}")
-            raise e
+        except Exception:
+            request_id = get_request_id()
+            logger.bind(request_id=request_id, trace_id=request_id).exception(
+                "S3 photo upload failed",
+                bucket=self.bucket_name,
+                object_name=object_name,
+                filename=filename,
+            )
+            raise

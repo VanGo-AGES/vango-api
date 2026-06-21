@@ -11,9 +11,16 @@ from src.domains.users.errors import (
     InvalidCredentialsError,
     UserNotFoundError,
 )
+from src.domains.users.entity import UserModel
 from src.domains.users.service import UserService
+from src.infrastructure.auth.dependencies import get_current_user
 from src.infrastructure.dependencies.user_dependencies import get_user_service
 from src.main import fastapi_app as app
+from tests.test_user.conftest import VALID_PASSWORD
+
+
+def _fake_user(role: str = "driver") -> UserModel:
+    return UserModel(id=uuid4(), name="Auth User", email=f"auth_{uuid4()}@test.com", role=role)
 
 
 def make_user_response(**kwargs) -> UserResponse:
@@ -51,7 +58,7 @@ def test_register_user_success():
             "name": "John Doe",
             "email": "john@email.com",
             "phone": "54999999999",
-            "password": "senha123",
+            "password": VALID_PASSWORD,
             "role": "driver",
         },
     )
@@ -77,7 +84,7 @@ def test_register_user_duplicate_email_returns_400():
             "name": "John Doe",
             "email": "john@email.com",
             "phone": "54999999999",
-            "password": "senha123",
+            "password": VALID_PASSWORD,
             "role": "driver",
         },
     )
@@ -117,7 +124,7 @@ def test_register_user_invalid_role_returns_422():
             "name": "John Doe",
             "email": "john@email.com",
             "phone": "54999999999",
-            "password": "senha123",
+            "password": VALID_PASSWORD,
             "role": "admin",
         },
     )
@@ -143,7 +150,7 @@ def test_register_user_with_cpf_returns_cpf_in_response():
             "name": "João Motorista",
             "email": "joao@email.com",
             "phone": "54999999999",
-            "password": "senha123",
+            "password": VALID_PASSWORD,
             "role": "driver",
             "cpf": "999.999.999-99",
         },
@@ -353,7 +360,7 @@ def make_user_payload(**kwargs) -> dict:
         "name": "João Silva",
         "email": f"joao_{uuid4()}@test.com",
         "phone": "54999999999",
-        "password": "senha123",
+        "password": VALID_PASSWORD,
         "role": "driver",
     }
     defaults.update(kwargs)
@@ -540,7 +547,7 @@ def test_login_success_returns_200():
         "/users/login",
         json={
             "email": "john@email.com",
-            "password": "senha123",
+            "password": VALID_PASSWORD,
         },
     )
 
@@ -565,7 +572,7 @@ def test_login_user_not_found_returns_404():
         "/users/login",
         json={
             "email": "ghost@email.com",
-            "password": "senha123",
+            "password": VALID_PASSWORD,
         },
     )
 
@@ -681,12 +688,12 @@ def test_register_push_token_unit_success():
     mock_service.register_push_token.return_value = make_user_response()
 
     app.dependency_overrides[get_user_service] = lambda: mock_service
+    app.dependency_overrides[get_current_user] = lambda: _fake_user()
     client = TestClient(app)
 
     response = client.post(
         "/users/me/push-token",
         json={"token": "fcm-abc-123"},
-        headers={"X-User-Id": str(uuid4())},
     )
 
     assert response.status_code == 200
@@ -695,8 +702,8 @@ def test_register_push_token_unit_success():
     app.dependency_overrides.clear()
 
 
-def test_register_push_token_unit_missing_header_returns_422():
-    """POST /users/me/push-token sem X-User-Id deve retornar 422."""
+def test_register_push_token_unit_missing_auth_returns_401():
+    """POST /users/me/push-token sem Authorization deve retornar 401."""
     mock_service = Mock(spec=UserService)
 
     app.dependency_overrides[get_user_service] = lambda: mock_service
@@ -704,7 +711,7 @@ def test_register_push_token_unit_missing_header_returns_422():
 
     response = client.post("/users/me/push-token", json={"token": "fcm-abc-123"})
 
-    assert response.status_code == 422
+    assert response.status_code == 401
     mock_service.register_push_token.assert_not_called()
 
     app.dependency_overrides.clear()
@@ -716,12 +723,12 @@ def test_register_push_token_unit_user_not_found_returns_404():
     mock_service.register_push_token.side_effect = UserNotFoundError()
 
     app.dependency_overrides[get_user_service] = lambda: mock_service
+    app.dependency_overrides[get_current_user] = lambda: _fake_user()
     client = TestClient(app)
 
     response = client.post(
         "/users/me/push-token",
         json={"token": "fcm-abc-123"},
-        headers={"X-User-Id": str(uuid4())},
     )
 
     assert response.status_code == 404
@@ -732,28 +739,41 @@ def test_register_push_token_unit_user_not_found_returns_404():
 # ---- Integração (stack real) ----
 
 
-def test_integration_register_push_token_success(integration_client):
+def test_integration_register_push_token_success(integration_client, db_session, auth_header):
     """[Integração] POST /users/me/push-token deve salvar token e retornar 200."""
-    payload = make_user_payload()
-    reg = integration_client.post("/users/", json=payload)
-    user_id = reg.json()["id"]
+    repo = UserRepositoryImpl(db_session)
+    user = repo.save(
+        UserModelEntity(
+            name="Push User",
+            email=f"push_{uuid4()}@test.com",
+            phone="54999999999",
+            password_hash="hashed",
+            role="driver",
+        )
+    )
 
     response = integration_client.post(
         "/users/me/push-token",
         json={"token": "fcm-integration-token"},
-        headers={"X-User-Id": user_id},
+        headers=auth_header(user),
     )
 
     assert response.status_code == 200
-    assert response.json()["id"] == user_id
+    assert response.json()["id"] == str(user.id)
 
 
-def test_integration_register_push_token_not_found_returns_404(integration_client):
-    """[Integração] POST /users/me/push-token com X-User-Id inválido deve retornar 404."""
+def test_integration_register_push_token_unauthenticated_returns_401(integration_client, auth_header):
+    """[Integração] POST /users/me/push-token com token de usuário inexistente deve retornar 401.
+
+    Com a auth JWT real (US17-TK05), o `sub` do token precisa apontar para um
+    usuário existente/ativo — um id fantasma falha em get_current_user antes de
+    chegar ao service (não é mais um 404 do service)."""
+    ghost = UserModelEntity(id=uuid4(), name="Ghost", email="ghost@test.com", role="driver")
+
     response = integration_client.post(
         "/users/me/push-token",
         json={"token": "fcm-token"},
-        headers={"X-User-Id": str(uuid4())},
+        headers=auth_header(ghost),
     )
 
-    assert response.status_code == 404
+    assert response.status_code == 401

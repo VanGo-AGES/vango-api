@@ -1,3 +1,28 @@
+# Python/cache artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/
+.coverage
+htmlcov/
+
+# Local/dev files
+.git/
+.gitignore
+.env
+.env.*
+.vscode/
+.devcontainer/
+
+# Generated/runtime data
+*.log
+openapi.json
+firebase_service_account.json
+
+# Docker/infra local state
+infra/observability/**/data/
 .git
 .gitignore
 .gitlab-ci.yml

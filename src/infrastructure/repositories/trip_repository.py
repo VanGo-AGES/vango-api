@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 
 from src.domains.trips.entity import TripModel
 from src.domains.trips.repository import ITripRepository
+from src.shared.enums import TripStatus
 
 
 class TripRepositoryImpl(ITripRepository):
@@ -52,7 +53,7 @@ class TripRepositoryImpl(ITripRepository):
             )
             .where(
                 TripModel.route_id == route_id,
-                TripModel.status == "iniciada",
+                TripModel.status == TripStatus.INICIADA,
             )
         )
 
