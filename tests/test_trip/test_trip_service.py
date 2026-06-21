@@ -91,6 +91,7 @@ def make_route_mock(driver_id=None, status: str = "ativa") -> RouteModel:
     route.driver = Mock()
     route.driver.name = "Motorista Teste"
     route.driver.photo_url = None
+    route.destination_address = None
     return route
 
 

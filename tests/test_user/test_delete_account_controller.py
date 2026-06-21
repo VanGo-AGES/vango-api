@@ -20,7 +20,6 @@ def _fake_user():
     return type("U", (), {"id": uuid4()})()
 
 
-@pytest.mark.skip(reason="US20-TK05")
 def test_delete_my_account_204():
     calls = {}
     service = type("S", (), {"delete_account": lambda self, uid, confirm: calls.update(uid=uid, confirm=confirm)})()
@@ -38,7 +37,6 @@ def test_delete_my_account_204():
     assert calls["uid"] == user.id
 
 
-@pytest.mark.skip(reason="US20-TK05")
 def test_delete_my_account_without_confirmation_4xx():
     def _raise(self, uid, confirm):
         raise DeletionNotConfirmedError()
@@ -55,14 +53,12 @@ def test_delete_my_account_without_confirmation_4xx():
     assert resp.status_code in (400, 422)
 
 
-@pytest.mark.skip(reason="US20-TK05")
 def test_delete_my_account_without_auth_returns_401():
     """Rota protegida: sem Bearer token, deve responder 401."""
     resp = client.request("DELETE", "/users/me", json={"confirm": True})
     assert resp.status_code == 401
 
 
-@pytest.mark.skip(reason="US20-TK05")
 def test_delete_my_account_integration(db_session):
     """Stack real: token válido + confirm -> 204 -> usuário inativo e anonimizado."""
     from datetime import datetime, timezone

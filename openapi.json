@@ -1748,6 +1748,28 @@
       "TripResponse": {
         "description": "Representação completa da viagem em andamento.\n\nFields esperados:\n- id: UUID\n- route_id: UUID\n- route_name: str\n- vehicle_id: UUID\n- trip_date: datetime\n- status: str                  — \"iniciada\" | \"finalizada\" | \"cancelada\"\n- total_km: float | None\n- started_at: datetime | None\n- finished_at: datetime | None\n- trip_passangers: list[TripPassangerResponse]",
         "properties": {
+          "destination_latitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destination Latitude"
+          },
+          "destination_longitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destination Longitude"
+          },
           "finished_at": {
             "anyOf": [
               {
