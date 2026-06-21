@@ -14,5 +14,12 @@ jobs:
           fetch-depth: 0
       - name: Push to vango-api GitLab
         run: |
-          git remote add gitlab https://stefano.carraro:${{ secrets.GITLAB_TOKEN }}@tools.ages.pucrs.br/vango/vango-api.git
+          git remote remove gitlab || true
+          
+          git remote add gitlab https://oauth2:${{ secrets.GITLAB_TOKEN }}@tools.ages.pucrs.br/vango/vango-api.git
+          
+          git fetch origin main
+          git checkout main
+          git reset --hard origin/main
+          
           git push gitlab main --force

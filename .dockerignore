@@ -23,3 +23,14 @@ firebase_service_account.json
 
 # Docker/infra local state
 infra/observability/**/data/
+.git
+.gitignore
+.gitlab-ci.yml
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.venv
+venv/
+ENV/
+env/

@@ -141,3 +141,4 @@ Adote o padrão **Conventional Commits**:
 - Escreva mensagens claras e objetivas.
 - Prefira commits pequenos e com objetivo único.
 - Evite commits genéricos como `ajustes` ou `update`.
+
