@@ -14,6 +14,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["ANN", "I", "UP", "E402", "F401", "F841", "F811"]
+"scripts/**" = ["T201", "ANN"]
 
 [tool.ruff.lint.flake8-annotations]
 allow-star-arg-any = true
